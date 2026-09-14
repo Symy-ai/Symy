@@ -40,7 +40,9 @@ jobs:
         run: npm ci
 
       - name: TypeScript 类型检查
-        run: npx tsc --noEmit
+        # 🔧 batch74-b 开源仓适配: 默认堆 (~2GB) 会 OOM (本机实测),
+        #    与 package.json build / pre-commit hook 一致给 4096MB 堆
+        run: NODE_OPTIONS='--max-old-space-size=4096' npx tsc --noEmit
 
   lint:
     name: ESLint Check

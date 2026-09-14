@@ -50,6 +50,7 @@ export function useGreenAltAdoptionInsight(): { insight: GreenAltAdoptionInsight
         const result = aggregateGreenAltAdoptionInsight(await fetchEvents());
         if (!cancelled) setInsight(result);
       } catch (error) {
+        // safe to ignore: insight widget is non-critical UI — stays empty on fetch failure
         logger.warn('[GreenAltAdoptionInsight] fetch failed:', error instanceof Error ? error.message : String(error));
       } finally {
         if (!cancelled) setIsLoading(false);

@@ -20,7 +20,7 @@ import { logger } from '@/lib/logger';
 import type { AppConfigEntry } from '@/lib/admin-panel/types';
 
 /** GET: 系统设置概览 */
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
   const authResult = verifyAdminAuth(req);
   if (!authResult.authorized) {
     void logUnauthorizedAdminAttempt(req, authResult);

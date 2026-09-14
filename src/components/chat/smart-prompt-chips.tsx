@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react';
 import { useI18n } from '@/i18n/provider';
-import type { HealthEvent } from '@/types/buddy-state';
-import type { BuddyState } from '@/types/buddy-state';
+import type { HealthEvent, BuddyState } from '@/types/buddy-state';
 import { getBadgeGoal } from '@/lib/badge-goal';
 import { ALL_BADGES } from '@/lib/badge-constants';
 
@@ -24,7 +23,6 @@ export interface SmartPromptChipsProps {
 }
 
 export function SmartPromptChips({
-  hasSentMessage,
   buddyState,
   healthEvents,
   hasHadInterceptInSession,

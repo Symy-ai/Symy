@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useGreenPrefs, _resetGreenPrefsStateForTest, getGreenPrefs, setGreenPrefs, setGreenPrefField, resetGreenPrefs } from '@/hooks/use-green-prefs';
+import { useGreenPrefs, _resetGreenPrefsStateForTest } from '@/hooks/use-green-prefs';
 
 const storage: Record<string, string> = {};
 
@@ -38,13 +38,8 @@ describe('useGreenPrefs', () => {
     expect(result.current.prefs).toEqual({ intensity: 'lockdown', wording: 'direct', pushTheme: 'guardian' });
   });
 
-  it('subscribers receive updates', async () => {
-    const { result } = renderHook(() => useGreenPrefs());
-    const values: Array<{ intensity: string; wording: string; pushTheme: string }> = [];
-    const unsub = () => {
-      values.push({ ...result.current.prefs });
-    };
-    // Access internal subscriber by writing a quick wrapper: render another hook that subscribes
+  it('subscribers receive updates', () => {
+    // 订阅路径通过第二个 hook 实例验证 (setGreenPrefField 会广播到订阅者)
     const { result: other } = renderHook(() => useGreenPrefs());
     act(() => other.current.setGreenPrefField('pushTheme', 'seasonal'));
     expect(other.current.prefs.pushTheme).toBe('seasonal');

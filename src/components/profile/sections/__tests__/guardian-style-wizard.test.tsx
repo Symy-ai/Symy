@@ -42,7 +42,7 @@ vi.mock('@/lib/push/use-push-preferences', () => ({
     justSaved: false,
     saveError: null,
     load: vi.fn(),
-    save: vi.fn(async () => pushSave.result),
+    save: vi.fn(() => Promise.resolve(pushSave.result)),
   }),
 }));
 

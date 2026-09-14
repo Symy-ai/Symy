@@ -93,6 +93,7 @@ export async function getMigrationsInfo(): Promise<MigrationsOverview> {
   try {
     filenames = await fs.readdir(MIGRATIONS_DIR);
   } catch (err) {
+    // safe to ignore: missing/unreadable migrations dir is reported as an empty list
     logger.error('[Admin Settings] read migrations dir failed:', err);
     return { migrations: [], duplicates: [] };
   }
@@ -141,7 +142,7 @@ export async function getCronJobs(): Promise<{ path: string; schedule: string }[
     const parsed = JSON.parse(raw) as { crons?: { path: string; schedule: string }[] };
     return Array.isArray(parsed.crons) ? parsed.crons : [];
   } catch {
-    // 无 vercel.json 或解析失败 —— 视为未配置 cron
+    // safe to ignore: 无 vercel.json 或解析失败 —— 视为未配置 cron
     return [];
   }
 }

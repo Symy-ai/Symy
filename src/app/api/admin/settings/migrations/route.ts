@@ -12,7 +12,7 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
 import { withAdminAudit, logUnauthorizedAdminAttempt } from '@/lib/admin-audit';
 import { getMigrationsInfo } from '@/lib/admin-settings';
 
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
   const authResult = verifyAdminAuth(req);
   if (!authResult.authorized) {
     void logUnauthorizedAdminAttempt(req, authResult);

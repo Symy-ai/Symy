@@ -9,9 +9,8 @@ import { ProfileTab } from '@/components/profile-tab';
 import { HomeTab } from '@/components/home-tab';
 import { MonitorTab } from '@/components/monitor-tab';
 import { ChevronLeft } from 'lucide-react';
-import type { BuddyState, DreamFund } from '@/types/buddy-state';
+import type { DreamFund } from '@/types/buddy-state';
 import type { ChallengeContext } from '@/types/challenge-context';
-import type { ImpulseEvent } from '@/lib/impulse-detector';
 
 export interface AppTabContentProps {
   activeTab: string;

@@ -22,8 +22,8 @@ const after: GuardPolicySnapshot = {
 
 describe('restoreGuardPolicySnapshot', () => {
   it('restores every changed field and leaves unchanged fields alone', async () => {
-    const savePushPreferences = vi.fn(async () => true);
-    const setHourlyRate = vi.fn(async () => undefined);
+    const savePushPreferences = vi.fn(() => Promise.resolve(true));
+    const setHourlyRate = vi.fn(() => Promise.resolve(undefined));
     const setGuardIntensity = vi.fn();
     const setGuardScopeMode = vi.fn();
     const setNightWindow = vi.fn();
@@ -43,13 +43,13 @@ describe('restoreGuardPolicySnapshot', () => {
   });
 
   it('does not claim success after a setter failure', async () => {
-    const savePushPreferences = vi.fn(async () => false);
+    const savePushPreferences = vi.fn(() => Promise.resolve(false));
     await expect(restoreGuardPolicySnapshot(before, diffGuardPolicy(before, after), {
       setGuardIntensity: vi.fn(),
       setGuardScopeMode: vi.fn(),
       setNightWindow: vi.fn(),
       savePushPreferences,
-      setHourlyRate: vi.fn(async () => undefined),
+      setHourlyRate: vi.fn(() => Promise.resolve(undefined)),
     })).resolves.toBe(false);
   });
 });

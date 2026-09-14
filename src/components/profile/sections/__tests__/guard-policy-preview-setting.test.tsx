@@ -30,7 +30,7 @@ vi.mock('@/hooks/use-hourly-rate', () => ({
 }));
 
 vi.mock('@/hooks/use-copy-to-clipboard', () => ({
-  useCopyToClipboard: () => ({ copied: false, copy: vi.fn(async (text: string) => { copiedText.current = text; }) }),
+  useCopyToClipboard: () => ({ copied: false, copy: vi.fn((text: string) => { copiedText.current = text; return Promise.resolve(true); }) }),
 }));
 
 const copiedText = { current: '' };
@@ -63,7 +63,7 @@ describe('GuardPolicyPreviewSetting', () => {
   it('previews without writing settings before Save', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ events }),
+      json: () => Promise.resolve({ events }),
     } as Response);
     render(<GuardPolicyPreviewSetting />);
 
@@ -77,7 +77,7 @@ describe('GuardPolicyPreviewSetting', () => {
   it('saves only through existing normalized hooks', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({ events }),
+      json: () => Promise.resolve({ events }),
     } as Response);
     render(<GuardPolicyPreviewSetting />);
     await waitFor(() => expect(screen.getByTestId('guard-policy-preview-card').dataset.status).toBe('ok'));

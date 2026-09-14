@@ -47,7 +47,7 @@ const defaultProps = {
 
 describe('ChatMessages fallback states', () => {
   it('renders empty state when messages is empty', async () => {
-    await act(async () => {
+    await act(() => {
       render(
         <div style={{ height: '400px' }}>
           <ChatMessages {...defaultProps} messages={[]} />

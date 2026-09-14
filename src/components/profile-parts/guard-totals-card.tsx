@@ -165,6 +165,7 @@ export function GuardTotalsCard({ isActive = true, onOpenInsights }: { isActive?
           // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 同上
           apiFetch<ChallengeStatsLite>('/api/challenge/stats', { signal: controller.signal }),
         ]);
+        // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 同上: 挂载时按需拉取既有管道, AbortController 已防悬挂
         const evidence = await apiFetch<{ events: GuardEvidenceEventInput[] }>(
           '/api/buddy/health-events?limit=100',
           { signal: controller.signal },

@@ -64,6 +64,7 @@ export function getDueReuseConfirmation(now = Date.now()): { card: DuplicatePrec
     if (typeof parsed.itemTitle !== 'string' || typeof parsed.category !== 'string' || typeof parsed.decisionId !== 'string' || typeof parsed.dueAt !== 'number' || parsed.dueAt > now) return null;
     return { card: { itemTitle: parsed.itemTitle, category: parsed.category as DuplicatePrecheckCardData['category'] }, decisionId: parsed.decisionId };
   } catch {
+    // safe to ignore: corrupted localStorage entry is treated as "no pending confirmation"
     return null;
   }
 }

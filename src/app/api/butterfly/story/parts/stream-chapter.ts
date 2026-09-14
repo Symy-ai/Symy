@@ -18,7 +18,6 @@
  * AI-RETRY: 如果 AI 返回空内容 (0 chunks), 最多重试 2 次
  */
 
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ButterflySession,
   StoryChapter,
@@ -26,7 +25,6 @@ import type {
   ChoiceOption,
   StoryEvent,
   OutlineData,
-  OutlineChapter,
   ChapterStartData,
   ChapterEndData,
   ChoicePromptData,
@@ -34,7 +32,6 @@ import type {
   IllustrationData,
   IllustrationFailedData,
   SceneIllustrationData,
-  DecisionType,
   StoryTone,
 } from '@/features/butterfly/types';
 import {
@@ -55,8 +52,7 @@ import { featureFlags } from '@/lib/feature-flags';
 import { completeStorySession } from './complete-story';
 import { createHealthEvent } from '@/lib/health-impact';
 // 🔧 ARCH fix (2026-07-22): Types and constants extracted to separate file
-import type { StreamChapterParams } from './stream-chapter-types';
-import { STREAM_TIMEOUT_MS, MAX_STORY_RETRIES } from './stream-chapter-types';
+import { STREAM_TIMEOUT_MS, MAX_STORY_RETRIES, type StreamChapterParams } from './stream-chapter-types';
 export type { StreamChapterParams } from './stream-chapter-types';
 export { STREAM_TIMEOUT_MS, MAX_STORY_RETRIES } from './stream-chapter-types';
 

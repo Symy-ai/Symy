@@ -108,6 +108,7 @@ export function buildGreenAlternativesContext(
       ? `[symy_green_alternatives]\n${lines.join("\n")}`
       : undefined;
   } catch (error) {
+    // safe to ignore: green alternatives are optional context enrichment — degrade gracefully
     logger.warn(
       "[ContextBuilder] Ignoring green alternatives injection failure:",
       error,

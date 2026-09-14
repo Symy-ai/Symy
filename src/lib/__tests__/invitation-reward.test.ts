@@ -752,7 +752,6 @@ describe('processInvitationReward', () => {
 
     let callCount = 0;
     let healthEventsPayload: any = null;
-    let buddyStateUpdatePayload: any = null;
     mockSupabaseFrom.mockImplementation((table: string) => {
       callCount++;
       // 1: invitations SELECT pending invitation
@@ -831,8 +830,7 @@ describe('processInvitationReward', () => {
               maybeSingle: vi.fn().mockRejectedValue(new Error('buddy_state timeout')),
             })),
           })),
-          update: vi.fn((payload: any) => {
-            buddyStateUpdatePayload = payload;
+          update: vi.fn(() => {
             return {
               eq: vi.fn().mockResolvedValue({ error: null }),
             };
@@ -1088,7 +1086,6 @@ describe('processInvitationReward', () => {
     });
 
     const result = await processInvitationReward('referee-123');
-    console.log('BUDDY PAYLOAD:', JSON.stringify(buddyStateUpdatePayload));
     expect(result.awarded).toBe(true);
     expect(result.badgeAwarded).toBe(true);
     expect(result.referrerPremiumDaysAwarded).toBe(60);

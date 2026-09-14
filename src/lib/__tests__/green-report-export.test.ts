@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildGreenReport, exportGreenReportBlob, greenReportFilename, type GreenReport, type GreenReportPeriod } from '../green-report-export';
+import { buildGreenReport, exportGreenReportBlob, greenReportFilename } from '../green-report-export';
 
 function mockFetchJson(response: unknown) {
   return vi.fn().mockResolvedValue(response);

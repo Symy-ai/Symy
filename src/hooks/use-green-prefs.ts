@@ -50,6 +50,7 @@ function readStoredPrefs(): GreenPrefs {
     const parsed = JSON.parse(raw) as Partial<GreenPrefs>;
     return { ...DEFAULT_PREFS, ...parsed };
   } catch {
+    // safe to ignore: corrupted localStorage falls back to default prefs
     return DEFAULT_PREFS;
   }
 }

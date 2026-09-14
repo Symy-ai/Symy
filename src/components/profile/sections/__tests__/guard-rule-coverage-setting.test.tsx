@@ -10,7 +10,7 @@ vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({ locale: 'zh', t: (key: string) => key }),
 }));
 vi.mock('@/hooks/use-copy-to-clipboard', () => ({
-  useCopyToClipboard: () => ({ copied: false, copy: vi.fn(async (text: string) => { copiedText.current = text; }) }),
+  useCopyToClipboard: () => ({ copied: false, copy: vi.fn((text: string) => { copiedText.current = text; return Promise.resolve(true); }) }),
 }));
 const copiedText = { current: '' };
 
@@ -22,9 +22,9 @@ afterEach(() => {
 
 describe('GuardRuleCoverageSetting', () => {
   it('loads read-only events and exports an amount-free diagnosis', async () => {
-    fetchMock.mockImplementation(async (url: URL | string) => ({
+    fetchMock.mockImplementation((url: URL | string) => Promise.resolve({
       ok: true,
-      json: async () => ({
+      json: () => Promise.resolve({
         events: new URL(String(url), 'http://localhost').searchParams.get('event_type') === 'manual_adjustment'
           ? [{ eventType: 'manual_adjustment', createdAt: new Date().toISOString(), metadata: { itemTitle: '演唱会门票', category: 'celebration' } }]
           : [],

@@ -9,8 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { getRankProgressPct, getAvgHoursPerGuard } from '@/lib/guard-rank-progress';
-import { GUARD_RANKS } from '@/lib/guard-rank';
-import type { GuardRank, GuardRankStats } from '@/lib/guard-rank';
+import { GUARD_RANKS, type GuardRank, type GuardRankStats } from '@/lib/guard-rank';
 
 function rank(id: GuardRank['id']): GuardRank {
   return GUARD_RANKS.find((r) => r.id === id)!;

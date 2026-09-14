@@ -1050,7 +1050,6 @@ describe('Architecture Guards: i18n key completeness', () => {
   function parseI18nKeys(file: string): Set<string> {
     const content = readSrcFile(file);
     const keys = new Set<string>();
-    console.log('parseI18nKeys called for', file, 'content length', content.length);
     // Recursively extract all keys from nested JSON object
     function extractKeys(obj: unknown, prefix: string = '') {
       if (typeof obj === 'string') {
@@ -1104,7 +1103,6 @@ describe('Architecture Guards: i18n key completeness', () => {
     while ((match = keyRegex.exec(content)) !== null) {
       keys.add(match[1]);
     }
-    console.log('FINAL: keys count =', keys.size, 'has monthlyGuard =', keys.has('monthlyGuard'), 'has monthlyGuard.title =', keys.has('monthlyGuard.title'));
     return keys;
   }
 

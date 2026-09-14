@@ -16,6 +16,9 @@ name: E2E Tests (Playwright)
 # Secrets 需要 (GitHub repo Settings → Secrets):
 #   - E2E_EMAIL: 测试账号邮箱
 #   - E2E_PASSWORD: 测试账号密码
+#
+# 开源仓适配 (batch74-b): secrets 缺失时跳过整个 E2E 流程 (不阻塞 CI)。
+# 注: GitHub Actions 的 if 条件不支持 secrets 上下文, 因此用 shell gate 步骤输出做开关。
 
 on:
   push:
@@ -32,42 +35,58 @@ jobs:
     name: Playwright E2E Tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
     steps:
       - name: 拉取代码
         uses: actions/checkout@v4
 
+      - name: 检查 E2E secrets 是否已配置
+        id: gate
+        run: |
+          if [ -n "$E2E_EMAIL" ] && [ -n "$E2E_PASSWORD" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "✅ E2E secrets 已配置, 将运行 E2E 测试"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ E2E_EMAIL / E2E_PASSWORD 未配置, 跳过 E2E 测试 (不阻塞 CI)"
+            echo "   维护者在 repo Settings → Secrets 配置后自动启用"
+          fi
+
       - name: 安装 Node.js
+        if: steps.gate.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: 安装项目依赖
+        if: steps.gate.outputs.run == 'true'
         run: npm ci
 
       - name: 安装 Playwright 浏览器
+        if: steps.gate.outputs.run == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: 等待 Vercel 部署完成
+        if: steps.gate.outputs.run == 'true'
         run: |
           echo "等待 120 秒让 Vercel 完成部署..."
           sleep 120
           echo "Vercel 部署等待完成"
 
       - name: 运行 E2E 测试
+        if: steps.gate.outputs.run == 'true'
         env:
-          E2E_BASE_URL: https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app
           # 🔧 2026-07-15 (CRITICAL-14 修复): 移除硬编码 fallback 凭据
           #   此前 commit 68a7651a 起邮箱/密码明文在 git 历史中
           #   修复: 必须配置 GitHub secrets E2E_EMAIL/E2E_PASSWORD, 否则 workflow fail-closed
-          #   🔴 注意: 用户需立即 (1) 在 GitHub repo Settings → Secrets 配置 E2E_EMAIL/E2E_PASSWORD
-          #                          (2) 旋转测试账号密码 (历史已泄漏)
-          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
-          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+          E2E_BASE_URL: https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app
         run: npx playwright test --reporter=line
 
       - name: 上传测试报告 artifacts
-        if: always()
+        if: always() && steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
@@ -76,7 +95,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: 上传截图 artifacts
-        if: always()
+        if: always() && steps.gate.outputs.run == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots

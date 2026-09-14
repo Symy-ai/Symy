@@ -2,15 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
-import { HomeTab } from '@/components/home-tab';
-import { MonitorTab } from '@/components/monitor-tab';
-import { ChatTab } from '@/components/chat-tab';
-import { ErrorBoundary } from '@/components/error-boundary';
-import { ProfileTab } from '@/components/profile-tab';
-import { BuddyTab } from '@/components/buddy-tab';
 import type { ChallengeContext } from '@/types/challenge-context';
 import { TabBar, type Tab } from '@/components/tab-bar';
 import { TAB_ORDER, TAB_URL_WHITELIST, isTabId, type TabId } from '@/lib/tab-registry';
@@ -22,7 +14,6 @@ import { formatPlatformName } from '@/lib/utils';
 import { useAuth } from '@/components/auth/auth-provider';
 import { createClient } from '@/lib/supabase-browser';
 import { useI18n } from '@/i18n/provider';
-import { useTheme } from 'next-themes';
 import { useBuddyStateRQ as useBuddyState } from '@/hooks/use-buddy-state-rq';
 import { useHomeData } from '@/hooks/use-home-data';
 // 🔧 P1-5 机制闭合 (Round 90): 主动留言 + 个性觉醒 + challenge stats
@@ -56,17 +47,6 @@ import type { BuddyState } from '@/types/buddy-state';
 import { logger } from '@/lib/logger';
 import { LandingPage } from '@/components/landing-page';
 import { moneyToFreedomLabel } from '@/lib/freedom-time';
-
-// 🔧 perf: ButterflyTab + DefenseTab are heavier feature surfaces (story rendering, share cards).
-//    Loading them dynamically keeps them out of the initial page bundle until first visit.
-const ButterflyTab = dynamic(
-  () => import('@/features/butterfly/components/butterfly-tab').then((m) => ({ default: m.ButterflyTab })),
-  { loading: () => <div className="flex items-center justify-center h-full text-text-secondary text-sm">Loading...</div> }
-);
-const DefenseTab = dynamic(
-  () => import('@/features/defense/components/defense-tab').then((m) => ({ default: m.DefenseTab })),
-  { loading: () => <div className="flex items-center justify-center h-full text-text-secondary text-sm">Loading...</div> }
-);
 
 export default function WeMeApp() {
   const { user, loading } = useAuth();
@@ -147,7 +127,6 @@ export default function WeMeApp() {
     reasons: string[];
     time: string;
   } | undefined>(undefined);
-  const { setTheme, resolvedTheme } = useTheme();
   // 🔧 P1-1 Variable Reward (Round 92): 可变奖励动画 (提取到 hook)
   const { variableReward, clearVariableReward } = useVariableReward();
   const [chatContextMessage, setChatContextMessage] = useState<string | undefined>(undefined);
@@ -530,15 +509,6 @@ export default function WeMeApp() {
     setImpulseContext(undefined); // BUG-193 fix: 消费后清除 impulseContext
   // eslint-disable-next-line react-hooks/exhaustive-deps -- switchTab stable
   }, []);
-
-  // 主题切换：使用 next-themes
-  // 🔧 BUG-006 fix: hydration mismatch — next-themes handles SSR/mount internally,
-  // so the isClient gate causes a mismatch between server and client renders.
-  // resolvedTheme defaults to 'system' pre-mount → treat anything not 'light' as dark.
-  const effectiveDarkMode = resolvedTheme !== 'light';
-  const toggleDarkMode = useCallback(() => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
-  }, [resolvedTheme, setTheme]);
 
   const handleBuddyNavigateChat = useCallback(
     (context?: { type: 'challenge' | 'healing' | 'default'; message?: string; challengeContext?: ChallengeContext }) => {

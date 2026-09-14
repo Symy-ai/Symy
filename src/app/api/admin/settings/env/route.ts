@@ -12,14 +12,14 @@ import { verifyAdminAuth } from '@/lib/admin-auth';
 import { withAdminAudit, logUnauthorizedAdminAttempt } from '@/lib/admin-audit';
 import { checkEnvVars } from '@/lib/admin-settings';
 
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
   const authResult = verifyAdminAuth(req);
   if (!authResult.authorized) {
     void logUnauthorizedAdminAttempt(req, authResult);
     return NextResponse.json({ error: authResult.error }, { status: 401 });
   }
 
-  return withAdminAudit(req, authResult, async () => {
+  return withAdminAudit(req, authResult, () => {
     const envVars = checkEnvVars();
     // 按分组聚合，便于前端直接渲染
     const groups: Record<string, typeof envVars> = {};

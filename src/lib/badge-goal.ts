@@ -22,6 +22,7 @@ function safeLocalStorage(): Storage | null {
     if (typeof window === 'undefined') return null;
     return window.localStorage;
   } catch {
+    // safe to ignore: localStorage unavailable (SSR / privacy mode) — treat as unset
     return null;
   }
 }
@@ -36,6 +37,7 @@ export function getBadgeGoal(): string | null {
     if (!value) return null;
     return isBadgeId(value) ? value : null;
   } catch {
+    // safe to ignore: corrupted localStorage value is treated as "no goal set"
     return null;
   }
 }
@@ -64,6 +66,7 @@ export function isBadgeGoalCelebrated(badgeId: string): boolean {
     const set = new Set(raw.split(',').map((s) => s.trim()).filter(Boolean));
     return set.has(badgeId);
   } catch {
+    // safe to ignore: corrupted localStorage value is treated as "not celebrated"
     return false;
   }
 }

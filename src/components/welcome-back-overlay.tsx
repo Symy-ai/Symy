@@ -12,7 +12,6 @@ import { createPortal } from 'react-dom';
 import { useI18n } from '@/i18n/provider';
 import { getGuardRank, type GuardRankStats } from '@/lib/guard-rank';
 import { moneyToFreedomLabel } from '@/lib/freedom-time';
-import type { BuddyState } from '@/types/buddy-state';
 
 export interface WelcomeBackOverlayProps {
   /** 小象形象图 (可选) */
@@ -38,7 +37,6 @@ export function WelcomeBackOverlay({
   guardRankStats,
   onClose,
   onNavigateChat,
-  isDemo = false,
 }: WelcomeBackOverlayProps) {
   const { t, locale } = useI18n();
   const [mounted, setMounted] = useState(false);

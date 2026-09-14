@@ -69,6 +69,7 @@ export async function GET(
 
       return NextResponse.json(detail);
     } catch (err) {
+      // safe to ignore: error already logged and converted to a 500 response
       logger.error('[Admin Users Detail] Unexpected error:', err);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
@@ -121,6 +122,7 @@ export async function DELETE(
           }
         }
       } catch (profileErr) {
+        // safe to ignore: non-blocking cleanup — user deletion continues even if Letta agent lookup fails
         logger.warn('[Admin Users Delete] Failed to fetch profile for Letta agent ID:', profileErr);
       }
 
@@ -133,6 +135,7 @@ export async function DELETE(
           logger.info(`[Admin Users Delete] Deleted ${paths.length} avatar files`);
         }
       } catch (storageErr) {
+        // safe to ignore: non-blocking cleanup — orphaned avatar files are harmless
         logger.warn('[Admin Users Delete] Failed to delete avatar files:', storageErr);
       }
 
@@ -147,6 +150,7 @@ export async function DELETE(
       logger.info(`[Admin Users Delete] Deleted user ${id.substring(0, 8)} (cascaded to all tables)`);
       return NextResponse.json({ success: true, id });
     } catch (err) {
+      // safe to ignore: error already logged and converted to a 500 response
       logger.error('[Admin Users Delete] Unexpected error:', err);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }

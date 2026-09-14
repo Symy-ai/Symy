@@ -188,7 +188,7 @@ describe('BlindSpotMap component', () => {
 
   it('shows empathy text at bottom', async () => {
     mockApiFetch.mockResolvedValue(makeResponse());
-    const { container } = render(<BlindSpotMap isActive={true} />);
+    render(<BlindSpotMap isActive={true} />);
     await waitFor(() => {
       // 🔧 PM-P1-13 fix: empathy text now from frontend i18n
       expect(screen.getByText(/These spending patterns took years/i)).toBeTruthy();

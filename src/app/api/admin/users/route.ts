@@ -23,7 +23,7 @@ const PROFILE_COLS =
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** GET: 分页查询用户列表 */
-export async function GET(req: NextRequest) {
+export function GET(req: NextRequest) {
   const authResult = verifyAdminAuth(req);
   if (!authResult.authorized) {
     void logUnauthorizedAdminAttempt(req, authResult);
@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil((count || 0) / limit),
       });
     } catch (err) {
+      // safe to ignore: error already logged and converted to a 500 response
       logger.error('[Admin Users API] Unexpected error:', err);
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
+    // safe to ignore: malformed JSON is rejected with a 400 response
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -186,6 +188,7 @@ export async function POST(req: NextRequest) {
         }
         return NextResponse.json({ success: true, action, affected: data?.length || 0 });
       } catch (err) {
+        // safe to ignore: error already logged and converted to a 500 response
         logger.error('[Admin Users API] POST unexpected error:', err);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
       }

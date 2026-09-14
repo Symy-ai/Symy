@@ -104,7 +104,7 @@ export function logUnauthorizedAdminAttempt(
 export async function withAdminAudit(
   request: NextRequest,
   authResult: AdminAuthResult,
-  handler: () => Promise<NextResponse>,
+  handler: () => NextResponse | Promise<NextResponse>,
   // 🔧 ARCH fix (Round 14 ADV-R14-1): actionOverride — 当 action 在 body 而非 query string 时
   //    letta POST 的 action 在 body.action, 调用方传 ctx.action 覆盖 url.searchParams.get('action')
   actionOverride?: string,

@@ -7,8 +7,8 @@ import {
   GREEN_SCORE_BADGE_THRESHOLD,
   NON_GREEN_NEGATION_PHRASES,
   NON_GREEN_RULES,
+  type GreenSignalCardInput,
 } from '@/lib/green-rules';
-import type { GreenSignalCardInput } from '@/lib/green-rules';
 
 const card = (overrides: Partial<GreenSignalCardInput> = {}): GreenSignalCardInput => ({
   title: 'Plain product',

@@ -16,7 +16,7 @@
 import { getChallengeTypeLabelByAmount } from '@/lib/challenge-rules';
 import { calcLifeHours } from '@/lib/mcp-tools/handlers/descriptions';
 import { suggestAlternative } from '@/lib/green-alternatives';
-import { DEFAULT_HOURLY_RATE, moneyToFreedomLabel } from '@/lib/freedom-time';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 export const CHALLENGE_LENSES = [
   'TIME LENS: What else could those hours become? Name one concrete thing the user could do with that time instead — framed as a friendly "worth knowing", not a verdict.',
@@ -68,7 +68,6 @@ export function buildChallengePrompt(itemName: string, amount: number, hourlyRat
       suggestion &&
       selectedLens === CHALLENGE_LENSES[GREEN_LENS_INDEX]
     ) {
-      const freedomLabel = moneyToFreedomLabel(amount, 'zh');
       selectedLens = `${selectedLens} For THIS item, a greener path exists: ${suggestion.message}`;
     }
   } catch {

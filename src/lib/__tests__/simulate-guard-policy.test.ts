@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  GUARD_POLICY_MIN_SAMPLE_SIZE,
   GUARD_POLICY_PREVIEW_DAYS,
   simulateGuardPolicyCandidate,
 } from '@/lib/simulate-guard-policy';

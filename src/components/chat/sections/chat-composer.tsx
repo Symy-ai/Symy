@@ -1,8 +1,7 @@
 'use client';
 
 import { ChatInput } from '../parts/chat-input';
-import type { BuddyState } from '@/types/buddy-state';
-import type { HealthEvent } from '@/types/buddy-state';
+import type { BuddyState, HealthEvent } from '@/types/buddy-state';
 
 interface ChatComposerProps {
   input: string;
