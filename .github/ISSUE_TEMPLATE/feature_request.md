@@ -22,11 +22,11 @@ Any alternative solutions or features you've considered, including workarounds y
 
 ## Does it pass the doctrine?
 
-Two quick questions from [our product doctrine](../blob/open-source-init/doc/PRODUCT-DOCTRINE.md):
+Two quick questions from [our product doctrine](../../doc/PRODUCT-DOCTRINE.md):
 
 - **Pride**: does it give the user something to be proud of (shareable honor, identity)?
 - **Substance**: does it give the user something they actually keep (money, time, resources)?
 
 ## Additional context
 
-Screenshots, sketches, or links to related discussions. If you'd like to help implement this feature, say so — contributions are welcome (see [CONTRIBUTING.md](../blob/open-source-init/CONTRIBUTING.md)).
+Screenshots, sketches, or links to related discussions. If you'd like to help implement this feature, say so — contributions are welcome (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
