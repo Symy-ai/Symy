@@ -6,6 +6,7 @@
 
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 
 const authGetUser = vi.fn();
 
@@ -49,6 +50,8 @@ describe('/api/hands/cart', () => {
     authGetUser.mockResolvedValue({ data: { user: { id: 'a1b2c3d4e5f67890' } }, error: null });
     fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
+    vi.mocked(logger.warn).mockClear();
+    vi.mocked(logger.error).mockClear();
   });
 
   afterEach(() => {
@@ -117,10 +120,33 @@ describe('/api/hands/cart', () => {
     expect(await res.json()).toEqual({ ok: false, error: 'cart locked' });
   });
 
-  it('returns 502 when upstream is down', async () => {
+  it('refines upstream 401 into HANDS_AUTH_FAILED with error-level logging, without leaking the secret', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('unauthorized', { status: 401 }));
+
+    const res = await POST(makeRequest({ action: 'list' }));
+    expect(res.status).toBe(502);
+    const json = await res.json();
+    expect(json).toEqual({ ok: false, error: 'Cart service unavailable', code: 'HANDS_AUTH_FAILED' });
+    // 红线: 响应不得包含 secret 值或 upstream 细节
+    expect(JSON.stringify(json)).not.toContain('secret');
+    expect(JSON.stringify(json)).not.toContain('unauthorized');
+    // error 级日志 → Sentry = 「已通知管理员」的依据
+    expect(vi.mocked(logger.error)).toHaveBeenCalledWith(expect.stringContaining('401'));
+  });
+
+  it('tags other upstream failures as HANDS_UNAVAILABLE', async () => {
     fetchMock.mockResolvedValueOnce(new Response('boom', { status: 503 }));
 
     const res = await POST(makeRequest({ action: 'list' }));
     expect(res.status).toBe(502);
+    expect((await res.json()).code).toBe('HANDS_UNAVAILABLE');
+  });
+
+  it('tags network-level failures as HANDS_UNAVAILABLE', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('fetch failed'));
+
+    const res = await POST(makeRequest({ action: 'list' }));
+    expect(res.status).toBe(502);
+    expect((await res.json()).code).toBe('HANDS_UNAVAILABLE');
   });
 });

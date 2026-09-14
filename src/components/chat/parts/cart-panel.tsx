@@ -36,6 +36,16 @@ interface CheckoutSnapshot {
   totalHours: string;
 }
 
+// route 502 细分码 (契约见 /api/hands/cart route.ts) — 前端据此选文案
+type HandsCartFailureCode = 'HANDS_AUTH_FAILED' | 'HANDS_UNAVAILABLE';
+
+function handsFailureCode(err: unknown): HandsCartFailureCode {
+  const code = err && typeof err === 'object' && 'body' in err
+    ? (err as { body?: { code?: unknown } }).body?.code
+    : undefined;
+  return code === 'HANDS_AUTH_FAILED' ? 'HANDS_AUTH_FAILED' : 'HANDS_UNAVAILABLE';
+}
+
 export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t, locale } = useI18n();
   const { greenPrefEnabled } = useGreenPref();
@@ -44,7 +54,8 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
   const [totalCents, setTotalCents] = useState(0);
   const [loading, setLoading] = useState(false);
   // 🔧 P1 修复: 区分「购物车是空的」vs「购物车暂时连不上」— 不再把失败伪装成空车
-  const [loadFailed, setLoadFailed] = useState(false);
+  // 🔧 batch74-a: 再区分 upstream 401 (secret 配置错, 管理员已收到 Sentry 通知) 与一般不可达
+  const [loadFailedCode, setLoadFailedCode] = useState<HandsCartFailureCode | null>(null);
   // checkout 流程状态
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
@@ -62,17 +73,17 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
         body: JSON.stringify({ action: 'list' }),
       });
       if (data?.ok === false) {
-        // upstream 解包成功但业务层失败 (ok:false) — 同样视为连不上
-        setLoadFailed(true);
+        // upstream 解包成功但业务层失败 (ok:false) — 同样视为不可达
+        setLoadFailedCode('HANDS_UNAVAILABLE');
         setLines([]);
       } else {
         setLines(data?.data?.cart_lines ?? []);
         setTotalCents(data?.data?.cart_total_cents ?? 0);
-        setLoadFailed(false);
+        setLoadFailedCode(null);
       }
     } catch (err) {
       logger.warn('[ChatCart] list failed:', err instanceof Error ? err.message : String(err));
-      setLoadFailed(true);
+      setLoadFailedCode(handsFailureCode(err));
       setLines([]);
       setTotalCents(0);
     } finally {
@@ -162,8 +173,10 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
           {loading && <p className="text-xs text-text-tertiary text-center py-6">…</p>}
           {!loading && lines.length === 0 && (checkoutSuccess ? (
             <CheckoutSuccessPanel greenCount={checkoutSuccess.greenCount} totalHours={checkoutSuccess.totalHours} toastVisible={toastVisible} />
-          ) : loadFailed ? (
-            <p className="text-xs text-text-tertiary text-center py-8">{t('chat.cart.unreachable', { defaultValue: '购物车暂时连不上，稍后再试试' })}</p>
+          ) : loadFailedCode ? (
+            <p className="text-xs text-text-tertiary text-center py-8">
+              {loadFailedCode === 'HANDS_AUTH_FAILED' ? t('chat.cart.adminNotified') : t('chat.cart.unreachable')}
+            </p>
           ) : (
             <p className="text-xs text-text-tertiary text-center py-8">{t('chat.cart.empty', { defaultValue: '购物车还是空的——和小象聊聊想买什么吧' })}</p>
           ))}

@@ -22,6 +22,16 @@ const bodySchema = z.object({
   item: z.record(z.string(), z.unknown()).optional(),
 });
 
+// 502 细分码 — 前端据此选文案, 管理端据此诊断。不携带任何 upstream 细节/secret。
+// HANDS_AUTH_FAILED: upstream 401 — 部署层 Caddy Bearer 与本侧 SYMY_HANDS_SECRET 不匹配
+//   (deploy/hands/Caddyfile)。error 级日志 → Sentry 通知管理员, 前端文案承诺「已通知管理员」。
+// HANDS_UNAVAILABLE: 其他 upstream 5xx / 网络失败 — 部署侧问题, 代码重试无意义, 不重试。
+type HandsCartFailureCode = 'HANDS_AUTH_FAILED' | 'HANDS_UNAVAILABLE';
+
+function failureResponse(code: HandsCartFailureCode): NextResponse {
+  return NextResponse.json({ ok: false, error: 'Cart service unavailable', code }, { status: 502 });
+}
+
 export async function POST(request: NextRequest) {
   const secret = process.env.SYMY_HANDS_SECRET;
   if (!secret) {
@@ -68,8 +78,13 @@ export async function POST(request: NextRequest) {
 
     const upstreamText = await upstream.text();
     if (!upstream.ok) {
+      if (upstream.status === 401) {
+        // Caddy 网关鉴权失败 (secret 不匹配/缺失) — error 级日志进 Sentry = 「已通知管理员」
+        logger.error('[Hands Cart Proxy] upstream auth failed (401) — 检查部署侧 SYMY_HANDS_SECRET 是否与 Vercel 同值');
+        return failureResponse('HANDS_AUTH_FAILED');
+      }
       logger.warn('[Hands Cart Proxy] upstream failed:', upstream.status, upstreamText.slice(0, 500));
-      return NextResponse.json({ ok: false, error: 'Cart service unavailable' }, { status: 502 });
+      return failureResponse('HANDS_UNAVAILABLE');
     }
 
     // 解包 MCP envelope (JSON-RPC → result.content[0].text → {ok, data, error}), 直接回给前端
@@ -79,6 +94,6 @@ export async function POST(request: NextRequest) {
     // safe to ignore: upstream outage is recovered by returning 502 below —
     // 前端据 ok:false/502 显示「连不上」, 不假装空车
     logger.error('[Hands Cart Proxy] request error:', err);
-    return NextResponse.json({ ok: false, error: 'Cart service unavailable' }, { status: 502 });
+    return failureResponse('HANDS_UNAVAILABLE');
   }
 }

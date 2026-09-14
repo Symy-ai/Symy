@@ -133,6 +133,15 @@ describe('ChatCartPanel', () => {
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the admin-notified copy when upstream auth fails (502 + HANDS_AUTH_FAILED)', async () => {
+    apiFetchMock.mockRejectedValue(Object.assign(new Error('Cart service unavailable'), {
+      status: 502,
+      body: { ok: false, error: 'Cart service unavailable', code: 'HANDS_AUTH_FAILED' },
+    }));
+    await renderOpen();
+    expect(screen.getByText('chat.cart.adminNotified')).toBeTruthy();
+  });
+
   it('requires confirmation before checkout and celebrates the submitted list', async () => {
     mockList([greenLine, nonGreenLine], 31700);
     await renderOpen();
