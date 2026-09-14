@@ -1,0 +1,62 @@
+name: Database Types Sync Check
+
+# 🔧 第三阶段 §4.5.3: CI 检查 database.types.ts 是否与 Supabase schema 同步
+#
+# 需要配置 GitHub Secrets:
+#   SUPABASE_ACCESS_TOKEN — 在 https://supabase.com/dashboard/account/tokens 生成
+#   SUPABASE_PROJECT_REF — 项目 ref (fcgpxrujhnqramggupjm)
+#
+# 工作流:
+# 1. 用 supabase CLI 从远程 Supabase 生成 types
+# 2. 与 git 中的 src/lib/database.types.ts 做 diff
+# 3. 如果不同, 提示开发者运行 `supabase gen types` 更新
+#
+# 注意: 当前 workflow 是 placeholder, 需要用户配置 secrets 后取消注释
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'src/lib/database.types.ts'
+  workflow_dispatch: {}
+
+jobs:
+  check-types-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 检查 database.types.ts 是否需要更新
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || 'fcgpxrujhnqramggupjm' }}
+        run: |
+          # 如果没有配置 access token, 跳过检查 (不阻塞 PR)
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then
+            echo "⚠️ SUPABASE_ACCESS_TOKEN not configured, skipping types sync check"
+            echo "Configure it in GitHub Secrets to enable this check"
+            exit 0
+          fi
+
+          echo "安装 supabase CLI..."
+          npm install -g supabase
+
+          echo "从 Supabase 生成最新 types..."
+          supabase gen types typescript --project-id "$SUPABASE_PROJECT_REF" > /tmp/generated-types.ts
+
+          echo "比较生成的 types 与 git 中的 types..."
+          if diff -q /tmp/generated-types.ts src/lib/database.types.ts > /dev/null; then
+            echo "✅ database.types.ts is up to date"
+          else
+            echo "❌ database.types.ts is out of sync with Supabase schema"
+            echo ""
+            echo "Diff:"
+            diff /tmp/generated-types.ts src/lib/database.types.ts | head -50
+            echo ""
+            echo "To fix: run 'supabase gen types typescript --project-id $SUPABASE_PROJECT_REF > src/lib/database.types.ts'"
+            echo "Then commit the updated file"
+            exit 1
+          fi

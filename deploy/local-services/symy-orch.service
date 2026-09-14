@@ -1,0 +1,27 @@
+[Unit]
+Description=Symy local orchestrator (LangGraph agent + /img image proxy, :8082)
+Documentation=file:///home/spark/src/github/WeAreAllMe/deploy/local-services/README.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spark
+Group=spark
+WorkingDirectory=/home/spark/runtime/Shopping-AI
+EnvironmentFile=/home/spark/runtime/Shopping-AI/.env
+Environment=PYTHONPATH=/home/spark/runtime/Shopping-AI/orchestrator
+Environment=SHARED_CONFIG_ROOT=/home/spark/runtime/Shopping-AI/platform/configs
+Environment=CONFIG_OVERRIDE=config-local.yaml
+Environment=MILVUS_HOST=localhost
+Environment=MILVUS_PORT=19530
+Environment=NO_PROXY=localhost,127.0.0.1,open.bigmodel.cn
+Environment=no_proxy=localhost,127.0.0.1,open.bigmodel.cn
+# OPENAI_API_KEY=$LLM_API_KEY 的映射在包装脚本里做（systemd 不展开变量）
+ExecStart=/home/spark/src/github/WeAreAllMe/deploy/local-services/start-orch.sh
+Restart=always
+RestartSec=5
+SyslogIdentifier=symy-orch
+
+[Install]
+WantedBy=multi-user.target

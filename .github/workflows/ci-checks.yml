@@ -1,0 +1,84 @@
+name: CI Checks
+
+# 🔧 ARCH fix (Round 76): CI 集成 — TS + ESLint + Vitest 在每次 push/PR 自动运行
+# 帮开发快速发现 bug, 防止回归
+#
+# 工作流:
+# 1. TypeScript 类型检查 (tsc --noEmit)
+# 2. ESLint 检查 (0 errors expected)
+# 3. Vitest 单元测试 (771+ tests expected)
+#
+# 任一步骤失败 → CI 失败 → 阻止 merge
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一分支的新提交取消旧的运行，省额度
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: TypeScript Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装项目依赖
+        run: npm ci
+
+      - name: TypeScript 类型检查
+        run: npx tsc --noEmit
+
+  lint:
+    name: ESLint Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装项目依赖
+        run: npm ci
+
+      - name: ESLint 检查
+        # 🔧 Round 127: ESLint warnings 全部清零! 棘轮设为 0 (不允许任何 warning)
+        run: npx eslint src/ --max-warnings=0
+
+  test:
+    name: Vitest Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装项目依赖
+        run: npm ci
+
+      - name: 运行单元测试
+        run: npx vitest run

@@ -1,0 +1,26 @@
+[Unit]
+Description=Symy local search service (Milvus catalog retrieval, :8010)
+Documentation=file:///home/spark/src/github/WeAreAllMe/deploy/local-services/README.md
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spark
+Group=spark
+WorkingDirectory=/home/spark/runtime/Shopping-AI
+EnvironmentFile=/home/spark/runtime/Shopping-AI/.env
+Environment=PYTHONPATH=/home/spark/runtime/Shopping-AI/search
+Environment=SHARED_CONFIG_ROOT=/home/spark/runtime/Shopping-AI/platform/configs
+Environment=CONFIG_OVERRIDE=config-local.yaml
+Environment=MILVUS_HOST=localhost
+Environment=MILVUS_PORT=19530
+Environment=NO_PROXY=localhost,127.0.0.1,open.bigmodel.cn
+Environment=no_proxy=localhost,127.0.0.1,open.bigmodel.cn
+ExecStart=/home/spark/src/github/WeAreAllMe/deploy/local-services/start-search.sh
+Restart=always
+RestartSec=5
+SyslogIdentifier=symy-search
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+name: Smoke Test
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {} # 允许在 Actions 页面手动触发
+
+# 同一分支的新提交取消旧的运行，省额度
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装项目依赖
+        run: npm ci
+
+      - name: 安装 Playwright + 浏览器
+        run: |
+          npm install playwright
+          npx playwright install --with-deps chromium
+
+      - name: 等待 Vercel 部署完成
+        run: |
+          echo "等待 90 秒让 Vercel 完成部署..."
+          sleep 90
+          echo "Vercel 部署等待完成"
+
+      - name: 执行冒烟测试
+        env:
+          SMOKE_URL: https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app/
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+        run: node scripts/smoke-test.mjs
+
+      - name: 上传截图 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: /tmp/symy-smoke-*.png
+          retention-days: 7
+          if-no-files-found: ignore

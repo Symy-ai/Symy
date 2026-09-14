@@ -1,0 +1,41 @@
+services:
+  hands:
+    image: symy-hands:latest
+    restart: unless-stopped
+    environment:
+      SYMY_CATALOG_PROVIDER: ${SYMY_CATALOG_PROVIDER:-stub}
+      SYMY_CATALOG_BASE_URL: ${SYMY_CATALOG_BASE_URL:-}
+      SYMY_CART_PROVIDER: ${SYMY_CART_PROVIDER:-stub}
+      SYMY_CART_MEMORY: /tmp/cart.json
+      SYMY_SUPABASE_URL: ${SYMY_SUPABASE_URL:-}
+      SYMY_SUPABASE_KEY: ${SYMY_SUPABASE_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - hands
+    environment:
+      SYMY_HANDS_SECRET: ${SYMY_HANDS_SECRET}
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+    ports:
+      - "127.0.0.1:18080:8080"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    depends_on:
+      - caddy
+    environment:
+      HTTP_PROXY: ""
+      HTTPS_PROXY: ""
+      http_proxy: ""
+      https_proxy: ""
+    command: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN} --url http://caddy:8080

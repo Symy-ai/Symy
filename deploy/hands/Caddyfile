@@ -1,0 +1,25 @@
+{
+	auto_https off
+	admin off
+}
+
+:8080 {
+	@mcp path /mcp /mcp/*
+	@authorized header Authorization "Bearer {$SYMY_HANDS_SECRET}"
+	@authorizedSecret header X-MCP-Secret "{$SYMY_HANDS_SECRET}"
+	@unauthorized expression `{http.request.header.Authorization} != "Bearer {$SYMY_HANDS_SECRET}" && {http.request.header.X-MCP-Secret} != "{$SYMY_HANDS_SECRET}"`
+
+	handle @mcp {
+		respond @unauthorized 401
+		reverse_proxy @authorized hands:8080
+		reverse_proxy @authorizedSecret hands:8080
+	}
+
+	handle /img* {
+		reverse_proxy {$IMG_UPSTREAM}
+	}
+
+	handle {
+		reverse_proxy hands:8080
+	}
+}
