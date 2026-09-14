@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Symy — AI 驱动的冲动消费戒断伴侣</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #0B1120;
+  --bg-secondary: #111827;
+  --bg-card: rgba(17, 24, 39, 0.7);
+  --bg-glass: rgba(15, 23, 42, 0.85);
+  --emerald-300: #6EE7B7;
+  --emerald-400: #34D399;
+  --emerald-500: #10B981;
+  --emerald-600: #059669;
+  --emerald-glow: rgba(16, 185, 129, 0.3);
+  --indigo-400: #818CF8;
+  --indigo-500: #6366F1;
+  --amber-400: #FBBF24;
+  --amber-500: #F59E0B;
+  --red-400: #F87171;
+  --red-500: #EF4444;
+  --rose-400: #FB7185;
+  --rose-500: #F43F5E;
+  --cyan-400: #22D3EE;
+  --slate-300: #CBD5E1;
+  --slate-400: #94A3B8;
+  --slate-500: #64748B;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1E293B;
+  --white: #F8FAFC;
+  --pure-white: #FFFFFF;
+  --font-sans: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  --font-display: 'Noto Sans SC', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --transition-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  color: var(--white);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===== SLIDE CONTAINER ===== */
+.presentation {
+  width: 100vw; height: 100vh;
+  position: relative; overflow: hidden;
+}
+
+.slide {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: clamp(2rem, 4vh, 3.5rem) clamp(2rem, 6vw, 6rem);
+  opacity: 0; transform: translateX(60px);
+  transition: opacity 0.6s var(--transition-smooth), transform 0.6s var(--transition-smooth);
+  pointer-events: none; will-change: transform, opacity;
+}
+.slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.slide.exit-left { opacity: 0; transform: translateX(-60px); }
+.slide.exit-right { opacity: 0; transform: translateX(60px); }
+
+/* ===== ANIMATED BACKGROUND ===== */
+.bg-animation {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 0; pointer-events: none; overflow: hidden;
+}
+.bg-orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: 0.12;
+  animation: orbFloat 25s ease-in-out infinite;
+}
+.bg-orb:nth-child(1) { width: 600px; height: 600px; background: var(--emerald-500); top: -200px; right: -200px; }
+.bg-orb:nth-child(2) { width: 400px; height: 400px; background: var(--indigo-500); bottom: -150px; left: -100px; animation-delay: -8s; }
+.bg-orb:nth-child(3) { width: 300px; height: 300px; background: var(--emerald-400); top: 40%; left: 40%; animation-delay: -16s; }
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(40px, -60px) scale(1.1); }
+  66% { transform: translate(-30px, 40px) scale(0.95); }
+}
+
+.grid-pattern {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-image:
+    linear-gradient(rgba(16,185,129,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,185,129,0.03) 1px, transparent 1px);
+  background-size: 60px 60px; z-index: 0; pointer-events: none;
+}
+
+/* ===== SHARED STYLES ===== */
+.slide-content { position: relative; z-index: 2; max-width: 1100px; width: 100%; }
+.slide-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.3rem 0.9rem; border-radius: 100px;
+  font-size: clamp(0.68rem, 0.9vw, 0.78rem); font-weight: 500;
+  letter-spacing: 0.04em; margin-bottom: 1.2rem; backdrop-filter: blur(8px);
+}
+.slide-title {
+  font-family: var(--font-display); font-weight: 900;
+  line-height: 1.15; margin-bottom: 1.2rem; letter-spacing: -0.02em;
+}
+.slide-title.large { font-size: clamp(2.2rem, 5vw, 4rem); }
+.slide-title.medium { font-size: clamp(1.6rem, 3.2vw, 2.8rem); }
+.slide-subtitle {
+  font-size: clamp(0.95rem, 1.6vw, 1.25rem);
+  color: var(--slate-400); line-height: 1.6; max-width: 650px;
+}
+.hl { color: var(--emerald-400); font-weight: 700; }
+.hl-amber { color: var(--amber-400); font-weight: 700; }
+.hl-rose { color: var(--rose-400); font-weight: 700; }
+.hl-cyan { color: var(--cyan-400); font-weight: 700; }
+.hl-indigo { color: var(--indigo-400); font-weight: 700; }
+
+/* ===== COVER ===== */
+.cover-logo {
+  font-family: var(--font-display); font-size: clamp(3.5rem, 9vw, 7rem);
+  font-weight: 900; letter-spacing: -0.04em; line-height: 1; margin-bottom: 0.4rem;
+  background: linear-gradient(135deg, var(--emerald-400), var(--emerald-300), var(--emerald-500));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.cover-equation {
+  font-family: var(--font-mono); font-size: clamp(1rem, 1.8vw, 1.4rem);
+  color: var(--slate-400); margin-bottom: 1.5rem; letter-spacing: 0.04em;
+}
+.cover-equation .future-me { color: var(--emerald-400); font-weight: 600; }
+.cover-tagline {
+  font-family: var(--font-display); font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+  font-weight: 700; color: var(--white); margin-bottom: 0.6rem;
+}
+.cover-desc {
+  font-size: clamp(0.85rem, 1.3vw, 1rem);
+  color: var(--slate-400); margin-bottom: 2rem; max-width: 480px;
+}
+.cover-event {
+  font-size: clamp(0.7rem, 0.9vw, 0.8rem);
+  color: var(--slate-500); letter-spacing: 0.1em; text-transform: uppercase;
+}
+.cover-event span { color: var(--emerald-500); }
+
+/* ===== STAT CARDS ===== */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem; margin-top: 1.5rem;
+}
+.stat-card {
+  background: var(--bg-card); border: 1px solid rgba(16,185,129,0.1);
+  border-radius: 14px; padding: 1.2rem; backdrop-filter: blur(8px);
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+.stat-card:hover { transform: translateY(-3px); border-color: rgba(16,185,129,0.25); }
+.stat-number {
+  font-family: var(--font-display); font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+  font-weight: 900; line-height: 1; margin-bottom: 0.4rem;
+}
+.stat-label { font-size: clamp(0.7rem, 0.9vw, 0.8rem); color: var(--slate-400); line-height: 1.4; }
+
+/* ===== COMPARISON ===== */
+.compare-section {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.5rem; margin-top: 1.5rem; align-items: start;
+}
+.compare-col { display: flex; flex-direction: column; gap: 0.6rem; }
+.compare-item {
+  display: flex; align-items: flex-start; gap: 0.7rem;
+  padding: 0.7rem 0.9rem; border-radius: 10px;
+  font-size: clamp(0.8rem, 1.1vw, 0.88rem); line-height: 1.5;
+}
+.compare-item.fail { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.12); color: var(--slate-300); }
+.compare-item.success { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.12); color: var(--slate-300); }
+.compare-icon {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; margin-top: 1px;
+}
+.compare-icon.fail { background: rgba(239,68,68,0.18); color: var(--red-400); }
+.compare-icon.success { background: rgba(16,185,129,0.18); color: var(--emerald-400); }
+
+/* ===== DEMO ===== */
+.demo-container {
+  position: relative; width: 100%; max-width: 850px;
+  margin: 1rem auto 0; aspect-ratio: 16/10;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid rgba(16,185,129,0.2);
+  box-shadow: 0 0 50px rgba(16,185,129,0.08); background: #0F172A;
+}
+.demo-container iframe { width: 100%; height: 100%; border: none; }
+.demo-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(11,17,32,0.88);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; cursor: pointer; transition: opacity 0.4s ease; z-index: 5;
+}
+.demo-overlay.hidden { opacity: 0; pointer-events: none; }
+.demo-play-btn {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--emerald-500), var(--emerald-400));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 40px rgba(16,185,129,0.35);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.demo-overlay:hover .demo-play-btn { transform: scale(1.1); box-shadow: 0 0 55px rgba(16,185,129,0.45); }
+.demo-play-btn svg { width: 28px; height: 28px; fill: white; margin-left: 3px; }
+.demo-play-label { font-size: 0.8rem; color: var(--slate-400); letter-spacing: 0.04em; }
+.demo-features { display: flex; gap: 1rem; margin-top: 0.8rem; flex-wrap: wrap; justify-content: center; }
+.demo-feature-tag {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: clamp(0.65rem, 0.85vw, 0.75rem); color: var(--slate-400);
+  padding: 0.25rem 0.7rem; background: rgba(16,185,129,0.06);
+  border: 1px solid rgba(16,185,129,0.1); border-radius: 100px;
+}
+.demo-feature-tag .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--emerald-500); }
+
+/* ===== TECH ===== */
+.tech-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1.2rem; }
+.tech-card {
+  background: var(--bg-card); border: 1px solid rgba(16,185,129,0.08);
+  border-radius: 14px; padding: 1.1rem; backdrop-filter: blur(8px);
+}
+.tech-card-title {
+  font-family: var(--font-mono); font-size: clamp(0.75rem, 1vw, 0.85rem);
+  color: var(--emerald-400); font-weight: 600; margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.tech-card-desc { font-size: clamp(0.72rem, 0.95vw, 0.8rem); color: var(--slate-400); line-height: 1.55; }
+.tech-flow { display: flex; align-items: center; gap: 0.4rem; margin-top: 1.2rem; flex-wrap: wrap; justify-content: center; }
+.tech-flow-step {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.4rem 0.85rem; background: rgba(16,185,129,0.07);
+  border: 1px solid rgba(16,185,129,0.12); border-radius: 8px;
+  font-size: clamp(0.68rem, 0.85vw, 0.78rem); color: var(--emerald-400); font-weight: 500;
+}
+.tech-flow-arrow { color: var(--slate-600); font-size: 1rem; }
+
+/* ===== FOUNDER ===== */
+.founder-grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 2.5rem; margin-top: 1.2rem; align-items: center; }
+.founder-left { display: flex; flex-direction: column; gap: 0.9rem; }
+.founder-card {
+  background: var(--bg-card); border: 1px solid rgba(16,185,129,0.08);
+  border-radius: 14px; padding: 1rem 1.2rem; backdrop-filter: blur(8px);
+}
+.founder-card-label {
+  font-size: clamp(0.65rem, 0.8vw, 0.72rem); color: var(--slate-500);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem;
+}
+.founder-card-value { font-size: clamp(0.82rem, 1.1vw, 0.95rem); color: var(--white); line-height: 1.55; font-weight: 500; }
+.founder-right { display: flex; flex-direction: column; gap: 0.8rem; }
+.founder-quote {
+  font-family: var(--font-display); font-size: clamp(1.1rem, 1.8vw, 1.4rem);
+  font-style: italic; color: var(--emerald-400); line-height: 1.45;
+  padding-left: 1.2rem; border-left: 3px solid var(--emerald-500);
+}
+.founder-context { font-size: clamp(0.8rem, 1.1vw, 0.9rem); color: var(--slate-400); line-height: 1.65; }
+
+/* ===== MARKET ===== */
+.market-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1.2rem; align-items: start; }
+.market-left { display: flex; flex-direction: column; gap: 1rem; }
+.tam-block {
+  background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.03));
+  border: 1px solid rgba(16,185,129,0.18); border-radius: 14px; padding: 1.3rem;
+}
+.tam-number {
+  font-family: var(--font-display); font-size: clamp(2.2rem, 4.5vw, 3rem);
+  font-weight: 900; line-height: 1;
+  background: linear-gradient(135deg, var(--emerald-400), var(--emerald-300));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.tam-label { font-size: clamp(0.75rem, 1vw, 0.85rem); color: var(--slate-400); margin-top: 0.3rem; }
+.market-right { display: flex; flex-direction: column; gap: 0.8rem; }
+.revenue-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.7rem 0.9rem; background: var(--bg-card);
+  border: 1px solid rgba(16,185,129,0.06); border-radius: 10px;
+}
+.revenue-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.revenue-text { flex: 1; }
+.revenue-title { font-size: clamp(0.78rem, 1vw, 0.85rem); color: var(--white); font-weight: 600; }
+.revenue-desc { font-size: clamp(0.65rem, 0.85vw, 0.73rem); color: var(--slate-500); margin-top: 0.1rem; }
+.moat-section {
+  margin-top: 0.5rem; padding: 0.9rem 1rem;
+  background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.12); border-radius: 10px;
+}
+.moat-title { font-size: clamp(0.72rem, 0.95vw, 0.8rem); color: var(--indigo-400); font-weight: 600; margin-bottom: 0.3rem; }
+.moat-desc { font-size: clamp(0.68rem, 0.85vw, 0.76rem); color: var(--slate-400); line-height: 1.55; }
+
+/* ===== GTM ===== */
+.gtm-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.2rem; }
+.gtm-card {
+  background: var(--bg-card); border: 1px solid rgba(16,185,129,0.08);
+  border-radius: 14px; padding: 1.1rem; backdrop-filter: blur(8px);
+}
+.gtm-card-phase {
+  font-family: var(--font-mono); font-size: clamp(0.65rem, 0.8vw, 0.72rem);
+  color: var(--amber-400); font-weight: 600; margin-bottom: 0.4rem; letter-spacing: 0.06em;
+}
+.gtm-card-title { font-size: clamp(0.85rem, 1.1vw, 0.95rem); color: var(--white); font-weight: 700; margin-bottom: 0.3rem; }
+.gtm-card-desc { font-size: clamp(0.7rem, 0.9vw, 0.78rem); color: var(--slate-400); line-height: 1.55; }
+.gtm-flywheel {
+  margin-top: 1rem; padding: 0.9rem 1.2rem;
+  background: linear-gradient(135deg, rgba(16,185,129,0.06), rgba(99,102,241,0.04));
+  border: 1px solid rgba(16,185,129,0.12); border-radius: 12px;
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;
+}
+.flywheel-step {
+  font-size: clamp(0.72rem, 0.9vw, 0.8rem); color: var(--emerald-400); font-weight: 600;
+}
+.flywheel-arrow { color: var(--slate-600); font-size: 0.9rem; }
+
+/* ===== ASK ===== */
+.ask-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; margin-top: 1.2rem; align-items: start; }
+.ask-left { display: flex; flex-direction: column; gap: 1rem; }
+.ask-amount {
+  font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 900; line-height: 1;
+  background: linear-gradient(135deg, var(--emerald-400), var(--emerald-300));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.ask-detail { font-size: clamp(0.75rem, 1vw, 0.85rem); color: var(--slate-400); margin-top: 0.3rem; }
+.ask-right { display: flex; flex-direction: column; gap: 0.7rem; }
+.ask-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.7rem 1rem; background: var(--bg-card);
+  border: 1px solid rgba(16,185,129,0.06); border-radius: 10px;
+}
+.ask-row-bar {
+  height: 6px; border-radius: 100px; background: var(--slate-800);
+  flex: 1; overflow: hidden; position: relative;
+}
+.ask-row-fill { height: 100%; border-radius: 100px; width: 0; transition: width 1.2s ease; }
+.slide.active .ask-row-fill.eng { width: 60%; background: var(--emerald-500); }
+.slide.active .ask-row-fill.growth { width: 25%; background: var(--amber-500); }
+.slide.active .ask-row-fill.psych { width: 15%; background: var(--indigo-500); }
+.ask-row-label { font-size: clamp(0.75rem, 1vw, 0.82rem); color: var(--white); font-weight: 600; min-width: 60px; }
+.ask-row-pct { font-family: var(--font-mono); font-size: 0.75rem; color: var(--slate-500); min-width: 35px; text-align: right; }
+.ask-cofounder {
+  margin-top: 0.5rem; padding: 0.8rem 1rem;
+  background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.15); border-radius: 10px;
+}
+.ask-cofounder-title { font-size: clamp(0.75rem, 0.95vw, 0.82rem); color: var(--amber-400); font-weight: 600; margin-bottom: 0.25rem; }
+.ask-cofounder-desc { font-size: clamp(0.68rem, 0.85vw, 0.76rem); color: var(--slate-400); line-height: 1.55; }
+
+/* ===== CLOSING ===== */
+.closing-content {
+  text-align: center; display: flex; flex-direction: column;
+  align-items: center; gap: 1.2rem;
+}
+.closing-quote {
+  font-family: var(--font-display); font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  font-weight: 900; line-height: 1.3; max-width: 750px; color: var(--white);
+}
+.closing-quote .em { color: var(--emerald-400); }
+.closing-sub {
+  font-size: clamp(0.9rem, 1.4vw, 1.15rem); color: var(--slate-400);
+  max-width: 550px; line-height: 1.6;
+}
+.closing-cta { margin-top: 0.8rem; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; justify-content: center; }
+.cta-primary {
+  padding: 0.7rem 1.8rem;
+  background: linear-gradient(135deg, var(--emerald-500), var(--emerald-400));
+  color: var(--bg-primary); font-weight: 700; font-size: clamp(0.85rem, 1.1vw, 0.95rem);
+  border-radius: 100px; border: none; cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease; text-decoration: none;
+}
+.cta-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(16,185,129,0.3); }
+.cta-secondary {
+  padding: 0.7rem 1.8rem; background: transparent; color: var(--emerald-400);
+  font-weight: 600; font-size: clamp(0.85rem, 1.1vw, 0.95rem);
+  border-radius: 100px; border: 1px solid rgba(16,185,129,0.3);
+  cursor: pointer; transition: all 0.2s ease; text-decoration: none;
+}
+.cta-secondary:hover { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.4); }
+
+/* ===== NAVIGATION ===== */
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; height: 52px;
+  background: var(--bg-glass); backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(16,185,129,0.06);
+  display: flex; align-items: center;
+  padding: 0 clamp(0.8rem, 2.5vw, 2rem); z-index: 100; gap: 0.4rem;
+}
+.nav-dots { display: flex; align-items: center; gap: 0.3rem; flex: 1; justify-content: center; }
+.nav-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--slate-600); cursor: pointer;
+  transition: all 0.3s ease; border: none; padding: 0;
+}
+.nav-dot.active { width: 22px; border-radius: 100px; background: var(--emerald-500); }
+.nav-dot:hover { background: var(--slate-500); }
+.nav-dot.active:hover { background: var(--emerald-400); }
+.nav-btn {
+  background: none; border: 1px solid var(--slate-700); color: var(--slate-400);
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.2s ease; flex-shrink: 0;
+}
+.nav-btn:hover { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); color: var(--emerald-400); }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+.nav-counter { font-family: var(--font-mono); font-size: 0.7rem; color: var(--slate-500); flex-shrink: 0; min-width: 35px; text-align: center; }
+
+/* ===== PROGRESS ===== */
+.progress-bar {
+  position: fixed; top: 0; left: 0; height: 2px;
+  background: linear-gradient(90deg, var(--emerald-500), var(--emerald-400));
+  z-index: 200; transition: width 0.5s var(--transition-smooth);
+  box-shadow: 0 0 8px rgba(16,185,129,0.4);
+}
+
+/* ===== STAGGER ===== */
+.slide.active .stagger { animation: fadeInUp 0.55s var(--transition-smooth) both; }
+.slide.active .stagger:nth-child(1) { animation-delay: 0.08s; }
+.slide.active .stagger:nth-child(2) { animation-delay: 0.16s; }
+.slide.active .stagger:nth-child(3) { animation-delay: 0.24s; }
+.slide.active .stagger:nth-child(4) { animation-delay: 0.32s; }
+.slide.active .stagger:nth-child(5) { animation-delay: 0.4s; }
+.slide.active .stagger:nth-child(6) { animation-delay: 0.48s; }
+.slide.active .stagger:nth-child(7) { animation-delay: 0.56s; }
+.slide.active .stagger:nth-child(8) { animation-delay: 0.64s; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===== IMPULSE METER ===== */
+.impulse-meter {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-top: 1.2rem; padding: 0.8rem 1.2rem;
+  background: var(--bg-card); border: 1px solid rgba(239,68,68,0.12); border-radius: 10px;
+}
+.meter-bar { flex: 1; height: 6px; background: var(--slate-800); border-radius: 100px; overflow: hidden; }
+.meter-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, var(--amber-500), var(--red-500));
+  width: 0; transition: width 1.5s ease;
+}
+.slide.active .meter-fill { width: 73%; }
+.meter-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--red-400); font-weight: 600; white-space: nowrap; }
+
+/* ===== BUDDY SVG ===== */
+.buddy-svg {
+  width: clamp(70px, 10vw, 100px); height: clamp(70px, 10vw, 100px);
+  animation: buddyPulse 3s ease-in-out infinite;
+}
+@keyframes buddyPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(16,185,129,0.25)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 0 16px rgba(16,185,129,0.4)); }
+}
+
+/* ===== BADGES ===== */
+.timing-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.7rem; background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2); border-radius: 100px;
+  font-size: 0.68rem; color: var(--amber-400); font-weight: 600;
+}
+.validation-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.7rem; background: rgba(16,185,129,0.1);
+  border: 1px solid rgba(16,185,129,0.2); border-radius: 100px;
+  font-size: 0.68rem; color: var(--emerald-400); font-weight: 600;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .slide { padding: 1.2rem; }
+  .compare-section, .founder-grid, .market-layout, .tech-grid, .ask-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .gtm-grid { grid-template-columns: 1fr; }
+  .demo-container { aspect-ratio: 4/3; }
+}
+
+::-webkit-scrollbar { display: none; }
+
+.keyboard-hint {
+  position: fixed; bottom: 62px; right: 1.5rem;
+  font-size: 0.65rem; color: var(--slate-600); z-index: 50;
+  display: flex; align-items: center; gap: 0.35rem;
+  opacity: 0.5; transition: opacity 0.3s;
+}
+.keyboard-hint:hover { opacity: 1; }
+.kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 18px; padding: 0 4px;
+  background: var(--slate-800); border: 1px solid var(--slate-700);
+  border-radius: 3px; font-size: 0.6rem; font-family: var(--font-mono); color: var(--slate-400);
+}
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div class="bg-animation">
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+  <div class="bg-orb"></div>
+</div>
+<div class="grid-pattern"></div>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Presentation -->
+<div class="presentation" id="presentation">
+
+  <!-- ===== SLIDE 1: COVER ===== -->
+  <div class="slide active" data-slide="0">
+    <div class="slide-content" style="text-align:center; display:flex; flex-direction:column; align-items:center;">
+      <div class="stagger">
+        <svg class="buddy-svg" viewBox="0 0 120 120" fill="none">
+          <defs>
+            <radialGradient id="bG" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="#6EE7B7"/><stop offset="100%" stop-color="#059669"/></radialGradient>
+            <filter id="gw"><feGaussianBlur stdDeviation="3" result="c"/><feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <circle cx="60" cy="60" r="42" fill="url(#bG)" filter="url(#gw)"/>
+          <circle cx="48" cy="52" r="6.5" fill="#0B1120"/><circle cx="72" cy="52" r="6.5" fill="#0B1120"/>
+          <circle cx="50" cy="50" r="2.2" fill="#FFF"/><circle cx="74" cy="50" r="2.2" fill="#FFF"/>
+          <path d="M46 69 Q60 80 74 69" stroke="#0B1120" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="38" cy="63" rx="4.5" ry="3" fill="rgba(251,113,133,0.3)"/>
+          <ellipse cx="82" cy="63" rx="4.5" ry="3" fill="rgba(251,113,133,0.3)"/>
+        </svg>
+      </div>
+      <div class="cover-logo stagger">Symy</div>
+      <div class="cover-equation stagger">
+        <span style="color:var(--slate-500)">现在的我</span>
+        <span style="color:var(--slate-600)"> + </span>
+        <span class="future-me">未来的我</span>
+        <span style="color:var(--slate-600)"> = </span>
+        <span style="color:var(--white);font-weight:700;">我</span>
+      </div>
+      <div class="cover-tagline stagger">AI 驱动的冲动消费戒断伴侣</div>
+      <div class="cover-desc stagger">让未来的自己，回来拉住现在正在下单的你</div>
+      <div class="cover-event stagger">奇绩创坛 Vibeathon · <span>清华场决赛</span></div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 2: PAIN POINT ===== -->
+  <div class="slide" data-slide="1">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(244,63,94,0.1);color:var(--rose-400);border:1px solid rgba(244,63,94,0.2);">
+        &#x1F525; 高价值问题
+      </div>
+      <div class="slide-title large stagger">
+        买的时候快乐<br>拆完就后悔
+      </div>
+      <div class="slide-subtitle stagger">
+        你有没有在深夜直播间下过单？<br>收到快递那一刻，后悔了吗？
+      </div>
+      <div class="stat-grid stagger">
+        <div class="stat-card"><div class="stat-number" style="color:var(--rose-400);">80%</div><div class="stat-label">Gen Z 有冲动消费经历</div></div>
+        <div class="stat-card"><div class="stat-number" style="color:var(--amber-400);">64%</div><div class="stat-label">冲动购物后感到后悔</div></div>
+        <div class="stat-card"><div class="stat-number" style="color:var(--red-400);">$3000亿</div><div class="stat-label">全球每年冲动消费浪费</div></div>
+        <div class="stat-card"><div class="stat-number" style="color:var(--rose-400);">73%</div><div class="stat-label">Gen Z "焦虑性消费"</div></div>
+      </div>
+      <div class="impulse-meter stagger">
+        <span style="font-size:0.72rem;color:var(--slate-400);white-space:nowrap;">冲动指数</span>
+        <div class="meter-bar"><div class="meter-fill"></div></div>
+        <span class="meter-label">73 / 100 &#x26A0;</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 3: ANTI-CONSENSUS INSIGHT ===== -->
+  <div class="slide" data-slide="2">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(251,191,36,0.1);color:var(--amber-400);border:1px solid rgba(251,191,36,0.2);">
+        &#x1F4A1; 反共识洞察
+      </div>
+      <div class="slide-title medium stagger">
+        所有人都在做<span class="hl-rose">"买前"</span><br>但<span class="hl">"买后"</span>才是唯一窗口
+      </div>
+      <div class="compare-section stagger">
+        <div class="compare-col">
+          <div style="font-size:0.72rem;color:var(--red-400);font-weight:600;letter-spacing:0.06em;margin-bottom:0.4rem;">传统方案 · 全部失败</div>
+          <div class="compare-item fail"><div class="compare-icon fail">&#x2717;</div><div><strong>记账App</strong> — 记录花了多少，不帮你管住手</div></div>
+          <div class="compare-item fail"><div class="compare-icon fail">&#x2717;</div><div><strong>屏蔽插件</strong> — 绕过只需3秒，欲望无法阻挡</div></div>
+          <div class="compare-item fail"><div class="compare-icon fail">&#x2717;</div><div><strong>心理App</strong> — 不关心你花了多少，无法闭环</div></div>
+        </div>
+        <div class="compare-col">
+          <div style="font-size:0.72rem;color:var(--emerald-400);font-weight:600;letter-spacing:0.06em;margin-bottom:0.4rem;">Symy 反共识洞察</div>
+          <div class="compare-item success"><div class="compare-icon success">&#x2713;</div><div><strong>70%冲动消费</strong>发生在情绪峰值，理性承诺设备全失效</div></div>
+          <div class="compare-item success"><div class="compare-icon success">&#x2713;</div><div><strong>后悔期7天</strong>是黄金窗口，85%退货发生在前3天</div></div>
+          <div class="compare-item success"><div class="compare-icon success">&#x2713;</div><div><strong>CBT + 行动</strong> — 解开情绪后立即引导退款，闭环</div></div>
+        </div>
+      </div>
+      <div class="stagger" style="margin-top:1rem; text-align:center;">
+        <div style="font-size:clamp(0.85rem,1.2vw,1rem);color:var(--emerald-400);font-weight:600;font-style:italic;">
+          "买前拦截是假需求 — 理性回归后的买后行动，才是真解法"
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 4: SOLUTION + DEMO ===== -->
+  <div class="slide" data-slide="3">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(16,185,129,0.1);color:var(--emerald-400);border:1px solid rgba(16,185,129,0.2);">
+        &#x26A1; 方案 · Demo
+      </div>
+      <div class="slide-title medium stagger">
+        Symy = <span class="hl">买后解毒</span> 闭环
+      </div>
+      <div class="demo-features stagger">
+        <div class="demo-feature-tag"><div class="dot"></div>邮件自动监控</div>
+        <div class="demo-feature-tag"><div class="dot"></div>6维冲动评分</div>
+        <div class="demo-feature-tag"><div class="dot"></div>CBT心理疗愈</div>
+        <div class="demo-feature-tag"><div class="dot"></div>挑战机制</div>
+        <div class="demo-feature-tag"><div class="dot"></div>AI伴侣养成</div>
+        <div class="demo-feature-tag"><div class="dot"></div>梦想基金</div>
+      </div>
+      <div class="demo-container stagger" id="demoContainer">
+        <div class="demo-overlay" id="demoOverlay" onclick="playDemo()">
+          <div class="demo-play-btn"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+          <div class="demo-play-label">点击播放实时 Demo</div>
+        </div>
+        <iframe id="demoIframe" src="" allow="clipboard-write"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 5: TECH MOAT + DATA FLYWHEEL ===== -->
+  <div class="slide" data-slide="4">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(99,102,241,0.1);color:var(--indigo-400);border:1px solid rgba(99,102,241,0.2);">
+        &#x1F6E0; 技术壁垒 + 数据飞轮
+      </div>
+      <div class="slide-title medium stagger">
+        不是套壳ChatGPT<br>是<span class="hl">有记忆的AI伴侣</span>
+      </div>
+      <div class="tech-grid stagger">
+        <div class="tech-card">
+          <div class="tech-card-title">&#x1F9E0; Letta Agent（有状态）</div>
+          <div class="tech-card-desc">每用户独立Agent，<span class="hl">持久记忆</span>对话历史。不是无状态chatbot — 换App = 失去一个朋友</div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-title">&#x1F527; MCP 工具调用闭环</div>
+          <div class="tech-card-desc">AI自动调用6个工具：加分/活力/挑战/徽章/基金/冲动记录。<span class="hl">聊天→判断→执行</span>闭环</div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-title">&#x1F4CA; 6维冲动引擎</div>
+          <div class="tech-card-desc">深夜+30 / 金额x2+20 / 连续下单+25 / 闪购+15 / 冲动品类+10 / 直播间+20。≥60=<span class="hl-rose">冲动</span></div>
+        </div>
+        <div class="tech-card">
+          <div class="tech-card-title">&#x1F504; 三级LLM降级</div>
+          <div class="tech-card-desc">L1 Letta有状态Agent → L2 OpenAI网关 → L3 z-ai兜底。<span class="hl">永远在线</span>，成本可控</div>
+        </div>
+      </div>
+      <div class="gtm-flywheel stagger">
+        <span style="font-size:clamp(0.72rem,0.9vw,0.8rem);color:var(--indigo-400);font-weight:600;">数据飞轮：</span>
+        <span class="flywheel-step">更多用户</span><span class="flywheel-arrow">&#x2192;</span>
+        <span class="flywheel-step">更准评分</span><span class="flywheel-arrow">&#x2192;</span>
+        <span class="flywheel-step">更好CBT</span><span class="flywheel-arrow">&#x2192;</span>
+        <span class="flywheel-step">更高留存</span><span class="flywheel-arrow">&#x2192;</span>
+        <span class="flywheel-step">更多数据</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 6: WHY US + VALIDATION ===== -->
+  <div class="slide" data-slide="5">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(16,185,129,0.1);color:var(--emerald-400);border:1px solid rgba(16,185,129,0.2);">
+        &#x2764;&#xFE0F; 为什么是我
+      </div>
+      <div class="slide-title medium stagger">
+        因为<span class="hl">我自己</span>就是最重的用户
+      </div>
+      <div class="founder-grid stagger">
+        <div class="founder-left">
+          <div class="founder-card">
+            <div class="founder-card-label">创始人痛点</div>
+            <div class="founder-card-value">重度冲动消费者，TikTok Shop深度用户 — 亲身体验每一种痛点</div>
+          </div>
+          <div class="founder-card">
+            <div class="founder-card-label">全栈交付</div>
+            <div class="founder-card-value">前端/后端/AI Agent/DB/部署全链路，3周MVP，0外包</div>
+          </div>
+          <div class="founder-card">
+            <div class="founder-card-label">技术深度</div>
+            <div class="founder-card-value">Letta Agent + MCP + 三级降级 — 不是套壳ChatGPT</div>
+          </div>
+          <div class="founder-card" style="border-color:rgba(16,185,129,0.2);">
+            <div class="founder-card-label">Dogfood 验证</div>
+            <div class="founder-card-value"><span class="hl">2周内识别12笔冲动消费</span>，完成4笔退货，省下 ¥860</div>
+          </div>
+        </div>
+        <div class="founder-right">
+          <div class="founder-quote">"我做的每一个功能，都是我自己想要的。"</div>
+          <div class="founder-context">我在深夜直播间买过不需要的东西。这不是一个我观察到的市场 — 这是一个我<span class="hl">亲身经历</span>的痛苦。</div>
+          <div class="founder-context">正因如此，我知道：记账没用，我自己从来不用；屏蔽没用，我自己会绕过。真正有效的是 — <span class="hl">在后悔期帮你行动</span>。</div>
+          <div style="display:flex;gap:0.5rem;margin-top:0.3rem;flex-wrap:wrap;">
+            <div class="validation-badge">&#x2705; 内测活跃</div>
+            <div class="validation-badge">&#x1F4E6; Android APK已发布</div>
+            <div class="timing-badge">&#x23F1; #NoBuyChallenge 20亿+播放</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 7: MARKET + GTM ===== -->
+  <div class="slide" data-slide="6">
+    <div class="slide-content">
+      <div class="slide-badge stagger" style="background:rgba(16,185,129,0.1);color:var(--emerald-400);border:1px solid rgba(16,185,129,0.2);">
+        &#x1F4C8; 市场 + 冷启动
+      </div>
+      <div class="slide-title medium stagger">
+        <span class="hl">$400亿+</span> TAM · 零直接竞品
+      </div>
+      <div class="market-layout stagger">
+        <div class="market-left">
+          <div class="tam-block">
+            <div class="tam-number">$40B+</div>
+            <div class="tam-label">AI伴侣 x 金融健康 交叉市场<br><span style="font-size:0.7rem;color:var(--slate-500);">AI Companion $38.5B + FinWellness $8.5B</span></div>
+          </div>
+          <div style="display:flex;gap:0.6rem;">
+            <div style="flex:1;background:var(--bg-card);border:1px solid rgba(16,185,129,0.06);border-radius:10px;padding:0.8rem;">
+              <div style="font-size:clamp(1.2rem,2vw,1.5rem);font-weight:900;color:var(--emerald-400);">95M+</div>
+              <div style="font-size:0.65rem;color:var(--slate-500);">中国AI伴侣用户</div>
+            </div>
+            <div style="flex:1;background:var(--bg-card);border:1px solid rgba(16,185,129,0.06);border-radius:10px;padding:0.8rem;">
+              <div style="font-size:clamp(1.2rem,2vw,1.5rem);font-weight:900;color:var(--amber-400);">4.9万亿</div>
+              <div style="font-size:0.65rem;color:var(--slate-500);">直播电商规模</div>
+            </div>
+          </div>
+          <div class="moat-section">
+            <div class="moat-title">&#x1F6E1;&#xFE0F; 护城河</div>
+            <div class="moat-desc"><span class="hl-indigo">记忆壁垒</span>：3个月对话记忆 = 换App失去朋友<br><span class="hl-indigo">数据飞轮</span>：更多用户→更准评分→更好CBT<br><span class="hl-indigo">情绪绑定</span>：62% Gen Z更信任AI理财建议</div>
+          </div>
+        </div>
+        <div class="market-right">
+          <div style="font-size:0.72rem;color:var(--amber-400);font-weight:600;letter-spacing:0.06em;margin-bottom:0.3rem;">冷启动三步走</div>
+          <div class="gtm-card" style="margin-bottom:0.6rem;">
+            <div class="gtm-card-phase">PHASE 1 · 种子用户</div>
+            <div class="gtm-card-title">TikTok #NoBuyChallenge</div>
+            <div class="gtm-card-desc">借势20亿+播放话题，"30天戒断挑战"天然传播。小红书/B站理财社区同步。</div>
+          </div>
+          <div class="gtm-card" style="margin-bottom:0.6rem;">
+            <div class="gtm-card-phase">PHASE 2 · 病毒循环</div>
+            <div class="gtm-card-title">分享戒断战绩 → 好友加入挑战</div>
+            <div class="gtm-card-desc">"我帮AI伴侣省了¥860" → 好奇 → 注册 → 自己的伴侣。社交货币=省钱。</div>
+          </div>
+          <div class="gtm-card">
+            <div class="gtm-card-phase">PHASE 3 · B2B2C</div>
+            <div class="gtm-card-title">金融伙伴 · 降退货率</div>
+            <div class="gtm-card-desc">银行/信用卡降低chargeback → Symy获per-user推荐费。电商降低退货率 → 分润。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SLIDE 8: CLOSING + ASK ===== -->
+  <div class="slide" data-slide="7">
+    <div class="slide-content">
+      <div class="ask-grid stagger">
+        <div class="closing-content">
+          <svg width="clamp(50px,7vw,65px)" height="clamp(50px,7vw,65px)" viewBox="0 0 120 120" fill="none">
+            <defs><radialGradient id="bG2" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="#6EE7B7"/><stop offset="100%" stop-color="#059669"/></radialGradient></defs>
+            <circle cx="60" cy="60" r="42" fill="url(#bG2)" opacity="0.85"/>
+            <circle cx="48" cy="52" r="6.5" fill="#0B1120"/><circle cx="72" cy="52" r="6.5" fill="#0B1120"/>
+            <circle cx="50" cy="50" r="2.2" fill="#FFF"/><circle cx="74" cy="50" r="2.2" fill="#FFF"/>
+            <path d="M46 69 Q60 80 74 69" stroke="#0B1120" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div class="closing-quote">
+            让<span class="em">未来的自己</span><br>回来拉住现在的你
+          </div>
+          <div class="closing-sub">
+            每一次忍住冲动，是对未来的一次温柔<br>
+            每一次退回订单，是对梦想的一次充值
+          </div>
+          <div class="closing-cta">
+            <a class="cta-primary" href="https://we-me.pages.dev" target="_blank">体验 Symy</a>
+            <a class="cta-secondary" href="https://github.com/Symy-ai/WeAreAllMe" target="_blank">GitHub</a>
+          </div>
+        </div>
+        <div class="ask-right">
+          <div style="font-size:0.72rem;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.3rem;">融资计划</div>
+          <div class="ask-amount">$300K</div>
+          <div class="ask-detail">种子轮 · 18个月跑道</div>
+          <div class="ask-row">
+            <span class="ask-row-label">工程</span>
+            <div class="ask-row-bar"><div class="ask-row-fill eng"></div></div>
+            <span class="ask-row-pct">60%</span>
+          </div>
+          <div class="ask-row">
+            <span class="ask-row-label">增长</span>
+            <div class="ask-row-bar"><div class="ask-row-fill growth"></div></div>
+            <span class="ask-row-pct">25%</span>
+          </div>
+          <div class="ask-row">
+            <span class="ask-row-label">心理学</span>
+            <div class="ask-row-bar"><div class="ask-row-fill psych"></div></div>
+            <span class="ask-row-pct">15%</span>
+          </div>
+          <div class="ask-cofounder">
+            <div class="ask-cofounder-title">&#x1F91D; 正在寻找联创</div>
+            <div class="ask-cofounder-desc">心理学/行为经济学背景 · 帮我们把CBT从"功能"变成"专业壁垒"<br>如果你对这个方向有热情 — 我们聊聊</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation Bar -->
+<nav class="nav-bar">
+  <button class="nav-btn" id="prevBtn" onclick="prevSlide()" disabled aria-label="Previous">&#x276E;</button>
+  <div class="nav-dots" id="navDots"></div>
+  <div class="nav-counter" id="navCounter">1 / 8</div>
+  <button class="nav-btn" id="nextBtn" onclick="nextSlide()" aria-label="Next">&#x276F;</button>
+</nav>
+
+<div class="keyboard-hint">
+  <span class="kbd">&#x2190;</span><span class="kbd">&#x2192;</span> 切换
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const totalSlides = slides.length;
+let currentSlide = 0;
+let isTransitioning = false;
+
+const slideNames = ['封面','痛点共鸣','反共识洞察','方案·Demo','技术壁垒','为什么是我','市场+冷启动','结尾+融资'];
+
+const navDotsContainer = document.getElementById('navDots');
+for (let i = 0; i < totalSlides; i++) {
+  const dot = document.createElement('button');
+  dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  dot.setAttribute('aria-label', slideNames[i]);
+  dot.title = slideNames[i];
+  dot.onclick = () => goToSlide(i);
+  navDotsContainer.appendChild(dot);
+}
+
+function goToSlide(index) {
+  if (isTransitioning || index === currentSlide || index < 0 || index >= totalSlides) return;
+  isTransitioning = true;
+  const direction = index > currentSlide ? 1 : -1;
+  const oldSlide = slides[currentSlide];
+  const newSlide = slides[index];
+
+  oldSlide.classList.remove('active');
+  oldSlide.classList.add(direction > 0 ? 'exit-left' : 'exit-right');
+
+  newSlide.style.transform = direction > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+  newSlide.style.opacity = '0';
+  void newSlide.offsetWidth;
+
+  requestAnimationFrame(() => {
+    newSlide.classList.add('active');
+    newSlide.classList.remove('exit-left', 'exit-right');
+    newSlide.style.transform = '';
+    newSlide.style.opacity = '';
+  });
+
+  currentSlide = index;
+  updateNav();
+  setTimeout(() => { oldSlide.classList.remove('exit-left', 'exit-right'); isTransitioning = false; }, 600);
+}
+
+function nextSlide() { goToSlide(currentSlide + 1); }
+function prevSlide() { goToSlide(currentSlide - 1); }
+
+function updateNav() {
+  const dots = navDotsContainer.querySelectorAll('.nav-dot');
+  dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+  document.getElementById('navCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+  document.getElementById('prevBtn').disabled = currentSlide === 0;
+  document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+  document.getElementById('progressBar').style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+});
+
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].screenX - touchStartX;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(e.changedTouches[0].screenY - (touchStartX = 0))) {
+    dx < 0 ? nextSlide() : prevSlide();
+  }
+}, { passive: true });
+
+function playDemo() {
+  const overlay = document.getElementById('demoOverlay');
+  const iframe = document.getElementById('demoIframe');
+  iframe.src = 'https://we-me.pages.dev';
+  overlay.classList.add('hidden');
+}
+
+updateNav();
+</script>
+</body>
+</html>

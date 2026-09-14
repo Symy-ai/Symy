@@ -1,0 +1,905 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* ====== Symy Brand Colors (绿色环保主题) ====== */
+  --color-symy-blue: #0E3B2E;   /* 深林绿 (原深蓝 #0A2647) */
+  --color-symy-green: #27AE60;  /* 生态绿 (不变) */
+  --color-symy-neon: #4ADE80;   /* 嫩芽绿发光 (原青色 #22D3EE) */
+  --color-symy-purple: #14B8A6; /* 湖水青 (原紫 #8B5CF6) */
+  --color-symy-pink: #D97706;   /* 土壤暖金 (原粉 #EC4899) */
+
+  /* ====== Symy 语义化 Surface 色彩系统 (Light/Dark 自适应) ====== */
+  --color-surface-1: var(--surface-1);           /* 主应用背景 */
+  --color-surface-2: var(--surface-2);           /* 卡片/提升层背景 */
+  --color-surface-outer: var(--surface-outer);   /* 手机外壳背景 */
+  --color-surface-statusbar: var(--surface-statusbar); /* 状态栏背景 */
+  --color-surface-tabbar: var(--surface-tabbar);       /* 底部Tab栏背景 */
+
+  /* 语义化文字色彩 */
+  --color-text-primary: var(--text-primary);       /* 主要文字 */
+  --color-text-secondary: var(--text-secondary);   /* 次要文字 */
+  --color-text-tertiary: var(--text-tertiary);     /* 辅助/最淡文字 */
+  --color-text-inverse: var(--text-inverse);       /* 反色文字(在深色/强调色上) */
+
+  /* 语义化交互色彩 */
+  --color-glass-fill: var(--glass-fill);           /* 玻璃卡片填充 */
+  --color-glass-fill-strong: var(--glass-fill-strong); /* 更强玻璃填充 */
+  --color-glass-border: var(--glass-border);       /* 玻璃卡片边框 */
+  --color-glass-hover: var(--glass-hover);         /* 悬停背景 */
+  --color-icon-muted: var(--icon-muted);           /* 静音图标色 */
+  --color-scrollbar-thumb: var(--scrollbar-thumb); /* 滚动条颜色 */
+}
+
+/* ====== Light Mode (默认) ====== */
+:root {
+  --radius: 0.75rem;
+
+  /* Round 93: 高水准游戏缓动 token 系统 */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-soft: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-back: cubic-bezier(0.6, -0.28, 0.735, 0.045);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* shadcn/ui 标准 token — 青白基调 */
+  --background: oklch(0.975 0.007 170);    /* 青白 #f1f8f4 */
+  --foreground: oklch(0.22 0.025 170);     /* 深青炭 #163028 */
+  --card: oklch(1 0 0);                    /* 纯白 */
+  --card-foreground: oklch(0.22 0.025 170);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.22 0.025 170);
+  --primary: oklch(0.50 0.13 160);         /* 生态绿 */
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.965 0.008 170);
+  --secondary-foreground: oklch(0.22 0.025 170);
+  --muted: oklch(0.965 0.008 170);
+  --muted-foreground: oklch(0.55 0.02 170);
+  --accent: oklch(0.965 0.008 170);
+  --accent-foreground: oklch(0.22 0.025 170);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.90 0.008 170);
+  --input: oklch(0.90 0.008 170);
+  --ring: oklch(0.60 0.12 160);
+  --chart-1: oklch(0.50 0.13 160);   /* 生态绿 */
+  --chart-2: oklch(0.55 0.11 185);   /* 湖水青 */
+  --chart-3: oklch(0.70 0.15 70);    /* 土壤金 */
+  --chart-4: oklch(0.82 0.15 120);   /* 嫩芽 */
+  --chart-5: oklch(0.45 0.10 160);   /* 森林 */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* ====== Symy 语义化 Surface — Light (青白) ====== */
+  --surface-1: #f1f8f4;             /* 主应用背景: 青白 */
+  --surface-2: #ffffff;             /* 卡片背景: 纯白 */
+  --surface-outer: #dcebe3;         /* 外壳背景: 青白灰 */
+  --surface-statusbar: #eaf2ee;     /* 状态栏: 略深于surface-1 */
+  --surface-tabbar: rgba(241, 248, 244, 0.8); /* Tab栏: 半透明 */
+
+  /* 文字色彩 — Light */
+  --text-primary: #163028;          /* 主文字: 深青炭 */
+  --text-secondary: #5a6b62;        /* 次要文字: 青灰 */
+  --text-tertiary: #5a6b62;         /* 辅助文字: 青灰 */
+  --text-inverse: #ffffff;          /* 反色文字: 白 */
+
+  /* 玻璃/交互色彩 — Light */
+  --glass-fill: rgba(0, 0, 0, 0.05);           /* 微透明黑 */
+  --glass-fill-strong: rgba(0, 0, 0, 0.08);    /* 稍强透明黑 */
+  --glass-border: rgba(0, 0, 0, 0.10);          /* 边框透明黑 */
+  --glass-hover: rgba(0, 0, 0, 0.04);           /* 悬停态 */
+  --icon-muted: #5b6b60;                        /* 静音图标 */
+  --scrollbar-thumb: rgba(0, 0, 0, 0.18);       /* 滚动条 */
+
+  /* Auth 页面 light 模式背景 */
+  --auth-bg: #f1f8f4;
+  --auth-glow-opacity: 0.08;
+
+  /* Chat 页面 mesh 背景 */
+  --chat-mesh-bg: #f1f8f4;
+  --chat-mesh-opacity: 0.04;
+
+  /* Neon glow light 模式（减弱） */
+  --neon-opacity: 0.5;
+
+  /* Onboarding 遮罩层 — Light */
+  --onboarding-overlay: rgba(0, 0, 0, 0.55);
+
+  /* BUG-290 fix: 被诱导评分颜色 — Light Mode (深色文字在浅背景上可见) */
+  --score-green: #15803d;       /* green-700: 深绿，在白背景上高对比度 */
+  --score-yellow: #a16207;      /* yellow-700: 深琥珀，在白背景上高对比度 */
+  --guard-gold: #B8860B;        /* 守护金: 深绿金，在白背景上高对比度 */
+}
+
+/* ====== Dark Mode ====== */
+.dark {
+  /* shadcn/ui 标准 token — 松柏绿基调 */
+  --background: oklch(0.21 0.04 155);      /* 松柏绿 #143527 */
+  --foreground: oklch(0.97 0.012 155);     /* 浅青白 */
+  --card: oklch(0.26 0.045 155);           /* #1c4130 */
+  --card-foreground: oklch(0.97 0.012 155);
+  --popover: oklch(0.26 0.045 155);
+  --popover-foreground: oklch(0.97 0.012 155);
+  --primary: oklch(0.78 0.14 155);         /* 嫩芽绿 #4ADE80 */
+  --primary-foreground: oklch(0.21 0.04 155);
+  --secondary: oklch(0.31 0.035 155);
+  --secondary-foreground: oklch(0.97 0.012 155);
+  --muted: oklch(0.31 0.035 155);
+  --muted-foreground: oklch(0.72 0.02 155);
+  --accent: oklch(0.31 0.035 155);
+  --accent-foreground: oklch(0.97 0.012 155);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(0.85 0.02 155 / 12%);
+  --input: oklch(0.85 0.02 155 / 15%);
+  --ring: oklch(0.60 0.12 155);
+  --chart-1: oklch(0.70 0.14 155);   /* 生态绿 */
+  --chart-2: oklch(0.65 0.12 185);   /* 湖水青 */
+  --chart-3: oklch(0.75 0.15 85);    /* 土壤金 */
+  --chart-4: oklch(0.72 0.15 60);    /* 暖金 */
+  --chart-5: oklch(0.60 0.10 145);   /* 森林 */
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+
+  /* ====== Symy 语义化 Surface — Dark (松柏绿) ====== */
+  --surface-1: #143527;
+  --surface-2: #1c4130;
+  --surface-outer: #0c2017;
+  --surface-statusbar: #143527;
+  --surface-tabbar: rgba(20, 53, 39, 0.6);
+
+  /* 文字色彩 — Dark */
+  --text-primary: #eaf4ec;
+  --text-secondary: #b6cbbe;
+  --text-tertiary: #88a292;
+  --text-inverse: #143527;
+
+  /* 玻璃/交互色彩 — Dark */
+  --glass-fill: rgba(255, 255, 255, 0.03);
+  --glass-fill-strong: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-hover: rgba(255, 255, 255, 0.03);
+  --icon-muted: #5f7568;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+
+  /* Auth 页面 dark 模式背景 */
+  --auth-bg: #143527;
+  --auth-glow-opacity: 0.15;
+
+  /* Chat 页面 mesh 背景 */
+  --chat-mesh-bg: #143527;
+  --chat-mesh-opacity: 0.06;
+
+  /* Neon glow dark 模式（正常） */
+  --neon-opacity: 1;
+
+  /* Onboarding 遮罩层 — Dark */
+  --onboarding-overlay: rgba(0, 0, 0, 0.78);
+
+  /* BUG-290 fix: 被诱导评分颜色 — Dark Mode (亮色文字在暗背景上可见) */
+  --score-green: #4ade80;       /* green-400: 亮绿 */
+  --score-yellow: #fbbf24;      /* amber-400: 亮琥珀 */
+  --guard-gold: #DAA520;        /* 守护金: 亮深金 */
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ====== Symy Design System — Neon Glassmorphism (Theme-Aware) ====== */
+
+/* Animated mesh gradient background for auth pages */
+@keyframes mesh-gradient {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+@keyframes aurora {
+  0% { transform: translate(0%, 0%) rotate(0deg) scale(1); }
+  25% { transform: translate(5%, -10%) rotate(90deg) scale(1.1); }
+  50% { transform: translate(-5%, 5%) rotate(180deg) scale(0.95); }
+  75% { transform: translate(10%, 5%) rotate(270deg) scale(1.05); }
+  100% { transform: translate(0%, 0%) rotate(360deg) scale(1); }
+}
+
+@keyframes aurora-2 {
+  0% { transform: translate(0%, 0%) rotate(0deg) scale(1.05); }
+  33% { transform: translate(-8%, 8%) rotate(120deg) scale(0.95); }
+  66% { transform: translate(5%, -5%) rotate(240deg) scale(1.1); }
+  100% { transform: translate(0%, 0%) rotate(360deg) scale(1.05); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.05); }
+}
+
+@keyframes fade-in {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  100% { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+
+@keyframes slide-up {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Glass card utility — Theme-Aware */
+.glass-card {
+  background: var(--glass-fill);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+}
+
+.glass-card-strong {
+  background: var(--glass-fill-strong);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Neon glow utilities — Theme-Aware */
+.neon-glow-green {
+  box-shadow: 0 0 20px rgba(39, 174, 96, calc(0.3 * var(--neon-opacity))), 0 0 40px rgba(39, 174, 96, calc(0.1 * var(--neon-opacity)));
+}
+
+.neon-glow-blue {
+  box-shadow: 0 0 20px rgba(39, 174, 96, calc(0.5 * var(--neon-opacity))), 0 0 40px rgba(20, 184, 166, calc(0.15 * var(--neon-opacity)));
+}
+
+.neon-glow-purple {
+  box-shadow: 0 0 20px rgba(20, 184, 166, calc(0.3 * var(--neon-opacity))), 0 0 40px rgba(20, 184, 166, calc(0.1 * var(--neon-opacity)));
+}
+
+/* Gradient text utility — works on any bg */
+.gradient-text {
+  background: linear-gradient(135deg, #27AE60, #14B8A6, #D97706);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-green {
+  background: linear-gradient(135deg, #27AE60, #4ADE80);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Symy brand gradient */
+.symy-gradient {
+  background: linear-gradient(135deg, #0E3B2E, #17543F, #0E3B2E);
+}
+
+.symy-gradient-neon {
+  background: linear-gradient(135deg, #4ADE80, #14B8A6);
+}
+
+.symy-gradient-warm {
+  background: linear-gradient(135deg, #14B8A6, #D97706, #F59E0B);
+}
+
+/* Button shimmer effect */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Auth page animated background — Theme-Aware */
+.auth-bg {
+  background: var(--auth-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-bg::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(20, 184, 166, var(--auth-glow-opacity)) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 60%, rgba(39, 174, 96, var(--auth-glow-opacity)) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 80%, rgba(217, 119, 6, calc(var(--auth-glow-opacity) * 0.6)) 0%, transparent 50%);
+  animation: aurora 20s ease-in-out infinite;
+}
+
+.auth-bg::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -30%;
+  width: 160%;
+  height: 160%;
+  background: radial-gradient(ellipse at 60% 30%, rgba(74, 222, 128, calc(var(--auth-glow-opacity) * 0.7)) 0%, transparent 40%),
+              radial-gradient(ellipse at 20% 70%, rgba(20, 184, 166, calc(var(--auth-glow-opacity) * 0.6)) 0%, transparent 40%);
+  animation: aurora-2 25s ease-in-out infinite;
+}
+
+/* Chat page animated mesh background — Theme-Aware */
+.chat-mesh-bg {
+  background: var(--chat-mesh-bg);
+  position: relative;
+}
+
+.chat-mesh-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 600px 400px at 20% 20%, rgba(20, 184, 166, var(--chat-mesh-opacity)) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 500px at 80% 70%, rgba(39, 174, 96, calc(var(--chat-mesh-opacity) * 0.85)) 0%, transparent 70%),
+    radial-gradient(ellipse 400px 300px at 50% 50%, rgba(217, 119, 6, calc(var(--chat-mesh-opacity) * 0.7)) 0%, transparent 70%);
+  animation: aurora 30s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Custom Animations */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-3px); }
+  20%, 40%, 60%, 80% { transform: translateX(3px); }
+}
+
+@keyframes shake-screen {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.shake-animation {
+  animation: shake 0.5s ease-in-out;
+}
+
+.shake-screen {
+  animation: shake-screen 0.6s ease-in-out 2;
+}
+
+@keyframes success-flash {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+.success-flash {
+  animation: success-flash 0.6s ease-in-out 2;
+}
+
+/* Custom Scrollbar — Theme-Aware */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb);
+  filter: brightness(1.3);
+}
+
+/* Horizontal scrollbar — Theme-Aware */
+.custom-scrollbar-horizontal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar {
+  height: 3px;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-horizontal::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+/* Safe area padding for bottom */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+/* Smooth transitions + Mobile touch optimization */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ====== Button Touch Responsiveness Fix ====== */
+button,
+[role="button"],
+a,
+input[type="submit"],
+input[type="button"] {
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+}
+
+/* Ensure minimum touch target size (44px per Apple HIG) */
+button:not(:disabled) {
+  min-height: 28px;
+}
+
+/* Stronger active/pressed state feedback for mobile */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* Override for buttons that already have active:scale */
+button.active-scale-fix:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Phone frame on larger screens — Theme-Aware */
+@media (min-width: 431px) {
+  body {
+    background: var(--surface-outer);
+  }
+}
+
+/* ====== Buddy Floating Particles ====== */
+@keyframes float-1 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.6; }
+  25% { transform: translateY(-12px) translateX(4px); opacity: 0.8; }
+  50% { transform: translateY(-6px) translateX(-3px); opacity: 0.5; }
+  75% { transform: translateY(-15px) translateX(2px); opacity: 0.7; }
+}
+
+@keyframes float-2 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.4; }
+  33% { transform: translateY(-8px) translateX(-5px); opacity: 0.6; }
+  66% { transform: translateY(-18px) translateX(3px); opacity: 0.3; }
+}
+
+@keyframes float-3 {
+  0%, 100% { transform: translateY(0px) translateX(0px); opacity: 0.3; }
+  50% { transform: translateY(-20px) translateX(-4px); opacity: 0.5; }
+}
+
+/* ====== Butterfly Illustration Shimmer ====== */
+.animate-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--glass-fill-strong), transparent);
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+.animate-float-1 {
+  animation: float-1 6s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-2 8s ease-in-out infinite;
+}
+
+.animate-float-3 {
+  animation: float-3 7s ease-in-out infinite;
+}
+
+/* Badge container expand/collapse */
+.badge-scroll-container {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+.badge-scroll-container.expanded {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+/* Tab transition animations — Round 95: 2.5D 空间推入 + perspective */
+@keyframes tab-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Round 95: 2.5D — 从右侧推入, 带 rotateY 透视 */
+@keyframes tab-slide-from-right {
+  from { opacity: 0; transform: translateX(40px) translateZ(-30px) rotateY(8deg) scale(0.96); filter: blur(6px); }
+  60%  { opacity: 1; filter: blur(0); }
+  to   { opacity: 1; transform: translateX(0) translateZ(0) rotateY(0) scale(1); filter: blur(0); }
+}
+
+/* Round 95: 2.5D — 从左侧推入, 带 rotateY 透视 */
+@keyframes tab-slide-from-left {
+  from { opacity: 0; transform: translateX(-40px) translateZ(-30px) rotateY(-8deg) scale(0.96); filter: blur(6px); }
+  60%  { opacity: 1; filter: blur(0); }
+  to   { opacity: 1; transform: translateX(0) translateZ(0) rotateY(0) scale(1); filter: blur(0); }
+}
+
+.animate-tab-in       { animation: tab-slide-in 0.3s var(--ease-out-expo); }
+.animate-tab-in-right { animation: tab-slide-from-right 0.45s var(--ease-out-expo); transform-origin: center; }
+.animate-tab-in-left  { animation: tab-slide-from-left 0.45s var(--ease-out-expo); transform-origin: center; }
+
+/* 内容 stagger 入场 */
+@keyframes content-stagger {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-item { animation: content-stagger 0.4s var(--ease-out-expo) backwards; }
+.stagger-item:nth-child(1) { animation-delay: 0.04s; }
+.stagger-item:nth-child(2) { animation-delay: 0.08s; }
+.stagger-item:nth-child(3) { animation-delay: 0.12s; }
+.stagger-item:nth-child(4) { animation-delay: 0.16s; }
+.stagger-item:nth-child(5) { animation-delay: 0.20s; }
+.stagger-item:nth-child(n+6) { animation-delay: 0.24s; }
+
+/* 底栏 emoji 弹跳 */
+@keyframes tab-emoji-bounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35) translateY(-4px); }
+  100% { transform: scale(1.1) translateY(0); }
+}
+.tab-emoji-active { animation: tab-emoji-bounce 0.5s var(--ease-spring); }
+
+/* 底栏圆点入场 */
+@keyframes tab-dot-pop {
+  0%   { transform: scale(0); }
+  100% { transform: scale(1); }
+}
+.tab-dot-active { animation: tab-dot-pop 0.3s var(--ease-spring); }
+
+/* Pulse ring animation for buddy avatar */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 3s var(--ease-in-out-soft) infinite;
+}
+
+/* Buddy avatar idle breathe animation — Round 93: 更自然的呼吸节奏 */
+@keyframes buddy-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.animate-buddy-breathe {
+  animation: buddy-breathe 4s var(--ease-in-out-soft) infinite;
+}
+
+/* Round 114: buddy-eyes / buddy-trunk CSS 已移除 (不再用 SVG, 改用 AI 图片) */
+
+/* Round 93: vitality 变化时的冲击波 */
+@keyframes ring-impact {
+  0%   { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+.ring-impact { animation: ring-impact 0.8s var(--ease-out-expo) forwards; }
+
+/* Round 93: 受伤抖动 */
+@keyframes buddy-hurt {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20%      { transform: translateX(-5px); filter: hue-rotate(-20deg) saturate(0.7); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(2px); }
+}
+.buddy-hurt { animation: buddy-hurt 0.5s var(--ease-in-out-soft); }
+
+/* Round 93: hover/active 反馈 */
+.buddy-avatar-btn { transition: transform 0.2s var(--ease-spring); }
+.buddy-avatar-btn:hover { transform: scale(1.06) rotate(-2deg); }
+.buddy-avatar-btn:active { transform: scale(0.92); }
+
+/* Buddy avatar gentle float */
+@keyframes buddy-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+.animate-buddy-float {
+  animation: buddy-float 6s var(--ease-in-out-soft) infinite;
+}
+
+/* Neon border glow — Theme-Aware */
+.neon-border {
+  border: 1px solid rgba(39, 174, 96, calc(0.2 * var(--neon-opacity)));
+  box-shadow: inset 0 0 20px rgba(39, 174, 96, calc(0.03 * var(--neon-opacity))), 0 0 20px rgba(39, 174, 96, calc(0.05 * var(--neon-opacity)));
+}
+
+.neon-border-purple {
+  border: 1px solid rgba(20, 184, 166, calc(0.2 * var(--neon-opacity)));
+  box-shadow: inset 0 0 20px rgba(20, 184, 166, calc(0.03 * var(--neon-opacity))), 0 0 20px rgba(20, 184, 166, calc(0.05 * var(--neon-opacity)));
+}
+
+.neon-border-green {
+  border: 1px solid rgba(39, 174, 96, calc(0.2 * var(--neon-opacity)));
+  box-shadow: inset 0 0 20px rgba(39, 174, 96, calc(0.03 * var(--neon-opacity))), 0 0 20px rgba(39, 174, 96, calc(0.05 * var(--neon-opacity)));
+}
+
+/* ====== Round 93: 高水准游戏动画系统 ====== */
+
+/* Daily Needs 流动光带 */
+@keyframes bar-flow {
+  from { background-position: -100% 0; }
+  to   { background-position: 200% 0; }
+}
+
+/* Daily Needs 低需求心跳 (双跳节奏) */
+@keyframes critical-heartbeat {
+  0%, 100%  { transform: scale(1); }
+  10%, 30%  { transform: scale(1.08); }
+  20%       { transform: scale(0.96); }
+}
+
+/* Vitality Ring 变化时的 spring 过渡 */
+.vitality-ring-circle {
+  transition: stroke-dasharray 1.2s var(--ease-spring);
+}
+
+/* Toast 退场动画 */
+@keyframes toast-exit {
+  to { opacity: 0; transform: translateY(-20px) scale(0.9); }
+}
+.toast-exit { animation: toast-exit 0.3s var(--ease-in-out-soft) forwards; }
+
+/* Badge 解锁 glow-pulse */
+@keyframes badge-unlock-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+  50%      { box-shadow: 0 0 20px 4px rgba(74, 222, 128, 0.3); }
+}
+.badge-unlock { animation: badge-unlock-glow 1.5s var(--ease-in-out-soft) 3; }
+
+/* Gacha TAP idle 呼吸 (吸引点击) */
+@keyframes cta-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(74, 222, 128, 0.2); }
+  50%      { transform: scale(1.03); box-shadow: 0 0 30px rgba(74, 222, 128, 0.4); }
+}
+.cta-breathe { animation: cta-breathe 2.5s var(--ease-in-out-soft) infinite; }
+
+/* prefers-reduced-motion 降级 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ====== Round 96: 深化 2.5D + 3D ====== */
+
+/* Vitality Ring 高光点沿环旋转 (hero-section.tsx) */
+@keyframes ring-highlight-orbit {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -352; }  /* 一周 = 2*PI*56 ≈ 352 */
+}
+
+/* Dream Fund 进度条满 100% 时的金色 shimmer 光斑 */
+@keyframes fund-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Dream Fund 庆祝粒子爆发 (使用 CSS variable --tx / --ty 控制方向) */
+@keyframes fund-particle-burst {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0) scale(0); }
+  50%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--tx, 0px), var(--ty, 0px)) scale(1); }
+}
+
+/* Dream Fund Goal Reached 行入场 (rotateX 翻入) */
+@keyframes goal-reached-in {
+  0%   { opacity: 0; transform: translateY(-4px) rotateX(-30deg); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0deg); }
+}
+
+/* Dream Fund ★ 持续旋转 */
+@keyframes star-spin {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  50%      { transform: rotate(180deg) scale(1.2); }
+}
+
+/* Gacha ChoiceCard 命运揭示反面动画 */
+@keyframes fate-particle-in {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0) scale(0); }
+  60%  { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+@keyframes fate-symbol-in {
+  0%   { opacity: 0; transform: scale(0) rotate(-90deg); }
+  60%  { transform: scale(1.4) rotate(15deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes fate-text-in {
+  0%   { opacity: 0; letter-spacing: 0.5em; }
+  100% { opacity: 1; letter-spacing: 0.2em; }
+}
+
+/* backface-hidden helper (Tailwind v4 不内置, 手动加) */
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* ====== Round 97: 游戏化效果 ====== */
+
+/* 成长阶段进化提示 (接近下一阶段时闪烁)
+   Round 106 fix: absolute 定位在 LV badge 右侧 (LV badge 单独居中)。
+   只动画 opacity。 */
+@keyframes evolution-hint {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.9; }
+}
+
+/* 健康状态紧急光晕 (critical — 快速红色脉冲, 营造紧迫感)
+   注意: transform 只动画 scale, translateZ 由 inline style 提供 (避免覆盖) */
+@keyframes critical-pulse {
+  0%, 100% { opacity: 0.4; transform: translateZ(-10px) scale(1); }
+  50%      { opacity: 0.8; transform: translateZ(-10px) scale(1.1); }
+}
+
+/* 健康状态虚弱光晕 (weak — 中速琥珀色脉冲) */
+@keyframes weak-pulse {
+  0%, 100% { opacity: 0.35; transform: translateZ(-10px) scale(1); }
+  50%      { opacity: 0.6; transform: translateZ(-10px) scale(1.05); }
+}
+
+/* ====== batch3-b: 成长阶段升级庆祝 (卡内实现, 动效语言参考可变奖励 overlay) ====== */
+
+/* 粒子爆发 — 方向由 --tx/--ty 提供 (stage-up-celebration.tsx) */
+@keyframes stage-up-particle {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0, 0) scale(0.3); }
+  18%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate(var(--tx, 40px), var(--ty, -60px)) scale(1); }
+}
+
+/* ring 扩散 (双环, 第二环延迟) */
+@keyframes stage-up-ring {
+  0%   { transform: translate(-50%, -50%) scale(0.25); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.7); opacity: 0; }
+}
+
+/* 庆祝卡片弹入 */
+@keyframes stage-up-card-in {
+  0%   { opacity: 0; transform: scale(0.6) translateY(14px); }
+  60%  { transform: scale(1.06) translateY(-3px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* 庆祝 emoji pop */
+@keyframes stage-up-emoji-pop {
+  0%   { opacity: 0; transform: scale(0) rotate(-30deg); }
+  60%  { transform: scale(1.35) rotate(8deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+/* 小象升级蹦跳 (作用在头像 button wrapper 上, 与 button 自身 transform 分层不冲突) */
+@keyframes stage-up-hop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30%      { transform: translateY(-10px) scale(1.05); }
+  55%      { transform: translateY(0) scale(0.97); }
+  75%      { transform: translateY(-5px) scale(1.02); }
+}
+.stage-up-hop { animation: stage-up-hop 0.9s var(--ease-spring) 2; }

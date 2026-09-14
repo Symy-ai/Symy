@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="/pitch/">
+<title>Symy AI — 终结消费主义对人类心理健康的侵害</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="bg-a"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+<div class="grid"></div>
+<div class="pb" id="pb"></div>
+<div class="pr" id="pr">
+
+<!-- Slides will be loaded dynamically -->
+
+</div>
+
+<!-- Navigation bar (loaded inline for instant display) -->
+<div class="nb">
+<button class="nbtn" id="pbtn" onclick="prev()" disabled>&#x2190;</button>
+<div class="nds" id="nds"></div>
+<span class="ncnt" id="ncnt">1 / 7</span>
+<button class="nbtn" id="nbtn" onclick="next()">&#x2192;</button>
+</div>
+<div class="kh"><span class="kbd">&#x2190;</span><span class="kbd">&#x2192;</span> 切换</div>
+
+<script src="app.js"></script>
+<script>
+// Dynamically load all slide HTML files
+(async function() {
+  // Use absolute paths to avoid resolution issues when URL lacks trailing slash
+  const basePath = '/pitch/';
+  const slideFiles = [
+    basePath + 'slides/s1-cover.html',
+    basePath + 'slides/s2-demo.html',
+    basePath + 'slides/s3-passion.html',
+    basePath + 'slides/s4-strength.html',
+    basePath + 'slides/s5-value.html',
+    basePath + 'slides/s6-moat.html',
+    basePath + 'slides/s7-finale.html',
+  ];
+
+  const pr = document.getElementById('pr');
+
+  // Load all slides in parallel
+  const results = await Promise.all(
+    slideFiles.map(async (file, index) => {
+      try {
+        const resp = await fetch(file);
+        if (!resp.ok) throw new Error(`Failed to load ${file}: ${resp.status}`);
+        const html = await resp.text();
+        return { index, html };
+      } catch (err) {
+        console.error(err);
+        return { index, html: '' };
+      }
+    })
+  );
+
+  // Insert slides in order
+  results.sort((a, b) => a.index - b.index);
+  for (const { html } of results) {
+    if (html) {
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = html;
+      // Append all child nodes (the slide div)
+      while (wrapper.firstChild) {
+        pr.appendChild(wrapper.firstChild);
+      }
+    }
+  }
+
+  // Initialize the app after all slides are loaded
+  if (typeof initApp === 'function') {
+    initApp();
+  }
+})();
+</script>
+</body>
+</html>

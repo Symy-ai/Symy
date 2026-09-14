@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 400" width="580" height="400">
+  <defs>
+    <filter id="glow" x="-12%" y="-12%" width="124%" height="124%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#37DCF2" flood-opacity="0.45" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="580" height="400" fill="#0A2647" rx="16"/>
+
+  <!-- 地面 -->
+  <line x1="40" y1="345" x2="500" y2="345" stroke="#37DCF2" stroke-width="1" opacity="0.12"/>
+
+  <g filter="url(#glow)" transform="translate(25, 0)">
+    <!--
+      一笔画草书 Symy = 小象侧面
+      面朝左，每一笔既是字母又是象体
+
+      S: 头顶→鼻子的S形曲线
+      m: 身体的两个圆润弧
+      y: 前腿分叉踩地
+      y: 后腿分叉踩地
+    -->
+
+    <!-- ★ 整体用一个连续 path 绘制 ★ -->
+
+    <!-- S：从身体连接处开始，向上弧过头顶，再沿鼻子S曲线向下卷 -->
+    <path d="
+      M 148 198
+      C 155 172, 168 145, 188 128
+      C 205 112, 228 108, 240 118
+      C 252 128, 250 148, 238 162
+
+      C 252 150, 262 130, 256 112
+      C 248 92, 225 82, 205 88
+      C 185 94, 170 115, 168 140
+      C 166 158, 172 175, 185 188
+
+      C 168 180, 148 178, 132 185
+      C 112 195, 98 215, 102 238
+      C 106 258, 125 270, 148 265
+      C 165 262, 175 248, 172 232
+    " fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- 耳朵 -->
+    <path d="M 195 112 C 175 98, 155 102, 145 120 C 138 135, 142 155, 158 162"
+      fill="none" stroke="white" stroke-width="8" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- 眼 -->
+    <circle cx="205" cy="125" r="5" fill="#0A2647"/>
+    <circle cx="207" cy="123" r="1.8" fill="white"/>
+
+    <!-- m：圆润身体 -->
+    <path d="
+      M 185 188
+      C 208 182, 232 192, 240 215
+      C 248 238, 235 262, 212 270
+
+      C 238 258, 268 245, 288 228
+      C 312 208, 322 182, 318 158
+      C 314 135, 292 122, 272 128
+      C 252 134, 242 155, 250 178
+      C 258 198, 280 208, 305 202
+
+      C 328 195, 345 178, 352 155
+      C 360 130, 352 105, 335 92
+      C 318 80, 298 78, 282 88
+      C 268 98, 262 118, 270 138
+    " fill="none" stroke="white" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- 尾巴 -->
+    <path d="M 352 102 C 365 90, 378 95, 382 108 C 385 118, 378 128, 368 124"
+      fill="none" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- 第一个 y：前腿 -->
+    <!-- y 竖笔 = 前左腿踩地 -->
+    <path d="M 232 255 C 235 275, 236 300, 236 330 L 236 338"
+      fill="none" stroke="white" stroke-width="15" stroke-linecap="round"/>
+    <ellipse cx="232" cy="342" rx="12" ry="5" fill="white" opacity="0.88"/>
+
+    <!-- y 斜叉 = 前右腿踩地 -->
+    <path d="M 255 245 C 262 268, 272 298, 280 325 L 284 338"
+      fill="none" stroke="white" stroke-width="13" stroke-linecap="round"/>
+    <ellipse cx="280" cy="342" rx="11" ry="5" fill="white" opacity="0.88"/>
+
+    <!-- 第二个 y：后腿 -->
+    <!-- y 竖笔 = 后左腿踩地 -->
+    <path d="M 342 168 C 344 195, 345 230, 345 280 L 345 338"
+      fill="none" stroke="white" stroke-width="15" stroke-linecap="round"/>
+    <ellipse cx="341" cy="342" rx="12" ry="5" fill="white" opacity="0.88"/>
+
+    <!-- y 斜叉 = 后右腿踩地 -->
+    <path d="M 362 158 C 372 188, 385 228, 395 285 L 400 338"
+      fill="none" stroke="white" stroke-width="13" stroke-linecap="round"/>
+    <ellipse cx="396" cy="342" rx="11" ry="5" fill="white" opacity="0.88"/>
+
+  </g>
+
+  <text x="290" y="388" font-family="system-ui, sans-serif" font-size="13" font-weight="400" fill="#37DCF2" text-anchor="middle" letter-spacing="10" opacity="0.3">see me</text>
+</svg>

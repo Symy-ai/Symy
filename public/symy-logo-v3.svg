@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" width="680" height="440">
+  <defs>
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feFlood flood-color="#37DCF2" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="680" height="440" fill="#0A2647" rx="20"/>
+
+  <!-- 地面 -->
+  <line x1="70" y1="370" x2="580" y2="370" stroke="#37DCF2" stroke-width="1" opacity="0.15" stroke-dasharray="6,8"/>
+
+  <g filter="url(#glow)" transform="translate(60, 15)">
+    <!--
+      Symy 小象 v3 — 填充轮廓式
+      大象的外形轮廓直接由 S-m-y-y 的笔画构成
+      S的加粗曲线 = 头+鼻子
+      m的加粗双弧 = 身体
+      yy的加粗分叉 = 四条腿踩地
+      笔画加粗处暗示字母，大象自然浮现
+    -->
+
+    <!-- ──── S：头 + 鼻 ──── -->
+    <!-- S 路线：从脖子开始向上弯过头顶，再向前向下卷成象鼻 -->
+    <!-- 大象面朝右 -->
+
+    <!-- S 主体：头弧 + 鼻卷 -->
+    <path d="
+      M 155 210
+      C 158 188, 152 160, 135 140
+      C 118 120, 95 112, 78 118
+      C 60 125, 52 145, 58 162
+      C 64 178, 82 188, 100 184
+
+      C 88 188, 78 178, 75 162
+      C 70 140, 82 122, 102 115
+      C 122 108, 142 115, 152 135
+      C 162 155, 160 180, 148 200
+
+      C 142 210, 132 215, 125 220
+      C 115 230, 110 242, 112 255
+      C 114 265, 122 272, 132 270
+      C 140 268, 145 260, 142 250
+      C 140 242, 132 238, 125 240
+    " fill="white" stroke="none" opacity="0.95"/>
+
+    <!-- S 头顶加粗（突出S字母形） -->
+    <path d="
+      M 155 210
+      C 158 188, 152 160, 135 140
+      C 118 120, 95 112, 78 118
+      C 60 125, 52 145, 58 162
+      C 64 178, 82 188, 100 184
+    " fill="none" stroke="white" stroke-width="28" stroke-linecap="round" opacity="0.35"/>
+
+    <!-- 耳朵 -->
+    <ellipse cx="92" cy="148" rx="18" ry="28" fill="white" opacity="0.7" transform="rotate(-15 92 148)"/>
+    <ellipse cx="92" cy="148" rx="10" ry="18" fill="#0A2647" opacity="0.5" transform="rotate(-15 92 148)"/>
+
+    <!-- 眼睛 -->
+    <circle cx="108" cy="138" r="7" fill="#0A2647"/>
+    <circle cx="110" cy="136" r="2.5" fill="white"/>
+
+    <!-- ──── m：圆润身体 ──── -->
+    <!-- m 的两个弧：左弧=胸部隆起，右弧=臀部隆起 -->
+    <path d="
+      M 155 210
+      C 160 195, 180 182, 205 180
+      C 230 178, 248 190, 255 210
+      C 260 225, 252 245, 235 255
+
+      C 250 242, 265 225, 275 205
+      C 288 180, 290 152, 285 130
+      C 278 105, 258 92, 235 95
+      C 212 98, 198 118, 200 142
+      C 202 162, 218 178, 240 180
+
+      C 258 182, 275 170, 288 152
+      C 305 128, 312 100, 308 78
+      C 302 55, 282 42, 258 45
+      C 235 48, 220 68, 218 92
+      C 216 115, 230 135, 252 145
+
+      C 272 155, 295 148, 312 132
+      C 332 112, 340 85, 335 62
+      C 330 42, 312 32, 292 35
+    " fill="white" stroke="none" opacity="0.95"/>
+
+    <!-- m 加粗突出 -->
+    <path d="
+      M 155 210
+      C 160 195, 180 182, 205 180
+      C 230 178, 248 190, 255 210
+      C 260 225, 252 245, 235 255
+    " fill="none" stroke="white" stroke-width="26" stroke-linecap="round" opacity="0.3"/>
+
+    <path d="
+      M 288 152
+      C 305 128, 312 100, 308 78
+      C 302 55, 282 42, 258 45
+      C 235 48, 220 68, 218 92
+    " fill="none" stroke="white" stroke-width="26" stroke-linecap="round" opacity="0.3"/>
+
+    <!-- 尾巴 -->
+    <path d="
+      M 335 62
+      C 350 50, 365 55, 370 68
+      C 374 78, 368 90, 358 86
+    " fill="none" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+
+    <!-- ──── 第一个 y：前腿 ──── -->
+    <!-- y的主干笔直向下 = 前左腿踩地 -->
+    <!-- y的V叉 = 前右腿斜下踩地 -->
+    <path d="
+      M 222 210
+      L 220 310
+      L 218 345
+      C 216 355, 210 360, 205 358
+      C 198 355, 195 348, 200 342
+      L 205 338
+      L 208 310
+      L 210 215
+      Z
+    " fill="white" opacity="0.95"/>
+
+    <!-- 前左脚掌踩地 -->
+    <ellipse cx="208" cy="358" rx="16" ry="8" fill="white" opacity="0.9"/>
+
+    <!-- y的V叉 = 前右腿 -->
+    <path d="
+      M 242 225
+      L 262 295
+      L 272 338
+      C 274 348, 270 356, 264 358
+      C 256 360, 252 355, 254 348
+      L 258 338
+      L 250 298
+      L 232 230
+      Z
+    " fill="white" opacity="0.95"/>
+
+    <!-- 前右脚掌踩地 -->
+    <ellipse cx="266" cy="358" rx="14" ry="8" fill="white" opacity="0.9"/>
+
+    <!-- ──── 第二个 y：后腿 ──── -->
+    <!-- y的主干 = 后左腿踩地 -->
+    <path d="
+      M 328 195
+      L 326 295
+      L 324 345
+      C 322 355, 316 360, 312 358
+      C 305 355, 302 348, 308 342
+      L 312 338
+      L 314 295
+      L 316 200
+      Z
+    " fill="white" opacity="0.95"/>
+
+    <!-- 后左脚掌踩地 -->
+    <ellipse cx="314" cy="358" rx="16" ry="8" fill="white" opacity="0.9"/>
+
+    <!-- y的V叉 = 后右腿 -->
+    <path d="
+      M 348 210
+      L 370 285
+      L 382 338
+      C 384 348, 380 356, 374 358
+      C 366 360, 362 355, 364 348
+      L 368 338
+      L 378 290
+      L 358 218
+      Z
+    " fill="white" opacity="0.95"/>
+
+    <!-- 后右脚掌踩地 -->
+    <ellipse cx="376" cy="358" rx="14" ry="8" fill="white" opacity="0.9"/>
+
+  </g>
+
+  <!-- 底部品牌名（极简） -->
+  <text x="340" y="420" font-family="system-ui, sans-serif" font-size="15" font-weight="400" fill="#37DCF2" text-anchor="middle" letter-spacing="12" opacity="0.4">see me</text>
+</svg>

@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="600" height="400">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="outerGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feFlood flood-color="#37DCF2" flood-opacity="0.6" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feComposite in="SourceGraphic" in2="shadow" operator="over"/>
+    </filter>
+  </defs>
+  
+  <!-- Dark navy background -->
+  <rect width="600" height="400" fill="#0A2647" rx="24"/>
+  
+  <!-- Symy Elephant Logo: S=head+trunk, m=body, yy=legs -->
+  <!-- The entire elephant is drawn as ONE connected path forming letters S-m-y-y -->
+  <g filter="url(#outerGlow)">
+    <!-- Main elephant path: S-m-y-y forming the side-view elephant -->
+    <path d="
+      M 130 140
+      C 130 100, 170 80, 200 80
+      C 230 80, 250 95, 250 115
+      C 250 130, 240 140, 230 145
+      C 250 138, 270 120, 275 100
+      C 278 90, 272 80, 260 75
+      C 290 78, 310 100, 310 130
+      
+      C 310 160, 290 180, 260 190
+      C 240 198, 220 200, 200 200
+      C 180 200, 170 210, 170 230
+      
+      C 170 250, 185 270, 210 280
+      L 210 320
+      C 210 330, 200 335, 195 335
+      C 185 335, 178 328, 178 320
+      L 178 290
+      
+      C 155 280, 140 260, 140 235
+      C 140 215, 150 200, 165 192
+      C 140 188, 120 175, 120 155
+      C 120 148, 125 142, 130 140
+      Z
+    " fill="white" opacity="0.95"/>
+    
+    <!-- S continues as trunk curling down -->
+    <path d="
+      M 130 140
+      C 118 145, 105 155, 100 170
+      C 95 188, 100 200, 110 208
+      C 115 212, 122 210, 125 205
+      C 128 198, 125 190, 118 185
+    " fill="none" stroke="white" stroke-width="12" stroke-linecap="round" opacity="0.95"/>
+    
+    <!-- Eye on the S-head -->
+    <circle cx="205" cy="110" r="8" fill="#0A2647"/>
+    <circle cx="207" cy="108" r="3" fill="white" opacity="0.9"/>
+    
+    <!-- Ear detail on S-head -->
+    <path d="
+      M 165 88
+      C 148 85, 135 95, 135 110
+      C 135 125, 148 132, 160 128
+    " fill="none" stroke="#0A2647" stroke-width="3" opacity="0.4"/>
+    
+    <!-- m-belly continuation (the round body) -->
+    <path d="
+      M 310 130
+      C 330 135, 350 150, 360 175
+      C 370 200, 360 225, 340 240
+      
+      C 350 235, 365 225, 375 210
+      C 385 195, 385 175, 375 160
+      C 365 145, 345 135, 320 132
+    " fill="white" opacity="0.95"/>
+    
+    <!-- First y: front-right leg -->
+    <path d="
+      M 230 200
+      C 240 200, 255 205, 265 215
+      L 270 280
+      C 270 290, 280 295, 290 292
+      L 295 292
+      C 300 290, 302 285, 300 280
+      L 295 220
+      C 295 210, 285 200, 270 198
+    " fill="white" opacity="0.95"/>
+    
+    <!-- y foot detail -->
+    <ellipse cx="292" cy="295" rx="12" ry="6" fill="white" opacity="0.9"/>
+    
+    <!-- Second y: back-right leg -->  
+    <path d="
+      M 340 240
+      C 350 238, 360 242, 365 250
+      L 370 280
+      C 370 290, 380 295, 390 292
+      L 395 292
+      C 400 290, 402 285, 400 280
+      L 395 255
+      C 390 245, 378 238, 365 236
+    " fill="white" opacity="0.95"/>
+    
+    <!-- y foot detail -->
+    <ellipse cx="392" cy="295" rx="12" ry="6" fill="white" opacity="0.9"/>
+    
+    <!-- Tail (small detail from m-body) -->
+    <path d="
+      M 375 160
+      C 385 155, 395 158, 400 165
+      C 405 172, 400 178, 395 175
+    " fill="none" stroke="white" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  </g>
+  
+  <!-- Brand text below -->
+  <text x="300" y="365" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="700" fill="white" text-anchor="middle" letter-spacing="6" opacity="0.9">SYMγ</text>
+</svg>
