@@ -1,0 +1,15 @@
+:81 {
+	# 🔧 2026-07-15 (ARCH-5 #1 / CRITICAL-2 修复): 移除 XTransformPort 块
+	//   此前 `?XTransformPort=N` 可代理到任意 localhost 端口 (Postgres/Redis/metadata)
+	//   构成 SSRF 漏洞 — 无认证无 HTTPS 即可访问内部服务
+	//   修复: 直接反代到 Next.js 3000 端口, 不再接受 transform 参数
+
+	handle {
+		reverse_proxy localhost:3000 {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}
