@@ -193,7 +193,7 @@
     "healingKitUsed": "Symy feels happy ✨",
     "healingKit": "Pet Symy",
     "usedToday": "Petted today ✓",
-    "healingKitFailed": "Could not pet Symy — please try again.",
+    "healingKitFailed": "Couldn't pet Symy — try again.",
     "healingKitDesc": "+3 tokens · +15 XP",
     "healingKitResetsAt": "Resets at {time}",
     "gacha": "What If",
@@ -256,8 +256,8 @@
     "sharePrivacyNote": "Won't share your personal info",
     "shareCardGenerating": "Generating card...",
     "shareNeedChallenge": "Guard your first choice, then come back to share it. →",
-    "shareLinkCopied": "✅ Image saved + link copied!",
-    "streakTooltip": "Consecutive days of guarding. Complete at least 1 challenge or conversation per day to maintain. 24h without showing up resets to 0.",
+    "shareLinkCopied": "✅ Link copied!",
+    "streakTooltip": "Consecutive days of guarding. Keep it with at least 1 challenge or conversation a day — 24h away resets to 0.",
     "yourBalance": "Helped you win back",
     "savedFromImpulses": "of your life",
     "aiVitality": "Symy mood",
@@ -399,7 +399,7 @@
     "challengeAmountMinError": "Minimum $10 to start",
     "challengeAmountHint": "Enter a price to see the real cost",
     "challengeAmountMaxError": "Maximum $1,000,000",
-    "challengeAlreadyActive": "A guard challenge is already active. Continue?",
+    "challengeAlreadyActive": "Guard challenge already active. Continue?",
     "challengeResumeMessage": "I'm back — let's continue the challenge about {itemName}",
     "challengeLimitReached": "You completed 5 guards today. More tomorrow — unlimited with Premium",
     "challengeRemaining": "{n} left",
@@ -772,7 +772,7 @@
       "streak_7": "Keep this up and you'll start to feel the difference.",
       "streak_8": "Day seven — I'm still right here with you.",
       "completed_1": "You held it! That money stays, and you bought back some quiet.",
-      "completed_2": "Another impulse stopped. You just earned yourself a still moment.",
+      "completed_2": "Another impulse stopped — you've earned a still moment.",
       "completed_3": "Money kept. Time returned. You did more than you think.",
       "completed_4": "Challenge complete — here's a tiny medal from my trunk 🐘",
       "completed_5": "What you didn't spend just became a pocket of calm.",
@@ -843,7 +843,7 @@
     "shareTodayStoryPlaceholder": "Today I guarded a choice...",
     "shareUseDefault": "Use default",
     "streakRedeemButton": "Redeem {days} days → +{tokens}",
-    "streakRedeemDesc": "Redeem your {days}-day streak for {tokens} tokens to spend on Symy.",
+    "streakRedeemDesc": "Redeem for 50 tokens to restore your {n}-day streak.",
     "streakRedeemFailed": "Failed to redeem. Please try again.",
     "streakRedeemTitle": "Redeem your streak",
     "streakRedeemed": "✅ Redeemed! +{tokens} tokens added.",
@@ -903,7 +903,7 @@
       "home": "Use up what’s at home first — easier on the planet.",
       "homeReuse": "Use up what you have, then consider adding more.",
       "food": "Use up what’s in the pantry first.",
-      "foodReuse": "The pack tucked away can make one more meal yet.",
+      "foodReuse": "That pack in the fridge makes one more meal.",
       "default": "Another guard — that one counted.",
       "defaultReuse": "Go easy on yourself. You’re already doing great.",
       "bannerWithHours": "+{hours} free hours — {line}",
@@ -917,7 +917,7 @@
         "plastic": "Little Elephant pauses here — plastic stays around far longer than the thing it wraps.",
         "exotic_leather": "Little Elephant won’t help buy exotic leather — those skins already belong to someone wild."
       },
-      "impulse": "Let’s sit with it for 24 hours. If you still want it tomorrow, it can wait that long.",
+      "impulse": "Let's sit with it for 24 hours — still want it tomorrow? Buy then, no rush.",
       "budget": "This one leans on your budget more heavily than your day needs.",
       "unknown": "Let’s take a gentle pause here."
     },
@@ -961,7 +961,7 @@
       "recentIntercepts": "What did I guard in the last 7 days?",
       "heatmap": "Show me my guard heatmap",
       "fallback": "What do you want to save today?",
-      "afterIntercept": "Can you help me find a greener alternative for that?"
+      "afterIntercept": "Find me a greener alternative for that?"
     },
     "symyTyping": "Symy is guarding...",
     "avatarUser": "U",
@@ -1248,12 +1248,12 @@
       "reply": {
         "worth": {
           "gentle": "So glad it found its use. Buying well is part of guarding — your judgment is solid 🌱",
-          "balanced": "Used and loved — that's money well spent! Good spending IS part of the guard, and you called it yourself 🌱",
+          "balanced": "Used and loved — money well spent! Good spending is part of the guard, and you called it 🌱",
           "strict": "Worth every penny! Remember this feeling — you know how to pick, trust that next time 🌱"
         },
         "ok": {
           "gentle": "Okay is okay — not a loss. It might grow on you~",
-          "balanced": "Passing grade, no thrill — maybe next time we wait for something that excites you more? I'll wait with you 🐘",
+          "balanced": "Passing grade, no thrill — maybe something more exciting next time? I'll wait with you 🐘",
           "strict": "Okay = no trap sprung. Next time, try raising the bar just a little? 🐘"
         },
         "regret": {
@@ -1284,7 +1284,7 @@
         "statAssists": "{count} guard assists",
         "hoursPrivate": "Freedom guarded during the promise: {hours} hours",
         "brokenBody": "{subject} slipped in this time — that's okay, the guard is still here.",
-        "brokenNote": "A pause isn't the end of the story. Let's see where to begin next time — I'm with you.",
+        "brokenNote": "A pause isn't a full stop — we'll see where to pick up next time. I'm with you.",
         "insufficientBody": "No guard moments landed these {days} days, so I won't declare a result for you — only how you feel counts.",
         "restartBtn": "Another {days} days",
         "restartAck": "A new stretch begins — written down, and I'm still with you 🐘"
@@ -1302,9 +1302,9 @@
       "lineNeedLabel": "Need · ",
       "lineNeed": "Which one is closer to a real need? If both are just wants, maybe neither is urgent.",
       "lineAltLabel": "Greener pick · ",
-      "lineAltNone": "No entry in my lexicon for either side — check if something at home could cover it first; I won't make up eco claims.",
+      "lineAltNone": "No entry in my lexicon for either side — see if something at home covers it; I won't make up eco claims.",
       "lineDurabilityLabel": "Durability · ",
-      "lineDurabilityCited": "The matched side's entry carries secondhand/durability hints (above) — worth a look at the used market before checkout.",
+      "lineDurabilityCited": "The matched side's entry has secondhand/durability hints (above) — check the used market before checkout.",
       "lineDurabilityNeutral": "I have no reliable durability data for either side, so I won't vouch for either — the one built to last is cheaper per year.",
       "chooseA": "Go with {side}",
       "chooseB": "Go with {side}",
@@ -1410,7 +1410,7 @@
         "generic": "Next week, I'll keep watching your danger windows with you — one pause at a time 🐘"
       },
       "noDataBody": "No guard moments recorded this week yet — that's okay. When one lands, I'll walk through the week with you here.",
-      "reviewedNote": "You've already reviewed this week — you can revisit anytime.",
+      "reviewedNote": "This week's review is done — revisit anytime.",
       "shareBtn": "Share",
       "shareClose": "Close",
       "share": {
@@ -1432,7 +1432,7 @@
         "alt": "Chose a greener alternative — same need, lighter footprint 🌱",
         "reuse": "Used what you already had — the best purchase is no purchase ♻️"
       },
-      "emptyBody": "This timeline is still waiting — your first interception will be its opening line. Next time an impulse shows up, pause one second; Symy will be right there with you 🌱",
+      "emptyBody": "This timeline is still waiting — your first interception will open it. Next impulse, pause one second; Symy is right here 🌱",
       "closeBtn": "Close",
       "shareBtn": "Share",
       "shareClose": "Close",
@@ -1834,7 +1834,7 @@
     "disconnect": "Disconnect",
     "toast": {
       "unknownError": "Unknown error occurred",
-      "connectionFailed": "Email connection failed. Please try again.",
+      "connectionFailed": "Email connection failed. Try again.",
       "disconnectFailed": "Failed to disconnect email. Please try again.",
       "networkError": "Network error. Please check your connection.",
       "receiptIgnored": "Receipt ignored",
@@ -1907,11 +1907,11 @@
       },
       "companionHealth": {
         "title": "Your Green Companion",
-        "description": "Every guarded choice builds toward your dreams — and a lighter footprint. Your companion reflects your progress."
+        "description": "Every guard brings dreams closer and footprints lighter — your companion reflects your progress."
       },
       "smartRefunds": {
         "title": "Smart Refunds (Coming Soon)",
-        "description": "Automatically detect refundable purchases and get your money back. This feature is not yet available."
+        "description": "Auto-detect refundable purchases and get your money back. Coming soon."
       }
     },
     "symyFree": "You're on the way",
@@ -1932,7 +1932,7 @@
     "premiumLabel": "Premium",
     "premiumPremiumDesc": "Symy reaches you first, before the impulse does",
     "premiumFeatureActiveGuardTitle": "Proactive intercepts",
-    "premiumFeatureActiveGuardDesc": "When an impulse is about to land, Symy nudges you first",
+    "premiumFeatureActiveGuardDesc": "Before an impulse lands, Symy nudges you first.",
     "premiumFeatureDeepReportTitle": "Deep guardian report",
     "premiumFeatureDeepReportDesc": "Full blind-spot map + spending patterns + where your money stays",
     "premiumFeatureInfiniteSimTitle": "Unlimited guard plans",
@@ -2014,7 +2014,7 @@
     "timeValueCustomHint": "Dollars per hour, 1–500; out-of-range values are gently clamped",
     "timeValueInvalid": "Please enter a number",
     "timeValueSaveFailed": "Failed to save — please try again",
-    "guardIntensityDesc": "How proactive Symy should be when intercepting — this only changes the reminder style, not the guardian switch. Strict is an honor stance for guardian-season players.",
+    "guardIntensityDesc": "How proactive Symy gets when intercepting — reminder style only, not the guard switch. Strict is the guard-season honor stance.",
     "guardIntensityGentle": "Gentle",
     "guardIntensityGentleDesc": "One alternative suggestion, no follow-ups",
     "guardIntensityBalanced": "Balanced (default)",
@@ -2157,7 +2157,7 @@
     "signOutDesc": "Log out of your account",
     "signOutConfirm": "Are you sure you want to sign out?",
     "deleteAccount": "Delete Account",
-    "deleteAccountConfirm": "Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently removed.",
+    "deleteAccountConfirm": "Delete your account? This can't be undone — all your data will be permanently deleted.",
     "deleteAccountFailed": "Failed to delete account. Please try again or contact support.",
     "pushNotifications": "Push Notifications",
     "pushNotSupported": "Push notifications are not supported by your browser.",
@@ -2307,7 +2307,7 @@
     "emailDisconnectFailed": "Failed to disconnect — please try again",
     "languageSetting": "Language / 语言",
     "sendFeedback": "Send feedback",
-    "sendFeedbackDesc": "Report a bug or share an idea",
+    "sendFeedbackDesc": "Tell us your thoughts",
     "guardTotals": {
       "title": "Guardian record",
       "subtitle": "Since day one",
@@ -2370,7 +2370,7 @@
     "guardWinRateHeadline": "You won {percent}% of your guards ({wins}/{total} cooled off fully)",
     "guardWinRateTipHigh": "The elephant is impressed — you've gotten great at negotiating with yourself",
     "guardWinRateTipMid": "An even split is normal; every extra hour you hold pushes the rate up",
-    "guardWinRateTipLow": "Rounds you didn't win aren't failures, they're practice — the elephant is game for another round",
+    "guardWinRateTipLow": "Lost rounds aren't failures, they're practice — the elephant is game for another round",
     "guardWinRateStreak": "{days} days of guard wins in a row",
     "guardWinRateAmount": "{amount} guarded across wins (visible only to you)",
     "monthlyStatement": {
@@ -2385,7 +2385,7 @@
       "compareLine": "Last month: {count} rounds",
       "compareTip": {
         "up": "More guards than last month — the elephant is noting this step forward",
-        "flat": "Level with last month — holding steady is its own kind of win",
+        "flat": "Level with last month — holding steady is a win in itself.",
         "down": "Last month may have been a hard one — no worries, the elephant will guard it back with you, slowly"
       },
       "amountLine": "{amount} guarded this month (visible only to you)",
@@ -2449,7 +2449,7 @@
     "weeklyCompareHoursValue": "{hours} h",
     "weeklyCompareTipUp": "The elephant sees it: you're getting better at holding your ground week by week",
     "weeklyCompareTipFlat": "Level with last week — holding steady is its own kind of progress",
-    "weeklyCompareTipDown": "Last week may have been a rough one — no worries, the elephant will win it back with you, bit by bit",
+    "weeklyCompareTipDown": "Last week may have been rough — no worries, the elephant will win it back with you, bit by bit.",
     "guardCategoryTitle": "Category Insight",
     "guardCategoryDesc": "Where your guardian instincts shine",
     "guardCategoryEmpty": "Guard a few more times to see your category portrait",
@@ -2761,7 +2761,7 @@
         "title": "Talk to Symy",
         "description": "Chat with your little elephant before you buy. Buy less, live more — with a guardian by your side.",
         "benefit0": "Guard each purchase together",
-        "benefit1": "Understand your own patterns",
+        "benefit1": "Understand your patterns",
         "benefit2": "Choose freely, with support"
       },
       "challenge": {
@@ -2801,7 +2801,7 @@
       },
       "profile": {
         "title": "Your Symy",
-        "description": "Save your guard history, track your progress, sync across devices.",
+        "description": "Save guard history, track progress, sync across devices.",
         "benefit0": "Persistent data across sessions",
         "benefit1": "Cross-device sync",
         "benefit2": "Personalized Symy companion"
@@ -2846,7 +2846,7 @@
       "signInPrompt": "Sign in to your account",
       "signedOut": "You've been signed out",
       "errors": {
-        "authCallbackFailed": "Authentication failed. The login link may have expired — please try again.",
+        "authCallbackFailed": "Authentication failed — the login link may have expired. Try again.",
         "accessDenied": "Authorization cancelled.",
         "default": "Something went wrong. Please try again.",
         "serviceNotConfigured": "Service is not configured. Please try again later.",
@@ -2854,7 +2854,7 @@
         "invalidEmail": "Please enter a valid email address",
         "enterPassword": "Please enter your password",
         "magicLinkCooldown": "Please wait {remainingSec}s before requesting another magic link",
-        "networkError": "Unable to connect. Please check your internet and try again.",
+        "networkError": "Can't reach the server — check your network and try again.",
         "invalidCredentials": "Incorrect email or password."
       },
       "loginSuccess": "Login successful! Redirecting...",
@@ -2943,14 +2943,14 @@
     },
     "resetPassword": {
       "title": "New Password",
-      "subtitle": "Choose a new password for your account",
+      "subtitle": "Set a new password for your account",
       "newPassword": "New password",
       "confirmPassword": "Confirm new password",
       "passwordHint": "At least 6 characters",
       "updating": "Updating...",
       "updatePassword": "Update password",
       "expiredTitle": "Link expired or invalid",
-      "expiredDesc": "This password reset link may have been used or expired. Please request a new one.",
+      "expiredDesc": "This password reset link may have been used or expired — request a new one.",
       "requestNewLink": "Request new link",
       "successTitle": "Password updated",
       "successDesc": "Redirecting you to Symy...",
@@ -3010,7 +3010,7 @@
       "pattern": "Late-night scrolling. Livestream FOMO. You know the triggers. Sign up and Symy will help you spot yours. 🐘",
       "bnpl": "Buy Now Pay Later. Small payments that add up to the full price — plus late fees if you miss one. Sign up to guard the full picture. 🐘",
       "challengeFollowUp": "You said it. Your guardian elephant heard it. Sign up to start guarding.",
-      "challengeFollowUpWant": "You want it — that's true, and it's okay. The little elephant will help you decide gently. Sign up to guard together. 🐘",
+      "challengeFollowUpWant": "Wanting it is normal. The little elephant will gently help you decide. Sign up and we'll guard together. 🐘",
       "challengeFollowUpFriends": "Your friends have it. The ad said you'd be like them. The little elephant stays beside you either way. Sign up for calmer choices. 🐘",
       "challengeFollowUpNeed": "Need. Want. Deserve. The little elephant doesn't judge words — only helps you hold the gate. Sign up to keep it kind. 🐘"
     },
@@ -3026,7 +3026,7 @@
     "demoModeBadge": "✨ Demo — No sign-in required",
     "demoStoryHint": "Demo — Sign up to save your stories!",
     "boughtModeHint": "Tell me your decision. The little elephant will show what it grows into.",
-    "resistedModeHint": "Tell me what you didn't buy. The little elephant turns that guarded choice into a story for you.",
+    "resistedModeHint": "Tell me what you didn't buy — the little elephant will turn it into a story for you.",
     "iBoughtIt": "I bought",
     "iResisted": "I didn't buy",
     "boughtPlaceholder": "What did you buy? (e.g. \"A $159 ZARA jacket I wore once\")",
@@ -3082,10 +3082,10 @@
     "previousChapter": "Previous chapter",
     "tryAgain": "Try Again",
     "aiServiceError": "AI service is temporarily unavailable. Please try again in a moment.",
-    "sessionCreateError": "Failed to create story session. Please try again.",
-    "chapterLoadError": "Chapter content could not be loaded. Please retry or start a new story.",
+    "sessionCreateError": "Couldn't create the story session — try again.",
+    "chapterLoadError": "Chapter couldn't load — retry or start a new story.",
     "networkError": "Network connection issue. Please check your internet and try again.",
-    "timeoutError": "Story is taking longer than expected. Try again or use a preset example.",
+    "timeoutError": "Story is taking a while — try again or use a preset example.",
     "contentError": "This item couldn't be processed. Try a different description.",
     "errorCodeLabel": "Error code",
     "errorCopyCode": "Copy",
@@ -3093,7 +3093,7 @@
     "abandonConfirm": "Abandon this story and start over? Your progress will be lost.",
     "chapterComplete": "Chapter Complete",
     "chComplete": "CH.{n} COMPLETE",
-    "continueToNext": "Continue to Next Chapter →",
+    "continueToNext": "Next chapter →",
     "seeYourFuture": "Explore another path →",
     "youBought": "You bought",
     "youResisted": "You didn't buy",
@@ -3199,7 +3199,7 @@
     "loadingStage5": "Weaving the butterfly effect...",
     "patienceHint": "Taking longer than expected. The story is worth the wait — thank you for your patience.",
     "cancelAndRefund": "Cancel & refund pull",
-    "outlineTimeoutError": "Story generation timed out. Your pull was refunded — please try again.",
+    "outlineTimeoutError": "Story generation timed out — your pull was refunded, try again.",
     "outlineParseError": "The AI returned an unexpected response. Your pull was refunded — please try again.",
     "outlineLlmError": "The AI service is temporarily unavailable. Your pull was refunded — please try again in a moment.",
     "rateLimitError": "Too many requests. Please wait a moment and try again.",
@@ -3221,7 +3221,7 @@
     "shareStory": "Share story",
     "shareStoryText": "Just opened my What If story on Symy: \"{desc}\" — what would you have done?",
     "historyFilterConsidering": "I am considering",
-    "errorEngineNotReady": "Story engine is warming up. Please try again in a moment.",
+    "errorEngineNotReady": "Story engine is warming up — try again soon.",
     "errorSessionInProgress": "A story is already being created. Please wait a moment.",
     "errorGeneric": "Something went wrong. Please try again.",
     "retryButton": "Try again",
@@ -3250,7 +3250,7 @@
     "downloadPng": "Download PNG",
     "generatingIllustration": "Generating illustration...",
     "mayTakeTime": "This may take 10-30 seconds",
-    "selectPreset": "Select a preset or create a custom scene to generate an illustration",
+    "selectPreset": "Select a preset or custom scene to generate an illustration",
     "gallery": "Gallery ({n})",
     "galleryEmpty": "Generated illustrations will appear here",
     "customSceneDefault": "Custom Scene",
@@ -3380,7 +3380,7 @@
   "dreamFund": {
     "depositedToast": "🎉 {amount} saved to your Dream Fund!",
     "alreadyDeposited": "This challenge has already been deposited.",
-    "depositFailed": "Deposit failed. Please try again later.",
+    "depositFailed": "Deposit failed — try again later.",
     "skipToast": "That's okay — money in your pocket is a win too! 💪",
     "challengePassed": "Challenge Passed!",
     "savedAmount": "You saved {amount}",
@@ -3422,7 +3422,7 @@
     "wonBackUnit": "hours",
     "interceptMedal": {
       "pill": "Intercept Medal",
-      "title": "You won this one — for you and the planet",
+      "title": "You and the planet both won this one",
       "resistedChip": "Resisted: {item}",
       "fallbackItem": "this one",
       "greenSaved": "Chose the greener option",
@@ -3435,7 +3435,7 @@
       "share": "Share",
       "save": "Save image",
       "generating": "Creating your medal…",
-      "generateFailed": "Couldn't create the image. Check your connection and retry.",
+      "generateFailed": "Couldn't create the image — check connection and retry.",
       "retry": "Retry",
       "shareText": "I skipped an impulse buy and won back {hours}. With Symy — for me and the planet. Buy less. Live more.",
       "wonBackLabel": "You won back"
@@ -3499,7 +3499,7 @@
       "shareTextNoCount": "Won back {hours} so far. With Symy: buy less, live more.",
       "modalTitle": "Share your green report",
       "generating": "Creating your report…",
-      "generateFailed": "Couldn't create the report image. Check your connection and retry."
+      "generateFailed": "Couldn't create the report image — check connection and retry."
     },
     "badgeCard": {
       "pill": "Green Honor",
@@ -3676,7 +3676,7 @@
     "detailsTitle": "Spending Insights",
     "dataSourceNote": "Based on anonymous reports from The Guard Grove community",
     "platformIndex": "Spending Triggers by Platform",
-    "platformIndexDesc": "Where the community felt the most spending pressure this week",
+    "platformIndexDesc": "Most spending pressure in the community this week",
     "topStrategies": "Common Spending Traps",
     "topStrategiesDesc": "What the community noticed this week",
     "storiesTitle": "Guardians’ Stories",
