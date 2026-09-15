@@ -16,6 +16,16 @@
 
 import { defineConfig, devices } from '@playwright/test';
 
+// Playwright 进程自身不加载 .env (Next.js 只为 app 进程加载), 贡献者在 .env 填 E2E_* 即可生效。
+// 已存在的 shell env 优先 (Node --env-file 语义), CI secrets 不受影响; .env 缺失时静默跳过。
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile('.env');
+  } catch {
+    // .env 不存在 — 直接使用 shell env / CI secrets
+  }
+}
+
 const isCI = !!process.env.CI;
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:3000';
 
