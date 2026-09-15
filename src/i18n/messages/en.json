@@ -1754,12 +1754,16 @@
       "inferred": "inferred",
       "stale": "may be outdated",
       "notQuite": "Not quite right?",
-      "correction.not_me": "This isn't me",
-      "correction.expired": "It expired",
-      "correction.different_context": "Different context",
-      "ack.not_me": "Got it — I won't treat that as your preference in this conversation.",
-      "ack.expired": "Thanks — I'll set that timing aside and ask again when it is current.",
-      "ack.different_context": "Got it — this context changes how the suggestion applies."
+      "correction": {
+        "not_me": "This isn't me",
+        "expired": "It expired",
+        "different_context": "Different context"
+      },
+      "ack": {
+        "not_me": "Got it — I won't treat that as your preference in this conversation.",
+        "expired": "Thanks — I'll set that timing aside and ask again when it is current.",
+        "different_context": "Got it — this context changes how the suggestion applies."
+      }
     }
   },
   "monitor": {

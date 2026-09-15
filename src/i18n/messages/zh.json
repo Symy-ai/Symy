@@ -1754,12 +1754,16 @@
       "inferred": "推测",
       "stale": "可能过期",
       "notQuite": "哪里说得不对？",
-      "correction.not_me": "这不是我",
-      "correction.expired": "已过期",
-      "correction.different_context": "换场景了",
-      "ack.not_me": "收到，本次对话我不会再把它当作你的偏好。",
-      "ack.expired": "谢谢，这条时间依据先放一边，等它重新变准再问。",
-      "ack.different_context": "收到，这个场景会改变建议的适用方式。"
+      "correction": {
+        "not_me": "这不是我",
+        "expired": "已过期",
+        "different_context": "换场景了"
+      },
+      "ack": {
+        "not_me": "收到，本次对话我不会再把它当作你的偏好。",
+        "expired": "谢谢，这条时间依据先放一边，等它重新变准再问。",
+        "different_context": "收到，这个场景会改变建议的适用方式。"
+      }
     }
   },
   "monitor": {
