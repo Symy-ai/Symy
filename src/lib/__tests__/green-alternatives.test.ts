@@ -422,6 +422,61 @@ describe("green-alternatives 口语插入语 (batch69-a)", () => {
   });
 });
 
+describe("green-alternatives 囤系口语命中 (batch76-a)", () => {
+  it("囤点X 红转绿: 动宾连写 trigger 经归一化命中 (wool 审计发现 #1)", () => {
+    expect(suggestAlternative("囤点洗衣液", "zh")?.id).toBe(
+      "promo_household_stockup",
+    );
+    expect(suggestAlternative("先囤点洗衣液再说", "zh")?.id).toBe(
+      "promo_household_stockup",
+    );
+    expect(suggestAlternative("给娃囤点绘本", "zh")?.id).toBe(
+      "picturebook_library_swap",
+    );
+    expect(suggestAlternative("囤些零食", "zh")?.id).toBe("snack_hoarding");
+  });
+
+  it("裸名词 trigger 现状已中, 锁定不回退", () => {
+    // 「囤点纸巾」批前即经「纸巾」严格命中 (不依赖归一化), 修后仍同词条
+    expect(suggestAlternative("囤点纸巾", "zh")?.id).toBe("tissues");
+    expect(suggestAlternative("618 囤点纸巾", "zh")?.id).toBe("tissues");
+    // 连写对照组: 本就严格命中
+    expect(suggestAlternative("囤洗衣液", "zh")?.id).toBe(
+      "promo_household_stockup",
+    );
+    expect(suggestAlternative("囤绘本", "zh")?.id).toBe(
+      "picturebook_library_swap",
+    );
+    expect(suggestAlternative("囤零食", "zh")?.id).toBe("snack_hoarding");
+  });
+
+  it("囤系无宾语否定现状 null, 保持 null", () => {
+    expect(suggestAlternative("不囤了", "zh")).toBeNull();
+    expect(suggestAlternative("不囤", "zh")).toBeNull();
+    expect(suggestAlternative("囤点", "zh")).toBeNull();
+    expect(suggestAlternative("我想好了不囤了, 太占地方", "zh")).toBeNull();
+  });
+
+  it("含 囤点 的既有语料命中零漂移 (点 剥离不改命中)", () => {
+    expect(suggestAlternative("机票大促囤点券", "zh")?.id).toBe(
+      "travel_voucher_cooldown",
+    );
+    expect(suggestAlternative("刚接小狗回家先囤点东西", "zh")?.id).toBe(
+      "pet_supply_reuse_borrow",
+    );
+    expect(suggestAlternative("开学季囤点东西", "zh")?.id).toBe(
+      "back_to_school_cooldown",
+    );
+  });
+
+  it("「点个」非购物句不误命中 (点 未立为动词)", () => {
+    expect(suggestAlternative("点个赞", "zh")).toBeNull();
+    expect(suggestAlternative("点个名", "zh")).toBeNull();
+    // 外卖经裸名词严格命中, 与归一化无关
+    expect(suggestAlternative("点个外卖", "zh")?.id).toBe("takeout_meal");
+  });
+});
+
 describe("green-alternatives 文案红线", () => {
   it("全库无羞耻框架文案 (不说教)", () => {
     const banned = /你不该|不应该买|别买|shouldn't buy|should not buy|shame|guilt trip/i;

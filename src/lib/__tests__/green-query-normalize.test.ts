@@ -65,3 +65,52 @@ describe("green-query-normalize 边界自证", () => {
     expect(normalizeGreenQuery(null as unknown as string)).toBeNull();
   });
 });
+
+describe("green-query-normalize 囤系口语动词 (batch76-a)", () => {
+  it.each([
+    // 简报发现 #1 三连: 动词「囤」+ 约量「点/些」+ 名词 → 剥成动宾连写
+    ["囤点洗衣液", "囤洗衣液"],
+    ["给娃囤点绘本", "给娃囤绘本"],
+    ["囤点纸巾", "囤纸巾"],
+    ["囤些零食", "囤零食"],
+    ["先囤点洗衣液再说", "先囤洗衣液再说"],
+    ["618 囤点纸巾", "618 囤纸巾"],
+    // 「点/些」入插入语表后对既有 买/换 系的自然外溢 (约量词, 同为口语常态)
+    ["买点水果", "买水果"],
+    ["买些什么好", "买什么好"],
+    ["换点零钱", "换零钱"],
+  ])("%s → %s", (input, expected) => {
+    expect(normalizeGreenQuery(input)).toBe(expected);
+  });
+
+  it("动词后无名词残余不剥 (与 想买个 同规)", () => {
+    expect(normalizeGreenQuery("囤点")).toBe("囤点");
+    expect(normalizeGreenQuery("囤些")).toBe("囤些");
+    expect(normalizeGreenQuery("买点")).toBe("买点");
+  });
+
+  it("囤系否定句按现状恒等 (不新增否定逻辑)", () => {
+    expect(normalizeGreenQuery("不囤了")).toBe("不囤了");
+    expect(normalizeGreenQuery("不囤")).toBe("不囤");
+    expect(normalizeGreenQuery("我想好了不囤了, 太占地方")).toBe(
+      "我想好了不囤了, 太占地方",
+    );
+  });
+
+  it("「来点/点个」保守不冒进: 点 非购买动词, 不产生 点X 连写", () => {
+    // 实测 (batch76-a): 点个外卖/来点纸巾 均经裸名词 trigger (外卖/纸巾)
+    // 严格命中, 归一化无增益; 贸然立 点 为动词会把 点个赞 剥成 点赞 类
+    // 非购物连写 — 保持不收。
+    expect(normalizeGreenQuery("点个外卖")).toBe("点个外卖");
+    expect(normalizeGreenQuery("点个赞")).toBe("点个赞");
+    expect(normalizeGreenQuery("来点纸巾")).toBe("来点纸巾");
+  });
+
+  it("混排按 zh 处理, en 恒等 (囤 系同规)", () => {
+    expect(normalizeGreenQuery("囤 laundry detergent")).toBe(
+      "囤 laundry detergent",
+    );
+    expect(normalizeGreenQuery("囤点 tissues")).toBe("囤 tissues");
+    expect(normalizeGreenQuery("囤点tissues")).toBe("囤tissues");
+  });
+});
