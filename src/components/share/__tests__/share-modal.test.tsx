@@ -21,6 +21,10 @@ vi.mock('@/lib/html-to-image-loader', () => ({
   loadHtmlToImage: () => Promise.resolve({ toPng: toPngMock }),
 }));
 
+// 隔离网络 — ShareModal 挂载即拉 stats/invite 两个接口, 真 fetch 悬挂到
+// happy-dom teardown 会被 abort 成 unhandled AbortError; 组件自身捕获走降级路径
+vi.mock('@/lib/api-client', () => ({ apiFetch: () => Promise.reject(new Error('skip in test')) }));
+
 // Mock i18n
 vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({

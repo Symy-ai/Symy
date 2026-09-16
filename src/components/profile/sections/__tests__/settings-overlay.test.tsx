@@ -70,6 +70,12 @@ vi.mock('../push-notification-settings', () => ({
   PushNotificationSettings: () => <div data-testid="push-notifications" />,
 }));
 
+// 挂载即 fetch 的子面板 (GuardPolicyPreview / GuardRuleCoverage) — 全局 stub 掉 fetch,
+// 不发真网络请求 (悬挂的在途 fetch 会被 happy-dom teardown abort 成 unhandled AbortError);
+// 与 guard-rule-coverage-setting.test.tsx 同一模式, 默认无实现 → 组件走失败降级路径
+const fetchMock = vi.fn();
+vi.stubGlobal('fetch', fetchMock);
+
 vi.mock('../profile-parts', () => ({
   EmailConnectionSetting: () => <div data-testid="email-connection" />,
 }));
@@ -112,6 +118,7 @@ describe('SettingsOverlay green preferences section', () => {
     _resetNightWindowStateForTest();
     _resetGuardScopeStateForTest();
     window.localStorage.clear();
+    fetchMock.mockReset();
   });
 
   it('renders green preferences block', () => {
@@ -166,6 +173,7 @@ describe('SettingsOverlay guardian style wizard entry (batch61-a)', () => {
     _resetNightWindowStateForTest();
     _resetGuardScopeStateForTest();
     window.localStorage.clear();
+    fetchMock.mockReset();
   });
 
   it('renders the entry row and opens the wizard on click', () => {
@@ -192,6 +200,7 @@ describe('SettingsOverlay guard control index (batch68-b)', () => {
     _resetNightWindowStateForTest();
     _resetGuardScopeStateForTest();
     window.localStorage.clear();
+    fetchMock.mockReset();
   });
 
   it('renders the master index with four group rows and all anchor targets', () => {
