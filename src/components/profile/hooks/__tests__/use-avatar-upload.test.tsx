@@ -120,10 +120,11 @@ describe('useAvatarUpload 上传失败回滚 (不留脏状态)', () => {
 
   it('res !ok → finally 复位上传态, localAvatarUrl 不落脏值 (回退 user_metadata), input 复位', async () => {
     const { result } = renderHook(() => useAvatarUpload());
+    // json 桩须返回 Promise 对齐真实 Response (生产走 res.json().catch)
     fetchMock.mockResolvedValueOnce({
       ok: false,
       status: 413,
-      json: () => ({ error: 'Payload too large' }),
+      json: () => Promise.resolve({ error: 'Payload too large' }),
     });
     const ev = fileEvent('image/png', 100);
 
