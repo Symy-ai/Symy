@@ -67,9 +67,10 @@ function setup(overrides: Partial<ChatPersistenceParams> = {}) {
     ...overrides,
   };
 
-  const { result } = renderHook(() => useChatPersistence(params));
+  const { result, unmount } = renderHook(() => useChatPersistence(params));
   return {
     result,
+    unmount,
     params,
     messagesRef,
     getState: () => state,
@@ -326,5 +327,103 @@ describe('useChatPersistence — loadMoreMessages', () => {
     expect(logger.warn).toHaveBeenCalled();
     expect(isLoadingMoreRef.current).toBe(false);
     expect(setIsLoadingMore).toHaveBeenNthCalledWith(2, false);
+  });
+});
+
+describe('useChatPersistence — round-trip 与降级 (batch79-b)', () => {
+  it('round-trip: 保存 POST body 与重挂载后读回的消息逐字段一致 (temp id → 服务端 id 闭环)', async () => {
+    const created = '2026-09-16T08:30:00.000Z';
+
+    // 第一实例: 保存 (apiFetch POST 成功返回服务端 id)
+    vi.mocked(apiFetch).mockResolvedValueOnce({ id: 'db-rt' });
+    const first = setup();
+    // chat-tab 流程: 先乐观上屏, 再持久化换 id
+    act(() => first.setMessagesSync([msg({ id: 'temp-rt', content: 'round trip', reasoning: 'think' })]));
+    await act(async () => {
+      first.result.current.saveMessage(
+        msg({ id: 'temp-rt', role: 'user', content: 'round trip', reasoning: 'think' }),
+      );
+      await new Promise((r) => setTimeout(r, 0)); // flush promise 链 (.then/.catch)
+    });
+    // temp id 已被重映射为服务端 id — 保存侧闭环
+    expect(first.getState().find((m) => m.id === 'db-rt')).toBeTruthy();
+
+    const postBody = postCalls()[0]![1]!.body as Record<string, unknown>;
+    expect(postBody).toMatchObject({ role: 'user', content: 'round trip', reasoning: 'think', mode: 'normal' });
+
+    // 第二实例 (模拟刷新后): 服务端按保存时的形态返回 → 读回逐字段一致
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      messages: [
+        {
+          id: 'db-rt',
+          role: postBody.role,
+          content: postBody.content,
+          reasoning: postBody.reasoning,
+          created_at: created,
+        },
+      ],
+      hasMore: false,
+    });
+    const second = setup();
+    await act(async () => { await second.result.current.loadMoreMessages(); });
+
+    expect(second.getState().filter((m) => m.id === 'db-rt')).toHaveLength(1);
+    expect(second.getState().find((m) => m.id === 'db-rt')).toMatchObject({
+      id: 'db-rt',
+      role: 'user',
+      content: 'round trip',
+      reasoning: 'think',
+      mode: 'normal',
+      timestamp: new Date(created),
+    });
+  });
+
+  it('坏 JSON (SyntaxError) → 保存/删除/翻页均不抛, 降级 warn; tempId 释放可重试', async () => {
+    // apiFetch 对无效 JSON 响应抛 SyntaxError — hook 三入口都必须吞掉
+    vi.mocked(apiFetch).mockRejectedValue(new SyntaxError('Unexpected token < in JSON'));
+    vi.mocked(apiFetchVoid).mockRejectedValue(new SyntaxError('Unexpected end of JSON input'));
+    const { result, isLoadingMoreRef, getState } = setup();
+
+    expect(() => result.current.saveMessage(msg())).not.toThrow();
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(logger.warn).toHaveBeenCalledWith('[ChatTab] saveMessage failed:', expect.any(String));
+
+    act(() => result.current.deleteMessage('m1'));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(getState().map((m) => m.id)).toEqual(['m2']); // 乐观删除不受影响
+    expect(logger.warn).toHaveBeenCalledWith('[ChatTab] deleteMessage failed:', expect.any(String));
+
+    await act(async () => { await expect(result.current.loadMoreMessages()).resolves.toBeUndefined(); });
+    expect(isLoadingMoreRef.current).toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith('[ChatTab] loadMoreMessages failed:', expect.anything());
+
+    // tempId 已释放 → 恢复后同 id 重试重发
+    vi.mocked(apiFetch).mockResolvedValue({ id: 'db-2' });
+    await act(async () => {
+      result.current.saveMessage(msg());
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(postCalls()).toHaveLength(2);
+  });
+
+  it('卸载清理无泄漏: 未决 POST 不炸; 去重集随实例销毁 — 重挂载同 tempId 可重存', async () => {
+    let resolveLate: (value: { id: string }) => void = () => {};
+    vi.mocked(apiFetch).mockImplementationOnce(
+      () => new Promise<{ id: string }>((res) => { resolveLate = res; }),
+    );
+
+    const first = setup();
+    act(() => first.result.current.saveMessage(msg({ id: 'persist-me' })));
+    expect(postCalls()).toHaveLength(1);
+    first.unmount();
+
+    // 卸载后未决 promise 才 resolve — 不得抛未处理异常
+    expect(() => resolveLate({ id: 'late-id' })).not.toThrow();
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+
+    // 新实例 (重挂载) 同 tempId 再次保存 → 无跨实例去重泄漏
+    const second = setup();
+    act(() => second.result.current.saveMessage(msg({ id: 'persist-me' })));
+    expect(postCalls()).toHaveLength(2);
   });
 });
