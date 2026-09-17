@@ -10,9 +10,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ButterflySession, OutlineChapter, DecisionType } from '@/features/butterfly/types';
 
 // Vercel serverless 函数超时保护
-// 🔧 2026-07-20 (P0 fix): letta/auto 非 reasoning 模式更快, 50s 足够
+// 🔧 2026-07-20 (P0 fix): letta/auto 非 reasoning 模式更快, 30s 足够
 //    旧代码: 110s（GLM-5.2 reasoning 需要更长，maxDuration=120 留 10s buffer）
-//    修复: 50s（letta/auto 非 reasoning 模式通常 10-30s 响应，maxDuration=60 留 10s buffer）
+//    修复: 30s（letta/auto 非 reasoning 模式通常 10-30s 响应，maxDuration=60 留 30s buffer）
 export const STREAM_TIMEOUT_MS = 30_000;
 
 // 🔧 AI-RETRY fix: 如果 AI 返回空内容, 最多重试 2 次
