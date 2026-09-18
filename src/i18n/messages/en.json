@@ -3786,5 +3786,23 @@
       "bodyHours": "You held your ground on \"{item}\" and won back ≈{hours} hours of freedom — tap to see your guard result",
       "bodyMinutes": "You held your ground on \"{item}\" and won back ≈{minutes} minutes of freedom — tap to see your guard result"
     }
+  },
+  "transparency": {
+    "title": "Weekly Transparency Report",
+    "subtitle": "Intercepts, money saved for users, hours won back — our north-star metrics, all in the open.",
+    "interceptsLabel": "Intercepts",
+    "savedLabel": "Saved for users (USD)",
+    "hoursLabel": "Hours won back",
+    "guardsLabel": "Guardians",
+    "thisWeek": "This week",
+    "allTime": "All time",
+    "guardsHint": "Total users who have completed at least one intercept challenge",
+    "caliberNote": "Caliber: intercepts = settled impulse challenges (completed + failed, deduplicated); saved = value of successfully resisted orders. All figures come from the platform-aggregated ledger (our own books) — no personal data involved.",
+    "hoursCaliberNote": "Hours won back are converted at the platform default rate of $25/hour (source: freedom-time caliber).",
+    "privacyNote": "This page shows platform-level aggregates only — individual user amounts never appear.",
+    "degradedNote": "Aggregation is temporarily unavailable — showing the most recent cached snapshot.",
+    "generatedAt": "Generated {time} (UTC)",
+    "footerSlogan": "Transparency is our content engine — build in public",
+    "footerNote": "Figures come from the platform-aggregated ledger, refreshed with each weekly report."
   }
 }

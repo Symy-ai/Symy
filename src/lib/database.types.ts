@@ -1030,6 +1030,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      transparency_snapshots: {
+        Row: {
+      week_start: string;
+      payload: Json;
+      updated_at: string;
+        };
+        Insert: {
+      week_start: string;
+      payload: Json;
+      updated_at?: string | null;
+        };
+        Update: {
+      week_start?: string;
+      payload?: Json;
+      updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       inward_why_wall: {
         Row: {
       id: string;
