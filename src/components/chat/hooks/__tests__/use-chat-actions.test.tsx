@@ -14,7 +14,8 @@
  *  - TECH-DEBT-D throttle: 同批多 token 只调度一次 rAF, 流结束 finally flush 最终全文
  *    (丢尾检查 — setMessagesSync 恰 3 次: user 占位 + assistant 占位 + 最终 flush)
  *  - 非 JSON 路径 toolCalls amount 入账分档: 有数字 amount → WithAmount 通知;
- *    缺失/0 → plain 通知不报金额; 非数字字符串 → 现状透传 (无数值清洗, 见 /tmp/b79c-result.md);
+ *    缺失/0 → plain 通知不报金额; 非数字字符串/NaN/Infinity → 数值清洗回落 plain
+ *    (batch80-b 修复 b79c-defects #2, 5 分档全覆盖);
  *    complete_challenge: activeChallenge.amount > 0 → onChallengeCompleted (计分/存款对话框);
  *    amount 0 → 不触发, 仅清 banner
  *  - demo 不双写: 非首条 → 仅 canned 路径 (零 fetch, 1.5s 后恰 1 条 canned 回复, 锁释放);
@@ -346,7 +347,7 @@ describe('useChatActions — 非 JSON 路径 toolCalls amount 入账分档', () 
     expect(t.mock.calls.some(([key]) => String(key).includes('WithAmount'))).toBe(false);
   });
 
-  it("现状固化: 非数字字符串 amount ('abc') 透传进 WithAmount 通知 (无数值清洗)", async () => {
+  it("batch80-b: 非数字字符串 amount ('abc') 数值清洗 → plain 通知, 不透传进 WithAmount 文案", async () => {
     const { params, result } = makeHarness();
     fetchMock.mockResolvedValueOnce(
       jsonResponse({ reply: 'ok', toolCalls: [{ name: 'record_impulse', args: { amount: 'abc' } }] })
@@ -356,11 +357,33 @@ describe('useChatActions — 非 JSON 路径 toolCalls amount 入账分档', () 
       await result.current.sendMessage('bought it');
     });
 
-    expect(t).toHaveBeenLastCalledWith('chat.mcpNotifications.impulseRecordedWithAmount', { amount: 'abc' });
+    expect(t).toHaveBeenLastCalledWith('chat.mcpNotifications.impulseRecorded');
     expect(params.callbacks.addMcpNotification).toHaveBeenCalledWith(
-      'chat.mcpNotifications.impulseRecordedWithAmount',
+      'chat.mcpNotifications.impulseRecorded',
       'penalty'
     );
+  });
+
+  it('batch80-b: 其余 4 分档非数字 saved_amount/amount 同样清洗回落 plain (数字字符串/NaN/Infinity 均不透传)', async () => {
+    // JSON 无法携带 NaN/Infinity (序列化为 null) — 传输层真实到达形态是字符串/数字, 用数字字符串覆盖
+    const cases: Array<{ toolName: string; args: Record<string, unknown>; plainKey: string }> = [
+      { toolName: 'complete_challenge', args: { saved_amount: 'abc' }, plainKey: 'chat.mcpNotifications.challengeCompleted' },
+      { toolName: 'add_tokens', args: { amount: '12.5' }, plainKey: 'chat.mcpNotifications.tokensEarned' },
+      { toolName: 'add_dream_fund_progress', args: { amount: 'lots' }, plainKey: 'chat.mcpNotifications.dreamFundProgress' },
+      { toolName: 'add_vitality', args: { amount: 'NaN' }, plainKey: 'chat.mcpNotifications.vitalityAdjusted' },
+    ];
+    for (const c of cases) {
+      t.mockClear();
+      const h = makeHarness();
+      fetchMock.mockResolvedValueOnce(
+        jsonResponse({ reply: 'ok', toolCalls: [{ name: c.toolName, args: c.args }] })
+      );
+      await act(async () => {
+        await h.result.current.sendMessage('go');
+      });
+      expect(t).toHaveBeenLastCalledWith(c.plainKey);
+      expect(h.params.callbacks.addMcpNotification).toHaveBeenCalledWith(c.plainKey, 'reward');
+    }
   });
 
   it('complete_challenge: activeChallenge.amount > 0 → onChallengeCompleted 恰一次 (计分/存款), 清 banner', async () => {

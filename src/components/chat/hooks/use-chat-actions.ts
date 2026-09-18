@@ -63,6 +63,10 @@ import { retryAiResponseImpl } from './retry-ai-response';
 import type { UseChatActionsParams } from './use-chat-actions-types';
 export type { ImpulseContext, SendMessageLockState, UseChatActionsParams } from './use-chat-actions-types';
 
+// batch80-b (b79c-defects #2): AI tool-call args 无 schema 保证 — 通知文案金额只认有限非零数字,
+// 其余 (字符串/NaN/Infinity/0) 回落 undefined 走无金额文案 (0 维持既有 falsy 分档, 不改语义)
+const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v !== 0 ? v : undefined);
+
 /**
  * useChatActions — sendMessage + retryAiResponse
  *
@@ -914,12 +918,12 @@ export function useChatActions({
             let notifMessage = '';
             switch (toolName) {
               case 'record_impulse': {
-                const amount = tc.args?.amount;
+                const amount = num(tc.args?.amount);
                 notifMessage = amount ? t('chat.mcpNotifications.impulseRecordedWithAmount', { amount }) : t('chat.mcpNotifications.impulseRecorded');
                 break;
               }
               case 'complete_challenge': {
-                const savedAmount = tc.args?.saved_amount;
+                const savedAmount = num(tc.args?.saved_amount);
                 notifMessage = savedAmount ? t('chat.mcpNotifications.challengeCompletedSaved', { amount: savedAmount }) : t('chat.mcpNotifications.challengeCompleted');
                 // Clear challenge banner on completion
                 // 🔧 Bug 1 fix (Round 43): 标记刚完成挑战, 防止 activeChallenge fetch effect 重新设
@@ -942,7 +946,7 @@ export function useChatActions({
                 break;
               }
               case 'add_tokens': {
-                const tokenAmount = tc.args?.amount;
+                const tokenAmount = num(tc.args?.amount);
                 notifMessage = tokenAmount ? t('chat.mcpNotifications.tokensEarnedAmount', { amount: tokenAmount }) : t('chat.mcpNotifications.tokensEarned');
                 break;
               }
@@ -952,12 +956,12 @@ export function useChatActions({
                 break;
               }
               case 'add_dream_fund_progress': {
-                const fundAmount = tc.args?.amount;
+                const fundAmount = num(tc.args?.amount);
                 notifMessage = fundAmount ? t('chat.mcpNotifications.dreamFundAdded', { amount: fundAmount }) : t('chat.mcpNotifications.dreamFundProgress');
                 break;
               }
               case 'add_vitality': {
-                const vitalityChange = tc.args?.amount;
+                const vitalityChange = num(tc.args?.amount);
                 notifMessage = vitalityChange ? t('chat.mcpNotifications.vitalityChange', { change: `${vitalityChange > 0 ? '+' : ''}${vitalityChange}` }) : t('chat.mcpNotifications.vitalityAdjusted');
                 break;
               }
