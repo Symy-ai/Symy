@@ -3,7 +3,8 @@
  * 🔧 Round 117 (P1-K-2): 从 Top 3 扩展到 Top 10, 新增 7 个债务诱导策略
  * 🔧 P1-1 fix (2026-07-17): isDemo prop 控制 Sample data 标注显示
  *   - Demo 模式 (未登录): 显示 "Sample data — yours will be real" (柔和, 不暴露规模)
- *   - 登录模式: 不显示 Sample data 标注 (即使数据是 mock, 也不向用户暴露 "我们没人")
+ * 🔧 batch81-b: 接真数据 — source='sample' (服务端样本量 <20 或 API 失败走 mock)
+ *   时, 登录用户也亮 Sample 角标 (诚实原则: 不装真数据), 替代旧"登录即不标注"口径。
  */
 
 'use client';
@@ -16,6 +17,8 @@ interface Props {
   isLoading: boolean;
   t: ReturnType<typeof useI18n>['t'];
   isDemo?: boolean;
+  /** 数据源标记 — real: 服务端真实聚合; sample: 样本/降级 (亮角标) */
+  source?: 'real' | 'sample';
 }
 
 const STRATEGY_ICONS: Record<string, string> = {
@@ -41,7 +44,7 @@ const STRATEGY_ICONS: Record<string, string> = {
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
-export function InducementStrategies({ strategies, isLoading, t, isDemo = false }: Props) {
+export function InducementStrategies({ strategies, isLoading, t, isDemo = false, source = 'real' }: Props) {
   if (isLoading || !strategies.length) return null;
 
   return (
@@ -52,12 +55,18 @@ export function InducementStrategies({ strategies, isLoading, t, isDemo = false 
       <p className="text-[10px] text-text-tertiary mb-3">
         {t('defense.topStrategiesDesc', { defaultValue: 'Most common spending traps Symy users faced this week' })}
       </p>
-      {/* 🔧 P1-1 fix (2026-07-17): 只在 Demo 模式显示 Sample data 标注
-          登录用户即使数据是 mock, 也不暴露 "我们没人" — 反向社交证明伤害信任 */}
-      {isDemo && (
+      {/* 数据源标注: Demo 模式显示引导文案; 登录用户在样本/降级数据时亮 Sample 角标
+          (batch81-b 诚实原则: 不装真数据) */}
+      {isDemo ? (
         <p className="text-[9px] text-amber-400/60 mb-2">
           {t('defense.sampleDataDemo', { defaultValue: 'Sample data — yours will be real when you sign up' })}
         </p>
+      ) : (
+        source === 'sample' && (
+          <p className="text-[9px] text-amber-400/60 mb-2">
+            {t('defense.sampleDataBadge', { defaultValue: '📋 Sample data' })}
+          </p>
+        )
       )}
       <div className="space-y-2">
         {/* 🔧 Round 117: 从 slice(0, 3) 改为 slice(0, 10), 显示全部 Top 10 */}

@@ -32,7 +32,9 @@ export interface DefenseTabProps {
 
 export function DefenseTab({ isDemo, onAuthPrompt, userTotalSaved, userDefenderNumber }: DefenseTabProps) {
   const { t, locale } = useI18n();
-  const { stats, platformIndex, strategies, isLoading } = useCommunityStats(isDemo);
+  // 🔧 batch81-b: strategies 走真数据 API, strategiesSource/strategiesLoading 单独透传
+  //   (不并入 isLoading — 其它板块的骨架时序保持不变)
+  const { stats, platformIndex, strategies, strategiesSource, strategiesLoading, isLoading } = useCommunityStats(isDemo);
   const { challenges, isLoading: challengesLoading, joinChallenge, checkin, actionLoading } = useCommunityChallenges(isDemo);
   const [showDetailsOverlay, setShowDetailsOverlay] = useState(false);
 
@@ -98,7 +100,7 @@ export function DefenseTab({ isDemo, onAuthPrompt, userTotalSaved, userDefenderN
           </div>
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <PlatformInduceIndex platforms={platformIndex} isLoading={isLoading} t={t} isDemo={isDemo} />
-            <InducementStrategies strategies={strategies} isLoading={isLoading} t={t} isDemo={isDemo} />
+            <InducementStrategies strategies={strategies} isLoading={strategiesLoading} t={t} isDemo={isDemo} source={strategiesSource} />
             <p className="text-[10px] text-text-tertiary text-center py-3 px-4">
               {t('inward.dataSourceNote', { defaultValue: 'Based on anonymous reports from The Guard Grove community' })}
             </p>

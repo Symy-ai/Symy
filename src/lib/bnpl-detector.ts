@@ -10,7 +10,8 @@
 import { logger } from '@/lib/logger';
 
 /** BNPL 关键词正则 (大小写不敏感) */
-const BNPL_PATTERNS: RegExp[] = [
+// 🔧 batch81-b: 导出供 inducement-tactics 社区聚合复用同一份词表 (零行为变化)
+export const BNPL_PATTERNS: RegExp[] = [
   /klarna/i,
   /afterpay/i,
   /affirm/i,

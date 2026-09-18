@@ -8,7 +8,7 @@
  * fetch:
  * - stats: 群体总览 (4 大数字)
  * - platformIndex: 平台诱导指数
- * - strategies: 高发诱导策略 (Phase 3, 暂用 mock)
+ * - strategies: 高发诱导战术 (batch81-b 起走真数据 API, mock 仅作失败降级)
  *
  * 优雅降级: API 失败 → 返回空数据, 不阻塞 UI
  */
@@ -43,12 +43,18 @@ export interface InducementStrategy {
   percentage: number;
 }
 
-// Mock 策略数据 (Phase 3 接入真实 AI 标注)
+/** /api/community/inducement-strategies 响应 — source 标记数据源 (诚实原则) */
+export interface InducementStrategiesData {
+  strategies: InducementStrategy[];
+  source: 'real' | 'sample';
+  totalEvents: number;
+}
+
+// Sample 降级数据 — 🔧 batch81-b: 从"常态数据源"降级为 API 失败/空数据时的
+// fallback, 前端会亮 Sample 角标 (defense.sampleDataBadge) 诚实标注。
 // labelKey 用于 i18n 翻译, defaultLabel 是英文 fallback
 // 🔧 Round 117 (P1-K-2): 扩展到 Top 10 — 新增 7 个债务诱导策略
-//   旧代码: 只有 3 个营销诱导策略 (限时/稀缺/社交证明)
-//   新代码: 3 营销 + 7 债务 = 10 个策略, 覆盖斩杀线场景
-//   占比重新分配: 营销诱导 ~43%, 债务诱导 ~57% (债务更危险)
+//   占比: 营销诱导 ~43%, 债务诱导 ~57% (债务更危险)
 const MOCK_STRATEGIES: InducementStrategy[] = [
   // === 营销诱导 (Top 3) ===
   { strategy: 'limited_time', labelKey: 'defense.strategyLimitedTime', defaultLabel: 'Limited-time countdown', percentage: 18 },
@@ -89,6 +95,14 @@ const DEMO_PLATFORM_INDEX: PlatformIndexItem[] = [
 
 const COMMUNITY_STATS_KEY = ['community-stats'] as const;
 const COMMUNITY_PLATFORM_KEY = ['community-platform-index'] as const;
+const COMMUNITY_STRATEGIES_KEY = ['community-inducement-strategies'] as const;
+
+// 🔧 batch81-b: mock 降级统一按 percentage 降序 (P1-3 fix 口径), source 恒为 sample
+const FALLBACK_STRATEGIES: InducementStrategiesData = {
+  strategies: [...MOCK_STRATEGIES].sort((a, b) => b.percentage - a.percentage),
+  source: 'sample',
+  totalEvents: 0,
+};
 
 export function useCommunityStats(isDemo: boolean) {
   // Stats query
@@ -115,14 +129,36 @@ export function useCommunityStats(isDemo: boolean) {
     retry: 1,
   });
 
+  // 🔧 batch81-b: strategies 接真数据 API (impulse_events 7 天战术聚合)。
+  //   source='sample' = 服务端样本量 <20 或查询失败 → 前端亮 Sample 角标。
+  const { data: strategiesData, isLoading: strategiesLoading } = useQuery({
+    queryKey: COMMUNITY_STRATEGIES_KEY,
+    queryFn: async () => {
+      const data = await apiFetch<InducementStrategiesData>('/api/community/inducement-strategies');
+      return data;
+    },
+    enabled: !isDemo,
+    staleTime: 60_000,
+    retry: 1,
+  });
+
   // 🔧 PM fix: 登录用户无真实 platform data 时, fallback 到 DEMO_PLATFORM_INDEX
-  //   (与 Top Inducement Tactics 的 MOCK_STRATEGIES 一致, 避免矛盾体验:
+  //   (与 Top Inducement Tactics 的 mock 降级一致, 避免矛盾体验:
   //    Platform Index 显示 "No data" 但 Tactics 有 10 条 Sample data)
   const platformIndex = isDemo ? DEMO_PLATFORM_INDEX : (platformIndexData ?? []);
   const isLoading = isDemo ? false : (statsLoading || platformLoading);
-  // 🔧 P1-3 fix: 按 percentage 降序排序 — 旧代码按"营销/债务"分组排列,
-  //   导致 BNPL(15%) 排在 scarcity(14%) 和 social_proof(11%) 后面
-  const strategies = [...MOCK_STRATEGIES].sort((a, b) => b.percentage - a.percentage);
+
+  // 降级矩阵:
+  // - API 成功且有战术 → 原样透传 (source real/sample 由服务端按样本量定)
+  // - API 成功但空 (0 条/查询失败降级) → mock + sample (与 platformIndex 的
+  //   DEMO fallback 同哲学: 登录用户不留白板)
+  // - API 失败/载荷不合规 (strategies 非数组) → mock + sample
+  // - Demo 模式 → mock (查询 disabled, demo 页自带 sample 说明)
+  const strategiesResult: InducementStrategiesData = isDemo
+    ? FALLBACK_STRATEGIES
+    : strategiesData?.strategies && strategiesData.strategies.length > 0
+      ? strategiesData
+      : { ...FALLBACK_STRATEGIES, source: strategiesData?.source ?? 'sample' };
 
   // Refresh: invalidate both queries to trigger refetch
   // 🔧 Round 100: was empty no-op — now properly invalidates React Query cache
@@ -136,7 +172,9 @@ export function useCommunityStats(isDemo: boolean) {
   return {
     stats,
     platformIndex,
-    strategies,
+    strategies: strategiesResult.strategies,
+    strategiesSource: strategiesResult.source,
+    strategiesLoading: isDemo ? false : strategiesLoading,
     isLoading,
     refresh,
   };
