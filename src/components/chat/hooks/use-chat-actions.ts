@@ -393,6 +393,11 @@ export function useChatActions({
         //    errorContent (如 "Connection interrupted") 丢失。
         //    根因修复: error 事件设 sseErrorDisplayed=true + 取消 pending rAF, finally 跳过 flush。
         let sseErrorDisplayed = false;
+        // batch80-a fix (/tmp/b79c-defects.md #1): 空 SSE 流 (idle timeout / 流关闭零 token) 时
+        //    try 块写入 streamInterrupted 兜底文案 + isError + onRetry 后 return,
+        //    finally 无条件 flushStreamUpdate() 用空串 accumulatedReply 覆盖 content → 空气泡。
+        //    修复: 与 sseErrorDisplayed 同款守卫 — 兜底文案已写入时 finally 跳过 flush。
+        let idleFallbackDisplayed = false;
         let productCards: ProductCardData[] = [];
         let greenAltCard: GreenAltCardData | undefined;
         // 🌱 batch68-a: green_alt_retro 预注入事件附带 (finalMsg 持久化用, 与 greenAlt 同策略)
@@ -708,6 +713,9 @@ export function useChatActions({
             if (streamResult.errorDisplayed) return;
             // 🔧 batch43-b: idle timeout 且无内容 → 显示流中断 fallback
             if (streamResult.idleTimeout && !accumulatedReply.trim()) {
+              // batch80-a fix (/tmp/b79c-defects.md #1): 标记兜底文案已写入 —
+              //    finally 跳过 flushStreamUpdate, 防止空串 accumulatedReply 覆盖 streamInterrupted 文案。
+              idleFallbackDisplayed = true;
               setMessagesSync((prev) =>
                 prev.map((m) =>
                   m.id === currentAssistantMsgId
@@ -738,7 +746,9 @@ export function useChatActions({
             if (streamingRafId) cancelAnimationFrame(streamingRafId);
             // SSE error 事件已设 errorContent + isError + onRetry,
             //    不再 flush (否则 flushStreamUpdate 用 accumulatedReply 覆盖 errorContent)。
-            if (!sseErrorDisplayed) {
+            // batch80-a: idle timeout 兜底文案已写入同理跳过 flush (保住 streamInterrupted,
+            //    否则空串 accumulatedReply 覆盖 → 空气泡, 见 /tmp/b79c-defects.md #1)。
+            if (!sseErrorDisplayed && !idleFallbackDisplayed) {
               // 🔧 ARCH fix: 始终 flush final state (不管 pendingStreamUpdate 是否 true)
               //    旧代码: if (pendingStreamUpdate) flushStreamUpdate() — 如果 rAF 已被 cancel,
               //    pendingStreamUpdate 仍为 true 但 flushStreamUpdate 不会重置它 → final state 丢失

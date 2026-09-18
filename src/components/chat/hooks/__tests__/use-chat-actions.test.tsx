@@ -9,7 +9,8 @@
  *    user 消息不复制 (NEW-002), 二次请求 body 恰 1 条 user 上下文
  *  - SSE error 事件 → isError + onRetry; sseErrorDisplayed 防止 finally flush 用部分回复
  *    覆盖错误文案; 不 saveMessage
- *  - 流关闭零 token (idleTimeout) → isError + onRetry, 不落库
+ *  - 流关闭零 token (idleTimeout) → streamInterrupted 兜底文案保留 (batch80-a 修复) +
+ *    isError + onRetry, 不落库
  *  - TECH-DEBT-D throttle: 同批多 token 只调度一次 rAF, 流结束 finally flush 最终全文
  *    (丢尾检查 — setMessagesSync 恰 3 次: user 占位 + assistant 占位 + 最终 flush)
  *  - 非 JSON 路径 toolCalls amount 入账分档: 有数字 amount → WithAmount 通知;
@@ -201,7 +202,7 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
   });
 
-  it('流关闭零 token (idleTimeout) → isError + onRetry 兜底, 不 saveMessage', async () => {
+  it('流关闭零 token (idleTimeout) → streamInterrupted 兜底文案保留 + isError + onRetry, 不 saveMessage', async () => {
     const { params, holder, result, saveMessage } = makeHarness();
     fetchMock.mockResolvedValueOnce(sseResponse([]));
 
@@ -213,9 +214,12 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     expect(errMsg).toBeDefined();
     expect(errMsg!.isError).toBe(true);
     expect(typeof errMsg!.onRetry).toBe('function');
-    // 现状固化: streamInterrupted 文案被 finally 的无条件 flushStreamUpdate 用空 accumulatedReply
-    //   覆盖 → 气泡最终 content 为空串 (isError/onRetry 保留, 重试可用)。见 /tmp/b79c-defects.md #1。
-    expect(errMsg!.content).toBe('');
+    // batch80-a fix 回归 (/tmp/b79c-defects.md #1): finally 的 flushStreamUpdate 跳过
+    //   (idleFallbackDisplayed 守卫), 不再用空 accumulatedReply 覆盖兜底文案 —
+    //   气泡显示 streamInterrupted 文案而非空气泡 (isError/onRetry 保留, 重试可用)。
+    expect(errMsg!.content).toBe('The reply was cut off.');
+    // flush 跳过的结构证明: setMessagesSync 恰 3 次 (user 占位 + assistant 占位 + 兜底写入), 无第 4 次覆盖写
+    expect(params.setters.setMessagesSync).toHaveBeenCalledTimes(3);
     // 错误路径不落库 assistant — 恰只有 userMsg
     expect(saveMessage).toHaveBeenCalledTimes(1);
     expect(saveMessage.mock.calls[0][0].role).toBe('user');
