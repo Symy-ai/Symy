@@ -1030,6 +1030,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      user_inventory: {
+        Row: {
+      id: string;
+      user_id: string;
+      item_name: string;
+      category: string | null;
+      source: string;
+      created_at: string;
+        };
+        Insert: {
+      id?: string;
+      user_id: string;
+      item_name: string;
+      category?: string | null;
+      source?: string;
+      created_at?: string;
+        };
+        Update: {
+      id?: string;
+      user_id?: string;
+      item_name?: string;
+      category?: string | null;
+      source?: string;
+      created_at?: string;
+        };
+        Relationships: [];
+      };
       transparency_snapshots: {
         Row: {
       week_start: string;

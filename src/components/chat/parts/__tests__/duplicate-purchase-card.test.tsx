@@ -33,18 +33,30 @@ describe('DuplicatePrecheckCard', () => {
   it('reuse writes event with source and same-day idempotent trigger id', () => {
     render(<DuplicatePrecheckCard data={{ itemTitle: 'storage box', category: 'home' }} />);
     fireEvent.click(screen.getByTestId('duplicate-precheck-reuse'));
-    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    // batch81-c: reuse = 确认「家里有」→ 健康事件上报 + 物品清单落库, 恰两次
+    expect(apiFetchMock).toHaveBeenCalledTimes(2);
     const body = apiFetchMock.mock.calls[0][1].body;
     expect(body.eventType).toBe('manual_adjustment');
     expect(body.metadata).toEqual({ source: 'duplicate_precheck', item: 'storage box', category: 'home', decision: 'reuse' });
     expect(body.triggerId).toMatch(/^duplicate-precheck:\d{4}-\d{2}-\d{2}:storage-box:reuse$/);
     expect(JSON.stringify(body)).not.toMatch(/amount|price|saved/i);
     expect(getDueReuseConfirmation(Date.now() + 25 * 60 * 60 * 1000)?.card.itemTitle).toBe('storage box');
+    // 第二次调用 = 物品清单建库 (source: 'chat')
+    expect(apiFetchMock.mock.calls[1][0]).toBe('/api/inventory');
+    expect(apiFetchMock.mock.calls[1][1]).toEqual({ method: 'POST', body: { item_name: 'storage box', category: 'home', source: 'chat' } });
+  });
+
+  it('reuse on unextracted item ("it") reports decision but skips inventory write', () => {
+    render(<DuplicatePrecheckCard data={{ itemTitle: 'it', category: 'other' }} />);
+    fireEvent.click(screen.getByTestId('duplicate-precheck-reuse'));
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    expect(apiFetchMock.mock.calls[0][0]).toBe('/api/buddy/health-events');
   });
 
   it('wait records decision without follow-up and repeated clicks stay idempotent', () => {
     render(<DuplicatePrecheckCard data={{ itemTitle: 'soy sauce', category: 'food' }} />);
     fireEvent.click(screen.getByTestId('duplicate-precheck-wait'));
+    // wait = 未确认「家里有」→ 只上报决策, 不落物品清单
     expect(apiFetchMock).toHaveBeenCalledTimes(1);
     expect(apiFetchMock.mock.calls[0][1].body.metadata.decision).toBe('wait');
     expect(getDueReuseConfirmation(Date.now() + 25 * 60 * 60 * 1000)).toBeNull();

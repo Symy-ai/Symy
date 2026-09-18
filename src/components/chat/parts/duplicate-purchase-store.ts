@@ -19,6 +19,21 @@ function triggerId(card: DuplicatePrecheckCardData, decision: DuplicatePrecheckD
   return `duplicate-precheck:${localDateKey(now)}:${slug(card.itemTitle)}:${decision}`;
 }
 
+/**
+ * 「家里有」确认 → 物品清单落一条 (batch81-c, BP 建库护城河)。
+ * 仅 reuse 决策写入 (wait = 还没确认家里有); 'it' 是抽取失败的兜底标题,
+ * 落库只会污染清单, 跳过。best-effort: 表未建 (503) / 网络失败只 warn。
+ */
+export function saveInventoryItemFromChat(card: DuplicatePrecheckCardData): void {
+  if (card.itemTitle === 'it') return;
+  apiFetch('/api/inventory', {
+    method: 'POST',
+    body: { item_name: card.itemTitle, category: card.category, source: 'chat' },
+  }).catch((err: unknown) => {
+    logger.warn('[duplicate-precheck] inventory save failed:', err instanceof Error ? err.message : String(err));
+  });
+}
+
 export function reportDuplicateDecision(card: DuplicatePrecheckCardData, decision: DuplicatePrecheckDecision): void {
   const now = Date.now();
   apiFetch('/api/buddy/health-events', {
@@ -38,6 +53,8 @@ export function reportDuplicateDecision(card: DuplicatePrecheckCardData, decisio
   }).catch((err: unknown) => {
     logger.warn('[duplicate-precheck] decision report failed:', err instanceof Error ? err.message : String(err));
   });
+  // reuse = 确认「家里有」→ 顺手建库 (wait 不写)
+  if (decision === 'reuse') saveInventoryItemFromChat(card);
 }
 
 export function savePendingReuseConfirmation(card: DuplicatePrecheckCardData): void {
