@@ -5,9 +5,13 @@
  *
  * 锁客户端行为: 不支持环境短路零请求、挂载回显已订阅、subscribe 全链路
  * (权限→SW 注册→VAPID 公钥 base64url 解码→pushManager.subscribe→POST 订阅+
- * 偏好合并)、错误分档文案 (401 登录 / 503 迁移未执行 / 500 透传 / 非 JSON 回落)、
- * unsubscribe 幂等与先浏览器后退订服务端。防重在消费层按钮 disabled (isLoading),
- * hook 本体无重入锁 — 现状如此, 不臆想。
+ * 偏好合并)、错误分档文案 (401 登录 / 503 迁移未执行 / 500 透传 / 非 JSON
+ * 同档回落)、unsubscribe 幂等与先浏览器后退订服务端。防重在消费层按钮
+ * disabled (isLoading), hook 本体无重入锁 — 现状如此, 不臆想。
+ *
+ * 🔧 batch85-a: 退订状态真相反转 — 浏览器侧退订成功后 isSubscribed 先行置
+ * false, 服务端失败仅 warn 不阻塞 (残留订阅由 TTL 清理); 83-b 钉现状断言
+ * 已同步反转, 非此契约的旧断言勿回填。
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, renderHook, act, waitFor } from '@testing-library/react';
@@ -222,7 +226,7 @@ describe('usePushNotifications subscribe', () => {
     expect(result.current.error).toBe('db down');
   });
 
-  it('503 空 JSON (migration 121 未执行) → 默认文案; 非 JSON 响应体 → 初始默认文案', async () => {
+  it('503 空 JSON (migration 121 未执行) → 默认文案; 非 JSON 响应体 → 同档回落 "temporarily unavailable"', async () => {
     installSupportedEnv(null);
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ publicKey: VAPID_B64URL }) })
@@ -233,7 +237,7 @@ describe('usePushNotifications subscribe', () => {
     });
     expect(result.current.error).toBe('Push notifications are not yet configured on this server.');
 
-    // json() 抛错进 catch: message 保持 let 初始值 'Failed to save subscription on server.'
+    // batch85-a: json() 抛错 → 与空 JSON 500 分支同档回落, 不再保持 let 初始值
     fetchMock
       .mockResolvedValueOnce({ ok: true, json: async () => ({ publicKey: VAPID_B64URL }) })
       .mockResolvedValueOnce({
@@ -246,7 +250,9 @@ describe('usePushNotifications subscribe', () => {
     await act(async () => {
       await result.current.subscribe();
     });
-    expect(result.current.error).toBe('Failed to save subscription on server.');
+    expect(result.current.error).toBe(
+      'Push notifications are temporarily unavailable. Please try again later.',
+    );
   });
 
   it('pushManager.subscribe 抛错 → error 透传 message, isLoading 收口 false', async () => {
@@ -305,7 +311,8 @@ describe('usePushNotifications unsubscribe', () => {
     expect(result.current.isSubscribed).toBe(false);
   });
 
-  it('服务端 401: 返回 false + 请先登录文案 (浏览器侧已退订为现状)', async () => {
+  // 🔧 batch85-a 反转 83-b 钉现状断言: 浏览器推送已死, 服务端失败也必须置 false
+  it('服务端 401/500: 返回 false + 分档文案, isSubscribed 先行置 false', async () => {
     const existing = makeSubscription();
     installSupportedEnv(existing);
     fetchMock.mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
@@ -319,5 +326,33 @@ describe('usePushNotifications unsubscribe', () => {
     expect(ok).toBe(false);
     expect(result.current.error).toBe('Please sign in to manage push notifications.');
     expect(existing.unsubscribe).toHaveBeenCalledTimes(1);
+    expect(result.current.isSubscribed).toBe(false);
+
+    fetchMock
+      .mockClear()
+      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'db down' }) });
+    await act(async () => {
+      ok = await result.current.unsubscribe();
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toBe('db down');
+    expect(result.current.isSubscribed).toBe(false);
+  });
+
+  it('浏览器侧退订被拒: isSubscribed 保持 true (推送仍活着), 不发服务端请求', async () => {
+    const existing = makeSubscription();
+    existing.unsubscribe.mockRejectedValueOnce(new Error('browser refused'));
+    installSupportedEnv(existing);
+
+    const { result } = renderHook(() => usePushNotifications());
+    await waitFor(() => expect(result.current.isSubscribed).toBe(true));
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.unsubscribe();
+    });
+    expect(ok).toBe(false);
+    expect(result.current.error).toBe('browser refused');
+    expect(result.current.isSubscribed).toBe(true);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

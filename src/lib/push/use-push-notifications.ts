@@ -128,7 +128,8 @@ export function usePushNotifications(): UsePushNotificationsReturn {
             message = errorBody.error;
           }
         } catch {
-          // Response body wasn't JSON; fall back to default message.
+          // Response body wasn't JSON; same fallback tier as the empty-JSON branch.
+          message = 'Push notifications are temporarily unavailable. Please try again later.';
         }
         throw new Error(message);
       }
@@ -165,36 +166,47 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       // 1. 从浏览器取消订阅
       await subscription.unsubscribe();
 
-      // 2. 通知服务器
-      const unsubscribeResponse = await fetch('/api/push/unsubscribe', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          endpoint: subscription.endpoint,
-        }),
-      });
+      // 🔧 batch85-a: 浏览器推送已死, UI 必须反映真相 — 无论服务端结果如何都置 false
+      setIsSubscribed(false);
 
-      if (!unsubscribeResponse.ok) {
-        let message = 'Failed to remove subscription on server.';
-        try {
-          const errorBody = await unsubscribeResponse.json();
-          if (unsubscribeResponse.status === 401) {
-            message = 'Please sign in to manage push notifications.';
-          } else if (unsubscribeResponse.status === 503) {
-            message = errorBody?.error || 'Push notifications are not yet configured on this server.';
-          } else if (unsubscribeResponse.status === 500) {
-            message = errorBody?.error || 'Push notifications are temporarily unavailable. Please try again later.';
-          } else if (errorBody?.error) {
-            message = errorBody.error;
+      // 2. 通知服务器 — 失败不阻塞用户 (残留订阅由服务端 TTL 清理), 仅 warn
+      try {
+        const unsubscribeResponse = await fetch('/api/push/unsubscribe', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            endpoint: subscription.endpoint,
+          }),
+        });
+
+        if (!unsubscribeResponse.ok) {
+          let message = 'Failed to remove subscription on server.';
+          try {
+            const errorBody = await unsubscribeResponse.json();
+            if (unsubscribeResponse.status === 401) {
+              message = 'Please sign in to manage push notifications.';
+            } else if (unsubscribeResponse.status === 503) {
+              message = errorBody?.error || 'Push notifications are not yet configured on this server.';
+            } else if (unsubscribeResponse.status === 500) {
+              message = errorBody?.error || 'Push notifications are temporarily unavailable. Please try again later.';
+            } else if (errorBody?.error) {
+              message = errorBody.error;
+            }
+          } catch {
+            // Response body wasn't JSON; fall back to default message.
           }
-        } catch {
-          // Response body wasn't JSON; fall back to default message.
+          logger.warn('[usePushNotifications] Server unsubscribe failed:', message);
+          setError(message);
+          return false;
         }
-        throw new Error(message);
+      } catch (err) {
+        logger.warn('[usePushNotifications] Server unsubscribe failed:', err);
+        const message = err instanceof Error ? err.message : 'Failed to remove subscription on server.';
+        setError(message);
+        return false;
       }
 
-      setIsSubscribed(false);
       logger.info('[usePushNotifications] ✅ Unsubscribed successfully');
       return true;
     } catch (err) {
