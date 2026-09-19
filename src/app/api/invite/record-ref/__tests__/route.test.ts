@@ -44,7 +44,7 @@ interface RlsOpts {
 }
 
 /** RLS client（withAuth 注入）— 查 profiles.ref_code 与 invitations.existing */
-function mockAuthed(opts: RlsOpts = {}) {
+function mockAuthed(opts: RlsOpts = {}, user: { id: string; email?: string | null } = REFEREE) {
   const rlsInsert = vi.fn(async () => ({ error: null }));
   const from = vi.fn((table: string) => {
     if (table === 'profiles') {
@@ -71,7 +71,7 @@ function mockAuthed(opts: RlsOpts = {}) {
   });
   vi.mocked(createAuthenticatedClient).mockResolvedValue({
     supabase: { from } as never,
-    user: REFEREE,
+    user,
     error: null,
     mergeCookies: <T>(res: T) => res,
     mergeCookiesOnResponse: <T>(res: T) => res,
@@ -182,6 +182,16 @@ describe('POST /api/invite/record-ref — recorded:false 族（零写库）', ()
     const json = await res.json();
     expect(json).toEqual({ success: true, recorded: false });
   });
+
+  it('referrer query transient error (non-column) → soft recorded:false, no degraded flag', async () => {
+    // profiles 错误保持软降级（Round 75 只硬化了 invitations 侧）——固化现行为
+    mockAuthed({ referrerErr: { message: 'connection reset', code: '08000' } });
+    const res = await POST(makeRequest({ refCode: 'SOMECODE' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toEqual({ success: true, recorded: false });
+    expect(lastInsert()).not.toHaveBeenCalled();
+  });
 });
 
 // helper: 最近一次 mockAdminInsert 的 insert vi.fn（beforeEach 重建后仍指向最新实例）
@@ -248,5 +258,15 @@ describe('POST /api/invite/record-ref — happy path (migration 111 server-side 
     const json = await res.json();
     expect(json.recorded).toBe(true);
     expect(rls.rlsInsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('inserts referee_email:null when user has no email', async () => {
+    mockAuthed({ referrerData: REFERRER }, { id: 'referee-noemail', email: null });
+    const { adminInsert } = mockAdminInsert();
+    const res = await POST(makeRequest({ refCode: 'SOMECODE' }));
+    expect(res.status).toBe(200);
+    expect(adminInsert).toHaveBeenCalledWith(
+      expect.objectContaining({ referee_user_id: 'referee-noemail', referee_email: null, reward_amount: 50 })
+    );
   });
 });
