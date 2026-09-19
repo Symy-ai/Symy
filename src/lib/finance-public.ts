@@ -27,6 +27,13 @@ export interface FinanceMonth extends FinanceMonthRaw {
   cumulativeNetUsd: number;
 }
 
+export interface FinanceSummary {
+  totalRevenueUsd: number;
+  totalCostsUsd: number;
+  cumulativeNetUsd: number;
+  isAllZeroPlaceholder: boolean;
+}
+
 export const FINANCE_DIR = path.join(process.cwd(), 'src', 'data', 'finance');
 
 /** 纯计算: 按 month 升序 → 逐月净利润 + 累计净额 */
@@ -40,6 +47,56 @@ export function computeFinanceMonths(rows: FinanceMonthRaw[]): FinanceMonth[] {
     cumulative += netUsd;
     return { ...m, netUsd, cumulativeNetUsd: cumulative };
   });
+}
+
+/** 页面展示层用的无符号 USD 数字格式 (zh/en 各自 locale 分组) */
+export function formatUsd(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+/** 净额可为负 (亏损月) — 诚实原则: 负数原样带符号显示, 不钳成 0 不装 */
+export function formatSignedUsd(value: number, locale: string): string {
+  return value < 0
+    ? `-$${formatUsd(Math.abs(value), locale)}`
+    : `$${formatUsd(value, locale)}`;
+}
+
+/** 会员数为非负整数展示, 四舍五入后按 locale 分组 */
+export function formatMemberCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US').format(
+    Math.max(0, Math.round(value)),
+  );
+}
+
+/** 全零 = owner 尚未录入首月真实账目 — 诚实标注占位, 不装有数据 */
+export function isAllZeroPlaceholder(months: readonly FinanceMonth[]): boolean {
+  return months.every(
+    (month) =>
+      month.members === 0 &&
+      month.revenueUsd.membership === 0 &&
+      month.revenueUsd.other === 0 &&
+      month.costsUsd.infra === 0 &&
+      month.costsUsd.ai === 0 &&
+      month.costsUsd.team === 0,
+  );
+}
+
+/** 表尾汇总: 收入 / 成本合计与自首月累计净额保持同源计算 */
+export function summarizeFinanceMonths(months: readonly FinanceMonth[]): FinanceSummary {
+  return {
+    totalRevenueUsd: months.reduce(
+      (sum, month) => sum + month.revenueUsd.membership + month.revenueUsd.other,
+      0,
+    ),
+    totalCostsUsd: months.reduce(
+      (sum, month) => sum + month.costsUsd.infra + month.costsUsd.ai + month.costsUsd.team,
+      0,
+    ),
+    cumulativeNetUsd: months.at(-1)?.cumulativeNetUsd ?? 0,
+    isAllZeroPlaceholder: isAllZeroPlaceholder(months),
+  };
 }
 
 /** 读 src/data/finance/*.json 全部月份 → 排序 + 累计; 任何失败 → 空数组降级 */

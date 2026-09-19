@@ -13,7 +13,13 @@
 
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { loadFinanceMonths, type FinanceMonth } from '@/lib/finance-public';
+import {
+  formatMemberCount,
+  formatSignedUsd,
+  formatUsd,
+  loadFinanceMonths,
+  summarizeFinanceMonths,
+} from '@/lib/finance-public';
 
 export async function generateMetadata({
   params,
@@ -31,34 +37,6 @@ export async function generateMetadata({
   };
 }
 
-function formatUsd(n: number, locale: string): string {
-  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
-    maximumFractionDigits: 2,
-  }).format(n);
-}
-
-/** 净额可为负 (亏损月) — 诚实原则: 负数原样带符号显示, 不钳成 0 不装 */
-function formatSignedUsd(n: number, locale: string): string {
-  return n < 0 ? `-$${formatUsd(Math.abs(n), locale)}` : `$${formatUsd(n, locale)}`;
-}
-
-function formatInt(n: number, locale: string): string {
-  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US').format(Math.max(0, Math.round(n)));
-}
-
-/** 全零 = owner 尚未录入首月真实账目 — 诚实标注占位, 不装有数据 */
-function isAllZeroPlaceholder(months: FinanceMonth[]): boolean {
-  return months.every(
-    (m) =>
-      m.members === 0 &&
-      m.revenueUsd.membership === 0 &&
-      m.revenueUsd.other === 0 &&
-      m.costsUsd.infra === 0 &&
-      m.costsUsd.ai === 0 &&
-      m.costsUsd.team === 0,
-  );
-}
-
 export default async function FinancePage({
   params,
 }: {
@@ -67,13 +45,12 @@ export default async function FinancePage({
   const { locale } = await params;
   const t = await getTranslations();
   const months = await loadFinanceMonths();
-
-  const totalRevenue = months.reduce((s, m) => s + m.revenueUsd.membership + m.revenueUsd.other, 0);
-  const totalCosts = months.reduce(
-    (s, m) => s + m.costsUsd.infra + m.costsUsd.ai + m.costsUsd.team,
-    0,
-  );
-  const cumulative = months.at(-1)?.cumulativeNetUsd ?? 0;
+  const {
+    totalRevenueUsd,
+    totalCostsUsd,
+    cumulativeNetUsd,
+    isAllZeroPlaceholder,
+  } = summarizeFinanceMonths(months);
 
   return (
     <div className="min-h-screen bg-surface-outer px-4 py-12" data-testid="finance-page">
@@ -94,7 +71,7 @@ export default async function FinancePage({
           </p>
         ) : (
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-            {isAllZeroPlaceholder(months) && (
+            {isAllZeroPlaceholder && (
               <p
                 className="mb-3 text-xs text-amber-700 dark:text-amber-400"
                 data-testid="finance-placeholder"
@@ -118,7 +95,7 @@ export default async function FinancePage({
                     <tr key={m.month} className="border-t border-emerald-500/10" data-testid={`finance-row-${m.month}`}>
                       <td className="py-2 pr-3 text-text-primary">{m.month}</td>
                       <td className="py-2 pr-3 text-right text-text-secondary tabular-nums">
-                        {formatInt(m.members, locale)}
+                        {formatMemberCount(m.members, locale)}
                       </td>
                       <td className="py-2 pr-3 text-right text-text-secondary tabular-nums">
                         ${formatUsd(m.revenueUsd.membership + m.revenueUsd.other, locale)}
@@ -137,13 +114,13 @@ export default async function FinancePage({
                     <td className="py-2 pr-3 text-text-primary">{t('transparency.financeCumulative')}</td>
                     <td className="py-2 pr-3 text-right text-text-tertiary">—</td>
                     <td className="py-2 pr-3 text-right text-text-primary tabular-nums">
-                      ${formatUsd(totalRevenue, locale)}
+                      ${formatUsd(totalRevenueUsd, locale)}
                     </td>
                     <td className="py-2 pr-3 text-right text-text-primary tabular-nums">
-                      ${formatUsd(totalCosts, locale)}
+                      ${formatUsd(totalCostsUsd, locale)}
                     </td>
                     <td className="py-2 text-right text-text-primary tabular-nums">
-                      {formatSignedUsd(cumulative, locale)}
+                      {formatSignedUsd(cumulativeNetUsd, locale)}
                     </td>
                   </tr>
                 </tfoot>

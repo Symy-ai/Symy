@@ -16,7 +16,12 @@ import path from 'node:path';
 
 import {
   computeFinanceMonths,
+  formatMemberCount,
+  formatSignedUsd,
+  formatUsd,
+  isAllZeroPlaceholder,
   loadFinanceMonths,
+  summarizeFinanceMonths,
   FINANCE_DIR,
   type FinanceMonthRaw,
 } from '../finance-public';
@@ -73,6 +78,69 @@ describe('computeFinanceMonths — 纯计算', () => {
 
   it('空输入 → 空数组', () => {
     expect(computeFinanceMonths([])).toEqual([]);
+  });
+});
+
+describe('presentation helpers — locale / honesty guards', () => {
+  it('formats positive and fractional USD amounts for zh and en locales', () => {
+    expect(formatUsd(1234567.5, 'zh')).toBe('1,234,567.5');
+    expect(formatUsd(1234567.5, 'en')).toBe('1,234,567.5');
+    expect(formatUsd(1000, 'zh')).toBe('1,000');
+    expect(formatUsd(1000, 'en')).toBe('1,000');
+  });
+
+  it('keeps negative net amounts signed instead of clamping them to zero', () => {
+    expect(formatSignedUsd(-1234.5, 'zh')).toBe('-$1,234.5');
+    expect(formatSignedUsd(-1234.5, 'en')).toBe('-$1,234.5');
+    expect(formatSignedUsd(60, 'en')).toBe('$60');
+  });
+
+  it('rounds member counts to non-negative locale-formatted integers', () => {
+    expect(formatMemberCount(1234.5, 'zh')).toBe('1,235');
+    expect(formatMemberCount(1234.4, 'en')).toBe('1,234');
+    expect(formatMemberCount(-8, 'en')).toBe('0');
+  });
+
+  it('marks only all-zero books as placeholders, including mixed month sets', () => {
+    const zeroMonth = computeFinanceMonths([
+      { ...RAW, members: 0, revenueUsd: { membership: 0, other: 0 }, costsUsd: { infra: 0, ai: 0, team: 0 } },
+    ]);
+    const realMonth = computeFinanceMonths([RAW]);
+
+    expect(isAllZeroPlaceholder(zeroMonth)).toBe(true);
+    expect(isAllZeroPlaceholder(realMonth)).toBe(false);
+    expect(isAllZeroPlaceholder([...zeroMonth, ...realMonth])).toBe(false);
+  });
+});
+
+describe('summarizeFinanceMonths — totals / cumulative consistency', () => {
+  it('derives totals, final cumulative net, and placeholder state from sorted months', () => {
+    const months = computeFinanceMonths([
+      {
+        month: '2026-02',
+        members: 12,
+        revenueUsd: { membership: 120, other: 5 },
+        costsUsd: { infra: 30, ai: 10, team: 60 },
+      },
+      { ...RAW },
+    ]);
+
+    const summary = summarizeFinanceMonths(months);
+
+    expect(summary.totalRevenueUsd).toBe(225);
+    expect(summary.totalCostsUsd).toBe(140);
+    expect(summary.cumulativeNetUsd).toBe(months.at(-1)?.cumulativeNetUsd);
+    expect(summary.cumulativeNetUsd).toBe(summary.totalRevenueUsd - summary.totalCostsUsd);
+    expect(summary.isAllZeroPlaceholder).toBe(false);
+  });
+
+  it('summarizes an empty book with zero totals and placeholder-compatible values', () => {
+    const summary = summarizeFinanceMonths([]);
+
+    expect(summary.totalRevenueUsd).toBe(0);
+    expect(summary.totalCostsUsd).toBe(0);
+    expect(summary.cumulativeNetUsd).toBe(0);
+    expect(summary.isAllZeroPlaceholder).toBe(true);
   });
 });
 
