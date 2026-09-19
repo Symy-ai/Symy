@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "finance:validate": "node scripts/validate-finance-data.mjs",
     "prepare": "bash scripts/setup-precommit.sh"
   },
   "dependencies": {

@@ -209,3 +209,58 @@ describe('loadFinanceMonths — 文件层与降级', () => {
     expect(FINANCE_DIR.replace(/\\/g, '/')).toMatch(/src\/data\/finance$/);
   });
 });
+
+/**
+ * batch89-b: owner 手填月账的三类陷阱在消费端的真实行为。
+ *
+ * scripts/validate-finance-data.mjs 从 owner 侧挡这些坑 (npm run finance:validate);
+ * 这里从消费端锁行为 — 证明 lib 不做 schema/类型兜底, 坏数据只能靠发账前自检。
+ */
+describe('loadFinanceMonths — owner 手填陷阱 (校验脚本的存在依据)', () => {
+  const cleanup: string[] = [];
+  afterEach(async () => {
+    await Promise.all(cleanup.splice(0).map((d) => rm(d, { recursive: true, force: true })));
+  });
+
+  it('month 写成数字 → 被过滤降级跳过, 不炸', async () => {
+    const dir = await makeTmpDir();
+    cleanup.push(dir);
+    await writeFile(
+      path.join(dir, '2026-01.json'),
+      JSON.stringify({ month: 202601, members: 10, revenueUsd: { membership: 100, other: 0 }, costsUsd: { infra: 30, ai: 10, team: 0 } }),
+    );
+
+    expect(await loadFinanceMonths(dir)).toEqual([]);
+  });
+
+  it('键名写错 (revenueUsd 整个缺失) → 月被静默保留且金额按 0 计, 不报错', async () => {
+    const dir = await makeTmpDir();
+    cleanup.push(dir);
+    await writeFile(
+      path.join(dir, '2026-01.json'),
+      JSON.stringify({ month: '2026-01', members: 10 }),
+    );
+
+    const months = await loadFinanceMonths(dir);
+
+    expect(months).toHaveLength(1);
+    expect(months[0].members).toBe(10);
+    expect(months[0].netUsd).toBe(0); // 缺键走 ?? 0 — 坏数据照样上线, 只能靠 owner 侧校验
+  });
+
+  it('数字写成字符串 → 不被过滤, 收入被字符串拼接静默算错', async () => {
+    const dir = await makeTmpDir();
+    cleanup.push(dir);
+    await writeFile(
+      path.join(dir, '2026-01.json'),
+      JSON.stringify({ month: '2026-01', members: 10, revenueUsd: { membership: '100', other: 0 }, costsUsd: { infra: 30, ai: 10, team: 0 } }),
+    );
+
+    const months = await loadFinanceMonths(dir);
+
+    // 锁死当前行为: "100" + 0 = "1000" (拼接), 再减 40 → 960 而非正确的 60。
+    // 若日后 lib 加类型守卫, 此断言应随行为一并更新。
+    expect(months).toHaveLength(1);
+    expect(months[0].netUsd).toBe(960);
+  });
+});
