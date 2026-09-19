@@ -1030,6 +1030,27 @@ export interface Database {
         };
         Relationships: [];
       };
+      transparency_subscribers: {
+        Row: {
+      id: string;
+      email: string;
+      locale: string;
+      created_at: string;
+        };
+        Insert: {
+      id?: string | null;
+      email: string;
+      locale?: string | null;
+      created_at?: string | null;
+        };
+        Update: {
+      id?: string | null;
+      email?: string | null;
+      locale?: string | null;
+      created_at?: string | null;
+        };
+        Relationships: [];
+      };
       user_inventory: {
         Row: {
       id: string;

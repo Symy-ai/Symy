@@ -3859,6 +3859,13 @@
     "financeNoteMembership": "Revenue comes from membership fees only — no ads, no data resale, so the books stay clean by design.",
     "financeNotePrivacy": "What we publish is our own books (cost structure and platform aggregates); secrets and user data are never published.",
     "financeNoteCaliber": "Caliber: static monthly updates — each month's books land as a data file in the repo (git history is the audit trail), updated manually by the team.",
-    "financeBack": "← Back to the weekly transparency report"
+    "financeBack": "← Back to the weekly transparency report",
+    "subscribeTitle": "Subscribe to the weekly transparency report",
+    "subscribeNote": "One email a week — numbers and methodology only. Unsubscribe anytime, no marketing.",
+    "subscribePlaceholder": "you@example.com",
+    "subscribeButton": "Subscribe",
+    "subscribeSuccess": "Subscribed — see you next week",
+    "subscribeUnavailable": "Subscription coming soon",
+    "subscribeError": "Subscription failed, please try again later"
   }
 }

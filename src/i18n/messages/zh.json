@@ -3859,6 +3859,13 @@
     "financeNoteMembership": "收入只来自会员费——没有广告、不转售数据，账目天然干净。",
     "financeNotePrivacy": "公开的是我们自己的账（成本结构与平台聚合数字）；密钥与用户隐私数据永不公开。",
     "financeNoteCaliber": "口径：静态月更——每月账目以数据文件随代码入库（git 历史即留痕），由团队手动更新。",
-    "financeBack": "← 返回每周透明度报告"
+    "financeBack": "← 返回每周透明度报告",
+    "subscribeTitle": "订阅每周透明度报告",
+    "subscribeNote": "每周一封, 只讲数字与口径。随时可退订, 不发营销邮件。",
+    "subscribePlaceholder": "you@example.com",
+    "subscribeButton": "订阅",
+    "subscribeSuccess": "已订阅，下周见",
+    "subscribeUnavailable": "订阅即将上线",
+    "subscribeError": "订阅失败, 请稍后再试"
   }
 }

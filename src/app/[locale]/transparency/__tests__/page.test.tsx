@@ -28,14 +28,16 @@ vi.mock('@/lib/growth-stats-server', () => ({
   loadGrowthStats: vi.fn(),
 }));
 
-// 页面自 batch82-a 起内嵌 TransparencyShareButton (client, useTranslations)
+// 页面自 batch82-a 起内嵌 TransparencyShareButton、batch84-c 起内嵌
+// TransparencySubscribeForm (client, useTranslations + useLocale)
 vi.mock('next-intl', () => ({
   useTranslations: vi.fn(),
+  useLocale: vi.fn(),
 }));
 
 import TransparencyPage from '../page';
 import { getTranslations } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import { loadGrowthStats } from '@/lib/growth-stats-server';
 import type { TransparencySnapshot } from '@/lib/transparency-weekly';
@@ -63,7 +65,7 @@ function makeT(dict: Record<string, string>) {
   };
 }
 
-/** RSC 与 client (share-button) 两条 t 路径都喂真实词典 */
+/** RSC 与 client (share-button / subscribe-form) 两条 t 路径都喂真实词典 */
 function mockMessages(dict: Record<string, string>) {
   (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(dict));
   (useTranslations as ReturnType<typeof vi.fn>).mockReturnValue(makeT(dict));
@@ -90,6 +92,8 @@ const GROWTH_FIXTURE: GrowthStats = {
 };
 
 async function renderPage(locale: 'zh' | 'en') {
+  // subscribe-form (batch84-c) 读 useLocale — 按渲染 locale 喂值
+  (useLocale as ReturnType<typeof vi.fn>).mockReturnValue(locale);
   const ui = await TransparencyPage({ params: Promise.resolve({ locale }) });
   return render(ui);
 }
@@ -228,6 +232,25 @@ describe('transparency page — finance link (batch83-a)', () => {
       const link = screen.getByTestId('transparency-finance-link');
       expect(link.getAttribute('href')).toBe(`/${locale}/transparency/finance`);
       expect(link.textContent).toContain(expectText);
+      unmount();
+    }
+  });
+});
+
+describe('transparency page — subscribe block (batch84-c)', () => {
+  it('renders the weekly-report subscribe block in zh and en', async () => {
+    for (const [locale, msgs] of [['zh', zhMsgs], ['en', enMsgs]] as const) {
+      mockMessages(flat(msgs));
+      const { unmount } = await renderPage(locale);
+
+      expect(screen.getByTestId('transparency-subscribe')).toBeTruthy();
+      expect(screen.getByTestId('transparency-subscribe-title').textContent).toBe(
+        msgs.transparency.subscribeTitle,
+      );
+      expect(screen.getByTestId('transparency-subscribe-input')).toBeTruthy();
+      expect(screen.getByTestId('transparency-subscribe-button').textContent).toBe(
+        msgs.transparency.subscribeButton,
+      );
       unmount();
     }
   });

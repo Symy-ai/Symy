@@ -21,6 +21,7 @@ import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import { loadGrowthStats } from '@/lib/growth-stats-server';
 import { CO2_METHODOLOGY_DOC_URL } from '@/lib/co2-estimate';
 import { TransparencyShareButton } from './share-button';
+import { TransparencySubscribeForm } from './subscribe-form';
 
 export async function generateMetadata({
   params,
@@ -225,6 +226,10 @@ export default async function TransparencyPage({
         <p className="mt-6 text-xs text-text-tertiary">
           {t('transparency.generatedAt', { time: generatedDate })}
         </p>
+
+        {/* 周报订阅 (batch84-c): 内容引擎闭环的回访钩子 — 每周报告 → 订阅 → 下周回访。
+            表未建 (503) 时显示「即将上线」, 取数失败不影响指标卡渲染 */}
+        <TransparencySubscribeForm />
 
         <div className="mt-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/20 p-5 text-center">
           <p className="text-sm font-semibold text-text-primary" data-testid="transparency-footer-slogan">
