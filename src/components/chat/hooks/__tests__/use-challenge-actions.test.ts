@@ -7,7 +7,8 @@
  *    symyEvents tokensEarned、elephant success toast、onChallengeCompleted 同步恰一次
  *  - 勋章 savedCents 舍入: 23.995 → 2400 分
  *  - variable reward (golden): 'variable-reward' CustomEvent detail、onChallengeCompleted 延迟到
- *    'variable-reward-complete' 事件; D2 现状固化 — 10s 兜底无 completed 标志 → 事件已触发仍**双调**
+ *    'variable-reward-complete' 事件; D2 fix (batch91-b) — 事件触发后 10s 兜底不再双调 (恰 1 次)、
+ *    无事件时兜底恰 1 次救场、卸载后兜底零调用
  *  - 双击防护: giveUp in-flight 时二次调用被吞; 共享 ref 也挡住 handleChooseToBuy
  *  - complete API 失败: retry info toast、不触发勋章/完成回调 (Round 19 H3)
  *  - 无 challengeId (demo): 零 API、success toast、onChallengePassed demo-* id
@@ -174,7 +175,7 @@ describe('useChallengeActions — handleGiveUp', () => {
     );
   });
 
-  it('golden tier: variable-reward 事件 detail 正确; onChallengeCompleted 延迟到完成事件; D2 — 10s 兜底无 completed 标志 → 双调 (现状固化)', async () => {
+  it('golden tier: variable-reward 事件 detail 正确; onChallengeCompleted 延迟到完成事件; D2 fix — 事件触发后 10s 兜底不再双调 (恰 1 次)', async () => {
     const { result, args } = setup();
     vi.mocked(apiFetch).mockResolvedValueOnce({
       result: { rewardTier: 'golden', bonusTokens: 30, bonusVitality: 10 },
@@ -197,13 +198,20 @@ describe('useChallengeActions — handleGiveUp', () => {
     });
     expect(args.onChallengeCompleted).toHaveBeenCalledTimes(1);
 
-    // D2 (v6 §十二.4): 兜底 setTimeout 无 completed 标志, 事件已触发后仍再次调用
+    // D2 fix (batch91-b): 事件已触发 (completed 标志置位), 10s 兜底只清监听不再调用
     await act(async () => {
       vi.advanceTimersByTime(10_000);
       await Promise.resolve();
     });
-    expect(args.onChallengeCompleted).toHaveBeenCalledTimes(2);
-    expect(args.onChallengeCompleted).toHaveBeenNthCalledWith(2, 'ch-1', 50);
+    expect(args.onChallengeCompleted).toHaveBeenCalledTimes(1);
+    expect(args.onChallengeCompleted).toHaveBeenNthCalledWith(1, 'ch-1', 50);
+
+    // 兜底触发后监听已移除: 再派发完成事件仍零额外调用
+    await act(async () => {
+      window.dispatchEvent(new Event('variable-reward-complete'));
+      await Promise.resolve();
+    });
+    expect(args.onChallengeCompleted).toHaveBeenCalledTimes(1);
   });
 
   it('D2 兜底单独路径: 无完成事件时 10s 内恰触发一次', async () => {
@@ -224,6 +232,23 @@ describe('useChallengeActions — handleGiveUp', () => {
       await Promise.resolve();
     });
     expect(args.onChallengeCompleted).toHaveBeenCalledTimes(1);
+  });
+
+  it('D2 fix 卸载清理: 兜底 timer 挂起时卸载 → 10s 后零调用 (batch91-b)', async () => {
+    const { result, args, unmount } = setup();
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      result: { rewardTier: 'golden', bonusTokens: 30, bonusVitality: 10 },
+    });
+    await act(async () => {
+      await result.current.handleGiveUp(CH);
+    });
+    expect(args.onChallengeCompleted).not.toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      vi.advanceTimersByTime(10_000);
+      await Promise.resolve();
+    });
+    expect(args.onChallengeCompleted).not.toHaveBeenCalled();
   });
 
   it('双击防护: in-flight 时二次调用被吞 (单次 sendMessage + 单次 API)', async () => {

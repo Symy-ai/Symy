@@ -81,6 +81,8 @@ export function useChallengeActions({
 }: ChallengeActionsArgs) {
   // 🔧 H3 fix: 跟踪 resume setTimeout, 卸载时清理
   const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 🔧 D2 fix (batch91-b): variable-reward 10s 兜底 setTimeout, 卸载时清理 (与 resumeTimerRef 模式一致)
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // 🔧 ARCH fix (Round 17 audit H3+H4 — handleGiveUp/handleResume 双击防护):
   const isGiveUpInProgressRef = useRef(false);
   const isResumeInProgressRef = useRef(false);
@@ -90,6 +92,10 @@ export function useChallengeActions({
       if (resumeTimerRef.current) {
         clearTimeout(resumeTimerRef.current);
         resumeTimerRef.current = null;
+      }
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
       }
     };
   }, []);
@@ -176,15 +182,22 @@ export function useChallengeActions({
           const challengeAmount = savedChallenge.amount;
           if (hasVariableReward) {
             // 监听 variable-reward-complete 事件, 一次性触发 onChallengeCompleted
+            // 🔧 D2 fix (batch91-b): completed 闭包标志防双调 — 旧代码事件触发后,
+            //    10s 兜底仍无条件再调一次 → SilentMoment/存款对话框重复弹。
+            //    兜底语义保留: 事件真没触发时 10s 定时器仍救场一次。
+            let completed = false;
             const triggerComplete = () => {
+              if (completed) return;
+              completed = true;
               onChallengeCompleted(challengeId, challengeAmount);
               window.removeEventListener('variable-reward-complete', triggerComplete);
             };
             window.addEventListener('variable-reward-complete', triggerComplete);
-            // 安全兜底: 10s 后强制触发 (防止 VariableRewardOverlay 未触发事件)
-            setTimeout(() => {
-              window.removeEventListener('variable-reward-complete', triggerComplete);
-              onChallengeCompleted(challengeId, challengeAmount);
+            // 安全兜底: 10s 后强制触发 (防止 VariableRewardOverlay 未触发事件);
+            // 已被事件触发过时 completed 守卫只清监听不再调用
+            fallbackTimerRef.current = setTimeout(() => {
+              fallbackTimerRef.current = null;
+              triggerComplete();
             }, 10000);
           } else {
             onChallengeCompleted(challengeId, challengeAmount);
