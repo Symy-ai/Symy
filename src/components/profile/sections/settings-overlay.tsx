@@ -9,6 +9,8 @@ import { EmailConnectionSetting } from '../profile-parts';
 import { PushNotificationSettings } from '../push-notification-settings';
 import { DeleteAccountButton } from '../delete-account-button';
 import { GreenImpactDashboard } from '@/components/profile-parts/green-impact-dashboard';
+// 🗂️ batch84-a: 物品清单查看卡 — BP p12 数据飞轮第②环「画像」露出面 (只读+删除, 无手动添加)
+import { InventoryListCard } from '@/components/profile-parts/inventory-list-card';
 import type { EmailConnection } from '@/lib/supabase';
 import { useGreenPrefs, type Intensity, type Wording, type PushTheme } from '@/hooks/use-green-prefs';
 // 🛡️ batch48-a: 守护强度三档 (gentle/balanced/strict) — localStorage 持久化, 零 DDL
@@ -296,6 +298,10 @@ export function SettingsOverlay({ isDemo, hasCustomName, displayName, onClose, o
 
         {/* 🔧 batch44-c: 绿色影响仪表盘 (只读) */}
         <GreenImpactDashboard />
+
+        {/* 🗂️ batch84-a: 物品清单查看卡 (BP p12 飞轮第②环) — 位置: 绿色影响 dashboard 之后;
+            demo 模式不挂 (无真实清单数据) */}
+        {!isDemo && <InventoryListCard />}
 
         {/* 🔧 BUG-2 fix: 推送通知从主体页面移入设置 overlay */}
         {/* 🔧 BUG-3 fix: 删除旧 SettingToggle (重复文案), 用 PushNotificationSettings 组件替代

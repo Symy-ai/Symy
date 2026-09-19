@@ -3,7 +3,9 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { useState, type ReactNode } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SettingsOverlay } from '../settings-overlay';
 import {
   _resetGuardIntensityStateForTest,
@@ -105,6 +107,15 @@ const baseProps = {
   onOpenFaqDialog: vi.fn(),
 };
 
+/** batch84-a: overlay 挂了物品清单卡 (React Query 消费者) — 与 app 根 QueryProvider 同构包装 */
+function renderOverlay(props: Partial<Omit<typeof baseProps, 'locale'>> & { locale?: 'en' | 'zh' } = {}) {
+  function Wrapper({ children }: { children: ReactNode }) {
+    const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } }));
+    return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+  }
+  return render(<SettingsOverlay {...baseProps} {...props} />, { wrapper: Wrapper });
+}
+
 describe('SettingsOverlay green preferences section', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -122,7 +133,7 @@ describe('SettingsOverlay green preferences section', () => {
   });
 
   it('renders green preferences block', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     expect(screen.getByText('Green Preferences')).toBeDefined();
     expect(screen.getByText('Green intensity')).toBeDefined();
     expect(screen.getByText('Alternative wording')).toBeDefined();
@@ -130,7 +141,7 @@ describe('SettingsOverlay green preferences section', () => {
   });
 
   it('shows reset confirmation dialog and resets on confirm', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     fireEvent.click(screen.getByText('Reset green preferences'));
     expect(screen.getByText('Reset all green preferences?')).toBeDefined();
     fireEvent.click(screen.getByText('Yes, reset'));
@@ -138,7 +149,7 @@ describe('SettingsOverlay green preferences section', () => {
   });
 
   it('cancels reset confirmation', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     fireEvent.click(screen.getByText('Reset green preferences'));
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByText('Reset all green preferences?')).toBeNull();
@@ -146,7 +157,7 @@ describe('SettingsOverlay green preferences section', () => {
   });
 
   it('toggles lock state via lock/unlock button', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     const lockButton = screen.getByText('Unlock');
     fireEvent.click(lockButton);
     expect(screen.getByText('Locked')).toBeDefined();
@@ -154,7 +165,7 @@ describe('SettingsOverlay green preferences section', () => {
   });
 
   it('renders localized labels for zh locale', () => {
-    render(<SettingsOverlay {...baseProps} locale="zh" />);
+    renderOverlay({ locale: "zh" });
     // t mock returns defaultValue; structure coverage is what matters here.
     expect(screen.getByText('Green Preferences')).toBeDefined();
     expect(screen.getByText('Green intensity')).toBeDefined();
@@ -177,7 +188,7 @@ describe('SettingsOverlay guardian style wizard entry (batch61-a)', () => {
   });
 
   it('renders the entry row and opens the wizard on click', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     expect(screen.getByTestId('guardian-style-entry')).toBeDefined();
     expect(screen.queryByTestId('guardian-style-wizard')).toBeNull();
 
@@ -204,7 +215,7 @@ describe('SettingsOverlay guard control index (batch68-b)', () => {
   });
 
   it('renders the master index with four group rows and all anchor targets', () => {
-    render(<SettingsOverlay {...baseProps} />);
+    renderOverlay();
     expect(screen.getByTestId('guard-control-index')).toBeDefined();
     for (const id of ['chat', 'cart', 'push', 'evidence']) {
       expect(screen.getByTestId(`guard-control-group-${id}`)).toBeDefined();

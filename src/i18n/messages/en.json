@@ -2519,6 +2519,34 @@
         "pet-first-care": "First pet"
       }
     },
+    "inventory": {
+      "title": "Your Inventory",
+      "desc": "Things you already own, mentioned in chats — the fuller it grows, the better Symy knows you",
+      "headline": "{count} items · still growing",
+      "disabled": "Inventory is coming soon",
+      "empty": "Mention things you already own in a chat and they are logged here automatically",
+      "emptyHint": "No manual entry here — just say it in a chat",
+      "group": {
+        "today": "Today",
+        "week": "This week",
+        "earlier": "Earlier"
+      },
+      "sourceChat": "Chat",
+      "sourceManual": "Manual",
+      "addedAt": "Added {date}",
+      "deleteAria": "Delete this item",
+      "confirmTitle": "Delete this item?",
+      "confirmDesc": "“{name}” will be removed from your inventory and cannot be recovered.",
+      "confirmYes": "Delete",
+      "cancel": "Cancel",
+      "deleteFailed": "Delete failed — your list is restored",
+      "cat": {
+        "electronics": "Electronics",
+        "food": "Food",
+        "home": "Home",
+        "other": "Other"
+      }
+    },
     "impulseTrigger": {
       "title": "Impulse Trigger Profile",
       "desc": "Know your impulses — every intercept is self-knowledge.",

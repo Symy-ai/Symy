@@ -2519,6 +2519,34 @@
         "pet-first-care": "新手养宠"
       }
     },
+    "inventory": {
+      "title": "物品清单",
+      "desc": "对话里聊过的家里已有物品都记在这里 — 清单越厚，小象的建议越懂你",
+      "headline": "{count} 件在册 · 还在生长",
+      "disabled": "清单功能即将上线",
+      "empty": "在对话里聊到已有物品，会自动记进这份清单",
+      "emptyHint": "这里不做手动添加 — 对话里说一声就行",
+      "group": {
+        "today": "今天",
+        "week": "本周",
+        "earlier": "更早"
+      },
+      "sourceChat": "对话",
+      "sourceManual": "手动",
+      "addedAt": "{date} 加入",
+      "deleteAria": "删除这条物品",
+      "confirmTitle": "删除这条物品？",
+      "confirmDesc": "「{name}」会从清单里移除，无法恢复。",
+      "confirmYes": "删除",
+      "cancel": "取消",
+      "deleteFailed": "删除失败，已帮你恢复",
+      "cat": {
+        "electronics": "数码",
+        "food": "食品",
+        "home": "家居",
+        "other": "其他"
+      }
+    },
     "impulseTrigger": {
       "title": "冲动触发画像",
       "desc": "认识自己的消费冲动 — 每一次拦截都是一份自我认知。",
