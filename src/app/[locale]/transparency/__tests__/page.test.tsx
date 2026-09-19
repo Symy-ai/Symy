@@ -22,8 +22,14 @@ vi.mock('@/lib/transparency-weekly-server', () => ({
   loadTransparencyWeekly: vi.fn(),
 }));
 
+// 页面自 batch82-a 起内嵌 TransparencyShareButton (client, useTranslations)
+vi.mock('next-intl', () => ({
+  useTranslations: vi.fn(),
+}));
+
 import TransparencyPage from '../page';
 import { getTranslations } from 'next-intl/server';
+import { useTranslations } from 'next-intl';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import type { TransparencySnapshot } from '@/lib/transparency-weekly';
 
@@ -49,6 +55,12 @@ function makeT(dict: Record<string, string>) {
   };
 }
 
+/** RSC 与 client (share-button) 两条 t 路径都喂真实词典 */
+function mockMessages(dict: Record<string, string>) {
+  (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(dict));
+  (useTranslations as ReturnType<typeof vi.fn>).mockReturnValue(makeT(dict));
+}
+
 const FIXTURE: TransparencySnapshot = {
   weekStart: '2026-09-14T00:00:00.000Z',
   weekEnd: '2026-09-18T12:00:00.000Z',
@@ -72,7 +84,7 @@ beforeEach(() => {
 
 describe('transparency page — zh', () => {
   it('renders real dictionary copy with hero numbers visible', async () => {
-    (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(flat(zhMsgs)));
+    mockMessages(flat(zhMsgs));
 
     const { container } = await renderPage('zh');
 
@@ -93,7 +105,7 @@ describe('transparency page — zh', () => {
 
 describe('transparency page — en', () => {
   it('renders the exact BP slogan and mirror metrics', async () => {
-    (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(flat(enMsgs)));
+    mockMessages(flat(enMsgs));
 
     const { container } = await renderPage('en');
 
@@ -110,7 +122,7 @@ describe('transparency page — en', () => {
 describe('transparency page — red lines', () => {
   it('renders zh and en with zero user-level fields in the markup (no personal amounts)', async () => {
     for (const [locale, msgs] of [['zh', zhMsgs], ['en', enMsgs]] as const) {
-      (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(flat(msgs)));
+      mockMessages(flat(msgs));
       const { container, unmount } = await renderPage(locale);
 
       const text = container.textContent ?? '';
@@ -121,7 +133,7 @@ describe('transparency page — red lines', () => {
   });
 
   it('shows the degraded banner when serving a cached snapshot', async () => {
-    (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(flat(zhMsgs)));
+    mockMessages(flat(zhMsgs));
     (loadTransparencyWeekly as ReturnType<typeof vi.fn>).mockResolvedValue({ ...FIXTURE, degraded: true });
 
     await renderPage('zh');

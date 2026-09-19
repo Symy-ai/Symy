@@ -3804,6 +3804,9 @@
     "degradedNote": "Aggregation is temporarily unavailable — showing the most recent cached snapshot.",
     "generatedAt": "Generated {time} (UTC)",
     "footerSlogan": "Transparency is our content engine — build in public",
-    "footerNote": "Figures come from the platform-aggregated ledger, refreshed with each weekly report."
+    "footerNote": "Figures come from the platform-aggregated ledger, refreshed with each weekly report.",
+    "shareButton": "Share on X",
+    "shareCopied": "Text copied — please keep the link when you post",
+    "shareText": "This week Symy intercepted {intercepts} impulse buys, saved users ${saved} and won {hours} hours back. All in the open, every week — transparency is our content engine."
   }
 }

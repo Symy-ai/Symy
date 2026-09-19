@@ -14,6 +14,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import type { TransparencySnapshot } from '@/lib/transparency-weekly';
+import { TransparencyShareButton } from './share-button';
 
 export async function generateMetadata({
   params,
@@ -22,6 +23,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const isZh = locale === 'zh';
+  const image = `/${locale}/transparency/og`;
 
   return {
     title: isZh ? '每周透明度报告 — Symy' : 'Weekly Transparency Report — Symy',
@@ -29,6 +31,8 @@ export async function generateMetadata({
       ? '拦截次数、为用户省下的金额、赢回的小时——北极星指标，全部公开。'
       : 'Intercepts, money saved for users, hours won back — our north-star metrics, all in the open.',
     alternates: { canonical: '/transparency' },
+    openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
+    twitter: { images: [{ url: image, width: 1200, height: 630 }] },
   };
 }
 
@@ -140,6 +144,11 @@ export default async function TransparencyPage({
             {t('transparency.footerSlogan')}
           </p>
           <p className="mt-1 text-xs text-text-tertiary">{t('transparency.footerNote')}</p>
+          <TransparencyShareButton
+            intercepts={formatInt(snapshot.intercepts.week, locale)}
+            savedUsd={formatInt(snapshot.savedUsd.week, locale)}
+            hoursWon={formatHours(snapshot.hoursWon.week, locale)}
+          />
         </div>
       </div>
     </div>
