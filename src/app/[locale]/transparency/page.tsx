@@ -9,12 +9,16 @@
  * 金额只在"为用户省下"平台总额语境出现; 赢回小时注明换算口径 (默认时薪 $25/h,
  * 来源: 自由时间换算); CO₂ (batch82-b, 第三北极星指标) 为估算值非实测 — 口径
  * 注明随数可见并链接开源仓库口径文件。本页是治理公开页非分享面, 口径必须随数注明。
+ *
+ * 增长区块 (batch82-c): K 因子近似值 + 邀请漏斗 (发出/完成/邀请者) —
+ * BP 0918 p20 验证期「病毒机制建档」数据层, 来自 invitations 只读聚合;
+ * 取数失败整段隐藏, 不展示假数据。
  */
 
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
-import type { TransparencySnapshot } from '@/lib/transparency-weekly';
+import { loadGrowthStats } from '@/lib/growth-stats-server';
 import { CO2_METHODOLOGY_DOC_URL } from '@/lib/co2-estimate';
 import { TransparencyShareButton } from './share-button';
 
@@ -49,6 +53,13 @@ function formatDecimal(n: number, locale: string): string {
   }).format(Math.max(0, n));
 }
 
+/** K 因子等比率指标 — 两位小数封顶, 0.3 显示 0.3 不凑整 (诚实原则) */
+function formatK(n: number, locale: string): string {
+  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(Math.max(0, n));
+}
+
 export default async function TransparencyPage({
   params,
 }: {
@@ -56,7 +67,10 @@ export default async function TransparencyPage({
 }) {
   const { locale } = await params;
   const t = await getTranslations();
-  const snapshot: TransparencySnapshot = await loadTransparencyWeekly();
+  const [snapshot, growth] = await Promise.all([
+    loadTransparencyWeekly(),
+    loadGrowthStats(),
+  ]);
 
   const generatedDate = snapshot.generatedAt.slice(0, 10);
 
@@ -138,6 +152,46 @@ export default async function TransparencyPage({
             </div>
           ))}
         </div>
+
+        {/* 增长区块 (batch82-c): K 因子近似值 + 邀请漏斗三数字 — 聚合 only,
+            取数失败时整段隐藏 (不展示假数据), 无金额 (邀请奖励是代币不是钱) */}
+        {growth && (
+          <div
+            className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+            data-testid="transparency-growth"
+          >
+            <p className="text-xs text-text-tertiary mb-2">{t('transparency.growthTitle')}</p>
+            <div className="flex items-baseline gap-3">
+              <p className="text-2xl font-bold text-text-primary" data-testid="transparency-growth-k-hero">
+                {formatK(growth.kFactorApprox, locale)}
+              </p>
+              <p className="text-xs text-text-tertiary">{t('transparency.growthKFactorLabel')}</p>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-3">
+              <div data-testid="transparency-growth-sent">
+                <p className="text-lg font-semibold text-text-primary">
+                  {formatInt(growth.invites.total, locale)}
+                </p>
+                <p className="text-[11px] text-text-tertiary">{t('transparency.growthSentLabel')}</p>
+              </div>
+              <div data-testid="transparency-growth-completed">
+                <p className="text-lg font-semibold text-text-primary">
+                  {formatInt(growth.invites.completed, locale)}
+                </p>
+                <p className="text-[11px] text-text-tertiary">{t('transparency.growthCompletedLabel')}</p>
+              </div>
+              <div data-testid="transparency-growth-inviters">
+                <p className="text-lg font-semibold text-text-primary">
+                  {formatInt(growth.uniqueInviters, locale)}
+                </p>
+                <p className="text-[11px] text-text-tertiary">{t('transparency.growthInvitersLabel')}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-[11px] leading-snug text-text-tertiary">
+              {t('transparency.growthCaliberNote')}
+            </p>
+          </div>
+        )}
 
         <div className="mt-6 space-y-2 text-xs text-text-tertiary" data-testid="transparency-caliber">
           <p>{t('transparency.caliberNote')}</p>

@@ -23,6 +23,11 @@ vi.mock('@/lib/transparency-weekly-server', () => ({
   loadTransparencyWeekly: vi.fn(),
 }));
 
+// 增长区块 (batch82-c) — K 因子 + 邀请漏斗
+vi.mock('@/lib/growth-stats-server', () => ({
+  loadGrowthStats: vi.fn(),
+}));
+
 // 页面自 batch82-a 起内嵌 TransparencyShareButton (client, useTranslations)
 vi.mock('next-intl', () => ({
   useTranslations: vi.fn(),
@@ -32,7 +37,9 @@ import TransparencyPage from '../page';
 import { getTranslations } from 'next-intl/server';
 import { useTranslations } from 'next-intl';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
+import { loadGrowthStats } from '@/lib/growth-stats-server';
 import type { TransparencySnapshot } from '@/lib/transparency-weekly';
+import type { GrowthStats } from '@/lib/growth-stats';
 
 /** zh/en 生产词典快照 — t() 断言打在用户真实可见文案上 */
 const zhMsgs = JSON.parse(readFileSync('src/i18n/messages/zh.json', 'utf-8'));
@@ -74,6 +81,14 @@ const FIXTURE: TransparencySnapshot = {
   degraded: false,
 };
 
+/** 增长区块 fixture (batch82-c): K=0.3 真实小数字, 7 发出/2 完成/7 邀请者 */
+const GROWTH_FIXTURE: GrowthStats = {
+  invites: { total: 7, pending: 5, completed: 2 },
+  uniqueInviters: 7,
+  kFactorApprox: 0.3,
+  generatedAt: '2026-09-18T12:00:00.000Z',
+};
+
 async function renderPage(locale: 'zh' | 'en') {
   const ui = await TransparencyPage({ params: Promise.resolve({ locale }) });
   return render(ui);
@@ -82,6 +97,7 @@ async function renderPage(locale: 'zh' | 'en') {
 beforeEach(() => {
   vi.clearAllMocks();
   (loadTransparencyWeekly as ReturnType<typeof vi.fn>).mockResolvedValue(FIXTURE);
+  (loadGrowthStats as ReturnType<typeof vi.fn>).mockResolvedValue(GROWTH_FIXTURE);
 });
 
 describe('transparency page — zh', () => {
@@ -148,5 +164,54 @@ describe('transparency page — red lines', () => {
     await renderPage('zh');
 
     expect(screen.getByTestId('transparency-degraded').textContent).toContain('缓存快照');
+  });
+});
+
+describe('transparency page — growth section (batch82-c)', () => {
+  it('renders zh K-factor + funnel with caliber note next to the numbers', async () => {
+    mockMessages(flat(zhMsgs));
+
+    const { container } = await renderPage('zh');
+
+    expect(screen.getByTestId('transparency-growth')).toBeTruthy();
+    expect(screen.getByTestId('transparency-growth-k-hero').textContent).toBe('0.3'); // K=0.3 显示 0.3
+    expect(screen.getByTestId('transparency-growth-sent').textContent).toContain('7');
+    expect(screen.getByTestId('transparency-growth-completed').textContent).toContain('2');
+    expect(screen.getByTestId('transparency-growth-inviters').textContent).toContain('7');
+    // 口径随数可见 (指定措辞): completed 邀请 ÷ 去重邀请者
+    expect(container.textContent).toContain('K 因子近似口径：completed 邀请 ÷ 去重邀请者');
+    // 奖励是代币权益非现金 — 注明不展示
+    expect(container.textContent).toContain('非现金');
+  });
+
+  it('renders en K-factor + funnel with the caliber note mirrored', async () => {
+    mockMessages(flat(enMsgs));
+
+    const { container } = await renderPage('en');
+
+    expect(screen.getByTestId('transparency-growth-k-hero').textContent).toBe('0.3');
+    expect(container.textContent).toContain('K-factor caliber (approx.): completed invites ÷ unique inviters');
+    expect(container.textContent).toContain('not cash');
+  });
+
+  it('hides the whole growth section when aggregation fails (never fake zeros)', async () => {
+    mockMessages(flat(zhMsgs));
+    (loadGrowthStats as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
+    const { container } = await renderPage('zh');
+
+    expect(screen.queryByTestId('transparency-growth')).toBeNull();
+    expect(container.textContent).not.toContain('K 因子近似口径');
+  });
+
+  it('growth markup carries zero personal / amount fields (aggregate only red line)', async () => {
+    mockMessages(flat(zhMsgs));
+
+    const { container } = await renderPage('zh');
+
+    const text = container.textContent ?? '';
+    expect(text).not.toMatch(/user_id|userId|referee|referrer_user/);
+    expect(text).not.toMatch(/reward|amount/i);
+    expect(text).not.toContain('50'); // 邀请奖励 50 代币不是钱, 任何形式都不出现
   });
 });
