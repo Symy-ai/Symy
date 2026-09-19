@@ -16,6 +16,13 @@
  * fail-mode: GET /__e2e/fail-mode?on=1 使所有 /rest/v1/* 返回 500 —
  * 用于验证页面 / OG 的降级分支 (恒 200 不抛 5xx)。?on=0 关闭。
  *
+ * auth-mode (batch88-b, inventory e2e): MOCK_POSTGREST_AUTH=1 启动时, /auth/v1/*
+ * 从固定 401 变为仿真 GoTrue 最小子集 — token 签发 (password/refresh_token grant)、
+ * /user 校验、logout。inventory 卡挂在登录态设置页 (isDemo=false 才渲染), 浏览器
+ * 层伪造不了 @supabase/ssr 的 cookie 会话, 必须让产品自己的登录表单吃到假 session。
+ * 默认关闭 — transparency 运行行为不变。浏览器侧跨源 fetch 需 CORS, 对 /auth/v1/*
+ * (含 OPTIONS 预检) 全量放行。
+ *
  * 口径锚点 (数字与 transparency.spec.ts 的 EXPECTED 一一对应, 改这里须同步 spec):
  * - health_events:     本周 12 条 + 往周 5 条 (challenge_completed / challenge_failed)
  * - active_challenges: 本周 120+100+120 = $340, 往周 3×220 = $660 (status=passed)
@@ -28,6 +35,43 @@ import { createServer } from 'node:http';
 
 const PORT = Number(process.env.MOCK_POSTGREST_PORT || 54399);
 let failMode = false;
+// batch88-b: 伪 GoTrue — 只在 inventory e2e 启动时开启 (见文件头 auth-mode 说明)
+const AUTH_ENABLED = process.env.MOCK_POSTGREST_AUTH === '1';
+
+/** 伪登录用户 — inventory e2e 的固定身份 (UUID 形态, API route 的 user_id 双过滤用它) */
+const E2E_USER = {
+  id: '00000000-0000-4000-8000-00000000e2e1',
+  aud: 'authenticated',
+  role: 'authenticated',
+  email: 'e2e-inventory@example.com',
+  email_confirmed_at: '2026-01-01T00:00:00Z',
+  confirmed_at: '2026-01-01T00:00:00Z',
+  last_sign_in_at: '2026-01-01T00:00:00Z',
+  app_metadata: { provider: 'email', providers: ['email'] },
+  user_metadata: { full_name: 'E2E Tester' },
+  identities: [],
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+
+/** GoTrue password/refresh_token grant 的 session 响应 — 1h 有效, 测试期内免刷新 */
+function sessionPayload() {
+  return {
+    access_token: 'e2e-fake-access-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: 'e2e-fake-refresh-token',
+    user: E2E_USER,
+  };
+}
+
+/** supabase-js 从浏览器跨源直打 /auth/v1/* (带 apikey 头) → 必须回 CORS, 含 OPTIONS 预检 */
+function corsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'authorization, x-client-info, apikey, content-type, x-supabase-api-version');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+}
 
 /** 本周时刻 = 本 UTC 周已流逝部分的中点 — 任何时刻请求都严格落在当前周内 */
 function timestamps() {
@@ -95,6 +139,32 @@ const server = createServer((req, res) => {
   }
 
   if (url.pathname.startsWith('/auth/v1/')) {
+    if (req.method === 'OPTIONS') {
+      corsHeaders(res);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (AUTH_ENABLED) {
+      corsHeaders(res);
+      // password / refresh_token grant 都签同一个假 session (登录表单 + 自动刷新共用)
+      if (req.method === 'POST' && url.pathname === '/auth/v1/token') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(sessionPayload()));
+        return;
+      }
+      // proxy (每条页面导航) + auth provider bootstrap 都拿它校验会话
+      if (req.method === 'GET' && url.pathname === '/auth/v1/user') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(E2E_USER));
+        return;
+      }
+      if (req.method === 'POST' && url.pathname === '/auth/v1/logout') {
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+    }
     res.writeHead(401, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ error: 'mock: no session' }));
     return;
@@ -127,5 +197,5 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[mock-postgrest] listening on http://127.0.0.1:${PORT} (transparency e2e fixture)`);
+  console.log(`[mock-postgrest] listening on http://127.0.0.1:${PORT} (transparency e2e fixture, auth-mode: ${AUTH_ENABLED ? 'on' : 'off'})`);
 });
