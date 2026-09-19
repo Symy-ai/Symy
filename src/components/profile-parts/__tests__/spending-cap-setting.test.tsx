@@ -17,7 +17,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpendingCapSetting } from '../spending-cap-setting';
 import { apiFetch } from '@/lib/api-client';
-import { useSpendingCap, type SpendingCapResponse } from '@/lib/hooks/use-spending-cap';
+import { useSpendingCap, toCapCents, type SpendingCapResponse } from '@/lib/hooks/use-spending-cap';
 import type { SpendingCapState } from '@/lib/spending-cap-tracker';
 
 vi.mock('@/lib/api-client', () => ({
@@ -242,6 +242,38 @@ describe('SpendingCapSetting — save 失败 (E6-③ 无 catch 固化)', () => {
       process.removeListener('unhandledRejection', mine);
       for (const l of prevListeners) process.on('unhandledRejection', l);
     }
+  });
+});
+
+describe('SpendingCapSetting — batch91-c E6 负上限钳制', () => {
+  it('toCapCents 三输入: 负数→0 (钳制), 0→0, 正常→round(draft*100)', () => {
+    expect(toCapCents('-5')).toBe(0);
+    expect(toCapCents('0')).toBe(0);
+    expect(toCapCents('12.34')).toBe(1234);
+    expect(toCapCents('')).toBe(0); // Number('')=NaN → ||0 → 0
+  });
+
+  it('输入框带 min=0 提示属性', () => {
+    setup(capData());
+    expect(amountInput().getAttribute('min')).toBe('0');
+  });
+
+  it('save 接线钳制: 请求体 capCents 永不为负 (经 toCapCents)', async () => {
+    setup(capData());
+    changeAmount('12.34');
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect((putCalls()[0]![1]!.body as { capCents: number }).capCents).toBe(1234);
+    expect((putCalls()[0]![1]!.body as { capCents: number }).capCents).toBeGreaterThanOrEqual(0);
+  });
+
+  it('UI 输入 "-5" → 负号被剥离为 "5" → 请求体 capCents=500 (输入层第一道防线, 钳制是旁路兜底)', async () => {
+    setup(capData());
+    changeAmount('-5');
+    expect(amountInput().value).toBe('5');
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(putCalls()).toHaveLength(1));
+    expect((putCalls()[0]![1]!.body as { capCents: number }).capCents).toBe(500);
   });
 });
 

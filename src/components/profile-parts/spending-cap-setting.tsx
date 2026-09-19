@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Gauge } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
-import { useSpendingCapForm, useSpendingCap, type SpendingCapResponse } from '@/lib/hooks/use-spending-cap';
+import { useSpendingCapForm, useSpendingCap, toCapCents, type SpendingCapResponse } from '@/lib/hooks/use-spending-cap';
 import { apiFetch } from '@/lib/api-client';
 import type { SpendingCapState } from '@/lib/spending-cap-tracker';
 
@@ -51,7 +51,7 @@ export function SpendingCapSetting({ isDemo = false }: { isDemo?: boolean }) {
     try {
       await apiFetch<SpendingCapResponse>('/api/buddy/spending-cap', {
         method: 'PUT',
-        body: { capCents: nextEnabled ? Math.round((Number(draft) || 0) * 100) : 0, warningPct, resetPeriod },
+        body: { capCents: nextEnabled ? toCapCents(draft) : 0, warningPct, resetPeriod },
       });
       await refetch();
     } finally {
@@ -87,6 +87,7 @@ export function SpendingCapSetting({ isDemo = false }: { isDemo?: boolean }) {
             <input
               id="spending-cap-amount"
               inputMode="decimal"
+              min="0"
               value={draft}
               onChange={(event) => setAmount(event.target.value)}
               className="mt-1 w-full rounded-lg border border-glass-border bg-glass-fill px-2.5 py-1.5 text-sm text-text-primary"

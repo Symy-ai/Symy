@@ -15,6 +15,13 @@ export interface SpendingCapResponse {
 
 export const SPENDING_CAP_KEY = ['spending-cap'] as const;
 
+/**
+ * draft 金额 → 分。钳制非负：负 draft（服务端回填脏数据等旁路）不得上送负 capCents。
+ */
+export function toCapCents(draft: string): number {
+  return Math.max(0, Math.round((Number(draft) || 0) * 100));
+}
+
 function fetchSpendingCap(): Promise<SpendingCapResponse> {
   return apiFetch<SpendingCapResponse>('/api/buddy/spending-cap');
 }

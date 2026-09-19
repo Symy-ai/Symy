@@ -104,10 +104,18 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
     }
 
     logger.info(`[Email Receipts] No-op PATCH: receipt ${receiptId} already in status "${status}"`);
-    return NextResponse.json({ success: true, status, noOp: true, healthImpactApplied: true });
+    // batch91-c (E1): no-op 未触碰任何 health impact, 如实返回 false
+    // (前端 use-receipt-actions 按 === false 显示 "companion boost delayed" 次要 toast)
+    return NextResponse.json({ success: true, status, noOp: true, healthImpactApplied: false });
   }
 
   // ====== Health Impact: Refund boost or Mindful recovery ======
+  // batch91-c (E1): triggerId 改用 '<event_type>:<receipt_id>' 稳定幂等键。
+  // health_events 有 UNIQUE (user_id, trigger_source, trigger_id) 部分索引
+  // (migration 008) + RPC ON CONFLICT DO NOTHING (migration 052/065/067),
+  // legacy 路径按 23505 去重 — 因此 refunded→ignored→refunded 来回切换的
+  // 重复 refund_boost 在管道层被去重, 不可刷奖励。
+  let healthImpactApplied = true;
   try {
     const { createHealthEvent } = await import('@/lib/health-impact');
     const { getUserLocale } = await import('@/lib/mcp-tools/handlers/_shared');
@@ -117,11 +125,11 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
     const userHourlyRate = await getUserHourlyRate(user.id);
 
     if (status === 'refunded') {
-      await createHealthEvent({
+      const result = await createHealthEvent({
         userId: user.id,
         eventType: 'refund_boost',
         triggerSource: 'email_refund',
-        triggerId: receiptId,
+        triggerId: `refund_boost:${receiptId}`,
         description: refundBoostDesc(userLocale, Number(receiptData.amount || 0), receiptData.platform || "", receiptData.item_name || "", userHourlyRate),
         metadata: {
           amount: Number(receiptData.amount || 0),
@@ -129,15 +137,16 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
           itemName: receiptData.item_name,
         },
       });
+      healthImpactApplied = result.success !== false;
       logger.info(`[Email Receipts] Refund boost applied for receipt ${receiptId}`);
     } else if (status === 'ignored') {
       const impulseScore = Number(receiptData.impulse_score || 0);
       if (impulseScore >= 60) {
-        await createHealthEvent({
+        const result = await createHealthEvent({
           userId: user.id,
           eventType: 'mindful_recovery',
           triggerSource: 'email_ignore',
-          triggerId: receiptId,
+          triggerId: `mindful_recovery:${receiptId}`,
           description: mindfulRecoveryDesc(userLocale, Number(receiptData.amount || 0), receiptData.platform || "", userHourlyRate),
           metadata: {
             impulseScore,
@@ -145,6 +154,7 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
             platform: receiptData.platform,
           },
         });
+        healthImpactApplied = result.success !== false;
         logger.info(`[Email Receipts] Mindful recovery applied for receipt ${receiptId}`);
       }
     }
@@ -154,7 +164,7 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
     return NextResponse.json({ success: true, status, healthImpactApplied: false });
   }
 
-  return NextResponse.json({ success: true, status, healthImpactApplied: true });
+  return NextResponse.json({ success: true, status, healthImpactApplied });
 });
 
 export const DELETE = withAuth(async ({ supabase, user, request }) => {
@@ -282,7 +292,8 @@ export const DELETE = withAuth(async ({ supabase, user, request }) => {
       .delete()
       .eq('user_id', user.id)
       .in('trigger_source', ['email_refund', 'email_ignore'])
-      .eq('trigger_id', receiptId);
+      // batch91-c (E1): 兼容新旧幂等键格式 (前缀版 + 历史裸 receiptId)
+      .in('trigger_id', [receiptId, `refund_boost:${receiptId}`, `mindful_recovery:${receiptId}`]);
 
     const { error: impulseDeleteError } = await supabase
       .from('impulse_events')
