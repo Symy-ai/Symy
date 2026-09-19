@@ -215,3 +215,20 @@ describe('transparency page — growth section (batch82-c)', () => {
     expect(text).not.toContain('50'); // 邀请奖励 50 代币不是钱, 任何形式都不出现
   });
 });
+
+describe('transparency page — finance link (batch83-a)', () => {
+  it('links to the financial transparency subpage in zh and en', async () => {
+    for (const [locale, msgs, expectText] of [
+      ['zh', zhMsgs, '财务公开'],
+      ['en', enMsgs, 'Financials'],
+    ] as const) {
+      mockMessages(flat(msgs));
+      const { unmount } = await renderPage(locale);
+
+      const link = screen.getByTestId('transparency-finance-link');
+      expect(link.getAttribute('href')).toBe(`/${locale}/transparency/finance`);
+      expect(link.textContent).toContain(expectText);
+      unmount();
+    }
+  });
+});

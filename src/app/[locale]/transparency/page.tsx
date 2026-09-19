@@ -211,6 +211,17 @@ export default async function TransparencyPage({
           <p className="font-medium text-text-secondary">{t('transparency.privacyNote')}</p>
         </div>
 
+        {/* 财务公开 (batch83-a): 三重公开最后一块, 月度收支/会员数/成本结构 */}
+        <p className="mt-6 text-sm">
+          <a
+            href={`/${locale}/transparency/finance`}
+            className="font-medium text-emerald-600 dark:text-emerald-400 underline"
+            data-testid="transparency-finance-link"
+          >
+            {t('transparency.financeLink')}
+          </a>
+        </p>
+
         <p className="mt-6 text-xs text-text-tertiary">
           {t('transparency.generatedAt', { time: generatedDate })}
         </p>

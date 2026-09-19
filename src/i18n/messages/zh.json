@@ -3815,6 +3815,22 @@
     "footerNote": "数据源自平台聚合台账，随每周报告更新。",
     "shareButton": "分享到 X",
     "shareCopied": "文案已复制，发布时请保留链接",
-    "shareText": "本周 Symy 拦截了 {intercepts} 次冲动下单，为用户省下 ${saved}，帮用户赢回 {hours} 小时。每周数据全部公开——透明就是我们的内容引擎。"
+    "shareText": "本周 Symy 拦截了 {intercepts} 次冲动下单，为用户省下 ${saved}，帮用户赢回 {hours} 小时。每周数据全部公开——透明就是我们的内容引擎。",
+    "financeLink": "财务公开：月度收支、会员数、成本结构 →",
+    "financeTitle": "财务公开",
+    "financeSubtitle": "月度收支、会员数、成本结构——我们自己的账，全部公开。",
+    "financeEmpty": "账目待更新——首月月报整理中，即将发布。",
+    "financePlaceholder": "以下数字为零值占位——真实账目录入后自动替换。",
+    "financeColMonth": "月份",
+    "financeColMembers": "会员数",
+    "financeColRevenue": "收入",
+    "financeColCosts": "成本",
+    "financeColNet": "净额",
+    "financeCumulative": "累计",
+    "financeNotesTitle": "账目说明",
+    "financeNoteMembership": "收入只来自会员费——没有广告、不转售数据，账目天然干净。",
+    "financeNotePrivacy": "公开的是我们自己的账（成本结构与平台聚合数字）；密钥与用户隐私数据永不公开。",
+    "financeNoteCaliber": "口径：静态月更——每月账目以数据文件随代码入库（git 历史即留痕），由团队手动更新。",
+    "financeBack": "← 返回每周透明度报告"
   }
 }

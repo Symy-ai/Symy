@@ -3815,6 +3815,22 @@
     "footerNote": "Figures come from the platform-aggregated ledger, refreshed with each weekly report.",
     "shareButton": "Share on X",
     "shareCopied": "Text copied — please keep the link when you post",
-    "shareText": "This week Symy intercepted {intercepts} impulse buys, saved users ${saved} and won {hours} hours back. All in the open, every week — transparency is our content engine."
+    "shareText": "This week Symy intercepted {intercepts} impulse buys, saved users ${saved} and won {hours} hours back. All in the open, every week — transparency is our content engine.",
+    "financeLink": "Financials: monthly revenue & costs, members, cost structure →",
+    "financeTitle": "Financial Transparency",
+    "financeSubtitle": "Monthly revenue & costs, members, cost structure — our own books, all in the open.",
+    "financeEmpty": "Books pending update — the first monthly report is in the works and coming soon.",
+    "financePlaceholder": "The figures below are zero placeholders — they are replaced automatically once real monthly books are recorded.",
+    "financeColMonth": "Month",
+    "financeColMembers": "Members",
+    "financeColRevenue": "Revenue",
+    "financeColCosts": "Costs",
+    "financeColNet": "Net",
+    "financeCumulative": "Cumulative",
+    "financeNotesTitle": "About these books",
+    "financeNoteMembership": "Revenue comes from membership fees only — no ads, no data resale, so the books stay clean by design.",
+    "financeNotePrivacy": "What we publish is our own books (cost structure and platform aggregates); secrets and user data are never published.",
+    "financeNoteCaliber": "Caliber: static monthly updates — each month's books land as a data file in the repo (git history is the audit trail), updated manually by the team.",
+    "financeBack": "← Back to the weekly transparency report"
   }
 }

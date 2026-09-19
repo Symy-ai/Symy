@@ -1,0 +1,15 @@
+{
+  "_comment": "owner 手动月更（每月一个 YYYY-MM.json，像发周报一样发月账）；数字为平台聚合台账，无任何用户数据。当前为示例月占位：全 0，真实账目由 owner 填写。",
+  "month": "2026-09",
+  "members": 0,
+  "revenueUsd": {
+    "membership": 0,
+    "other": 0
+  },
+  "costsUsd": {
+    "infra": 0,
+    "ai": 0,
+    "team": 0
+  },
+  "notes": "示例月占位：全 0，待 owner 录入首月真实账目。"
+}
