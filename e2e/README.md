@@ -29,3 +29,17 @@ When `E2E_BASE_URL` is omitted, Playwright starts `npm run dev` on port 3000 and
 ## CI
 
 `.github/workflows/e2e-tests.yml` runs the same suite against the deployed environment from repo secrets (`E2E_EMAIL` / `E2E_PASSWORD`) and skips itself when those secrets are not configured.
+
+## Transparency suite (mock backend)
+
+`e2e/transparency.spec.ts` verifies the `/transparency` build-in-public pages end to end (zh/en, finance, OG card, share intent, subscribe, degraded branch). Page data is server-rendered by a direct call to the aggregation loaders, so browser-level route interception cannot control the numbers — a small mock PostgREST upstream does instead:
+
+```bash
+node e2e/fixtures/mock-postgrest.mjs &            # deterministic PostgREST stub on 127.0.0.1:54399
+E2E_TRANSPARENCY_MOCK=1 \
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54399 \
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_e2e_local_mock \
+npx playwright test e2e/transparency.spec.ts --workers=1
+```
+
+Without `E2E_TRANSPARENCY_MOCK=1` the file skips itself, so deployed-environment CI runs stay green. Do not set `NEXT_PUBLIC_SUPABASE_ANON_KEY` for this run: with only the two variables above, the auth proxy skips itself and the mock only needs to serve `/rest/v1/*`.
