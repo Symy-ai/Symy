@@ -136,7 +136,10 @@ describe('savePendingReuseConfirmation', () => {
     expect(entry.category).toBe('electronics');
     expect(entry.decisionId).toBe(`duplicate-precheck:${expectedDateKey(new Date(before))}:cable:reuse`);
     expect(entry.askedAt).toBeGreaterThanOrEqual(before);
-    expect(Number(entry.dueAt) - Number(entry.askedAt)).toBe(DAY_MS);
+    // store 用两行独立 Date.now(); 高负载下跨毫秒 tick 差值为 DAY_MS+ε, 断言 24h 窗口而非逐毫秒相等
+    const windowMs = Number(entry.dueAt) - Number(entry.askedAt);
+    expect(windowMs).toBeGreaterThanOrEqual(DAY_MS);
+    expect(windowMs).toBeLessThan(DAY_MS + 60_000);
   });
 
   it('swallows localStorage write failures (quota / privacy mode)', () => {
