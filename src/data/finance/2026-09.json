@@ -1,5 +1,5 @@
 {
-  "_comment": "owner 手动月更（每月一个 YYYY-MM.json，像发周报一样发月账）；数字为平台聚合台账，无任何用户数据。当前为示例月占位：全 0，真实账目由 owner 填写。",
+  "_comment": "owner 手动月更（每月一个 YYYY-MM.json，像发周报一样发月账）；数字为平台聚合台账，无任何用户数据。",
   "month": "2026-09",
   "members": 0,
   "revenueUsd": {
@@ -7,9 +7,9 @@
     "other": 0
   },
   "costsUsd": {
-    "infra": 0,
-    "ai": 0,
+    "infra": 1,
+    "ai": 30,
     "team": 0
   },
-  "notes": "示例月占位：全 0，待 owner 录入首月真实账目。"
+  "notes": "9月预估数据（owner 授权 coordinator 估填，10月起按真实账单月更）：尚无付费会员，收入为 0；成本预估——AI ≈ $30（智谱 GLM coding plan 包月约 ¥200≈$28 + 零星 API 调用），基础设施 ≈ $1（域名 symy.ai 年费摊销 $12/年；Vercel/Supabase/Cloudflare 均免费档）；团队无薪。"
 }

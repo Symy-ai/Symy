@@ -150,13 +150,16 @@ describe('loadFinanceMonths — 文件层与降级', () => {
     await Promise.all(cleanup.splice(0).map((d) => rm(d, { recursive: true, force: true })));
   });
 
-  it('真实仓库数据: 随仓示例月 2026-09.json 可解析, 全 0 占位, 净额 0', async () => {
+  it('真实仓库数据: 随仓月账 2026-09.json 可解析, 预估月净额 = -(成本合计)', async () => {
     const months = await loadFinanceMonths(); // 默认 FINANCE_DIR = <repo>/src/data/finance
 
     expect(months.map((m) => m.month)).toEqual(['2026-09']);
     expect(months[0].members).toBe(0);
-    expect(months[0].netUsd).toBe(0);
-    expect(months[0].cumulativeNetUsd).toBe(0);
+    // 2026-09 为 owner 授权的预估月（收入 0、成本为估）——断言自洽而非绝对值，
+    // owner 改填真实账单后本用例依然成立。
+    const costs = months[0].costsUsd.infra + months[0].costsUsd.ai + months[0].costsUsd.team;
+    expect(months[0].netUsd).toBe(months[0].revenueUsd.membership + months[0].revenueUsd.other - costs);
+    expect(months[0].cumulativeNetUsd).toBe(months[0].netUsd);
   });
 
   it('多月份文件按文件名升序读入并累计', async () => {
