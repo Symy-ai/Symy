@@ -1,12 +1,13 @@
 /**
- * Tests for transparency-weekly pure aggregation (batch81-a)
+ * Tests for transparency-weekly pure aggregation (batch81-a / batch82-b)
  *
  * - utcWeekStart: 周一 00:00 UTC 边界 (周五/周一/周日)
  * - aggregateTransparency: 周窗切分 / (user,event_type,trigger) 幂等去重 /
  *   guards 注册序号 / 金额清洗 (string/0/负/NaN) + round2 /
- *   hoursWon = saved / $25
- * - 快照键面契约: 恰好 8 个顶层键, 序列化产物零 "user" — 无个人级字段 (红线)
- * - asTransparencySnapshot: 快照表 jsonb 回读验形, 坏行 → null
+ *   hoursWon = saved / $25 / co2SavedKg = saved × CO₂ 系数 (batch82-b)
+ * - 快照键面契约: 恰好 9 个顶层键, 序列化产物零 "user" — 无个人级字段 (红线)
+ * - asTransparencySnapshot: 快照表 jsonb 回读验形, 坏行 → null;
+ *   batch81-a 存量行 (无 co2SavedKg) 由 savedUsd 回填, 不打穿降级阶梯
  */
 
 import { describe, it, expect } from 'vitest';
@@ -120,6 +121,12 @@ describe('aggregateTransparency', () => {
     expect(snap.hoursWon).toEqual({ week: 4, total: 6 });
   });
 
+  it('derives co2SavedKg from savedUsd at the single co2 coefficient', () => {
+    const snap = aggregateTransparency([], [passedRow(100, inWeek), passedRow('50.5', lastWeek)], [], NOW);
+    expect(snap.savedUsd).toEqual({ week: 100, total: 150.5 });
+    expect(snap.co2SavedKg).toEqual({ week: 14, total: 21.07 });
+  });
+
   it('keeps the contract keys exactly and serializes with zero user-level fields (red line)', () => {
     const snap = aggregateTransparency(
       [healthRow({ id: 'a', user_id: 'u1', created_at: inWeek })],
@@ -133,6 +140,7 @@ describe('aggregateTransparency', () => {
       'intercepts',
       'savedUsd',
       'hoursWon',
+      'co2SavedKg',
       'guards',
       'generatedAt',
       'degraded',
@@ -151,6 +159,7 @@ describe('aggregateTransparency', () => {
   it('tolerates null/undefined inputs', () => {
     const snap = aggregateTransparency(null, undefined, undefined, NOW);
     expect(snap.intercepts).toEqual({ week: 0, total: 0 });
+    expect(snap.co2SavedKg).toEqual({ week: 0, total: 0 });
     expect(snap.guards).toBe(0);
   });
 });
@@ -160,6 +169,7 @@ describe('emptyTransparency', () => {
     const snap = emptyTransparency(NOW, true);
     expect(snap.guards).toBe(0);
     expect(snap.savedUsd).toEqual({ week: 0, total: 0 });
+    expect(snap.co2SavedKg).toEqual({ week: 0, total: 0 });
     expect(snap.degraded).toBe(true);
     expect(snap.weekStart).toBe('2026-09-14T00:00:00.000Z');
   });
@@ -179,5 +189,24 @@ describe('asTransparencySnapshot', () => {
     const valid = aggregateTransparency([], [], [], NOW);
     expect(asTransparencySnapshot({ ...valid, guards: 'many' })).toBeNull();
     expect(asTransparencySnapshot({ ...valid, savedUsd: { week: '1', total: 2 } })).toBeNull();
+  });
+
+  it('backfills co2SavedKg from savedUsd for legacy batch81-a rows (field missing or malformed)', () => {
+    const full = aggregateTransparency([], [passedRow(100, inWeek)], [], NOW);
+    const { co2SavedKg: _dropped, ...legacy } = full;
+    expect(_dropped).toBeDefined();
+
+    const restored = asTransparencySnapshot(legacy);
+    expect(restored?.co2SavedKg).toEqual({ week: 14, total: 14 });
+    expect(asTransparencySnapshot({ ...legacy, co2SavedKg: 'garbage' })?.co2SavedKg).toEqual({
+      week: 14,
+      total: 14,
+    });
+  });
+
+  it('keeps a valid stored co2SavedKg as-is instead of re-deriving', () => {
+    const snap = aggregateTransparency([], [passedRow(100, inWeek)], [], NOW);
+    const stored = { ...snap, co2SavedKg: { week: 1, total: 2 } };
+    expect(asTransparencySnapshot(stored)?.co2SavedKg).toEqual({ week: 1, total: 2 });
   });
 });

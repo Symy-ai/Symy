@@ -7,13 +7,15 @@
  *
  * 红线 (owner 09-06): 平台聚合 (我们自己的账) 可以展示; 用户级金额永不出现。
  * 金额只在"为用户省下"平台总额语境出现; 赢回小时注明换算口径 (默认时薪 $25/h,
- * 来源: 自由时间换算) — 本页是治理公开页非分享面, 口径必须随数注明。
+ * 来源: 自由时间换算); CO₂ (batch82-b, 第三北极星指标) 为估算值非实测 — 口径
+ * 注明随数可见并链接开源仓库口径文件。本页是治理公开页非分享面, 口径必须随数注明。
  */
 
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import type { TransparencySnapshot } from '@/lib/transparency-weekly';
+import { CO2_METHODOLOGY_DOC_URL } from '@/lib/co2-estimate';
 import { TransparencyShareButton } from './share-button';
 
 export async function generateMetadata({
@@ -40,7 +42,8 @@ function formatInt(n: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US').format(Math.max(0, Math.round(n)));
 }
 
-function formatHours(n: number, locale: string): string {
+/** 小数指标 (小时 / kg) — <10 一位小数, 其余整数量级由 Intl 决定 */
+function formatDecimal(n: number, locale: string): string {
   return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
     maximumFractionDigits: 1,
   }).format(Math.max(0, n));
@@ -76,9 +79,16 @@ export default async function TransparencyPage({
     {
       testId: 'transparency-hours',
       label: t('transparency.hoursLabel'),
-      hero: formatHours(snapshot.hoursWon.week, locale),
+      hero: formatDecimal(snapshot.hoursWon.week, locale),
       heroTag: weekTag,
-      sub: `${t('transparency.allTime')} ${formatHours(snapshot.hoursWon.total, locale)}`,
+      sub: `${t('transparency.allTime')} ${formatDecimal(snapshot.hoursWon.total, locale)}`,
+    },
+    {
+      testId: 'transparency-co2',
+      label: t('transparency.co2Label'),
+      hero: formatDecimal(snapshot.co2SavedKg.week, locale),
+      heroTag: weekTag,
+      sub: `${t('transparency.allTime')} ${formatDecimal(snapshot.co2SavedKg.total, locale)}`,
     },
     {
       testId: 'transparency-guards',
@@ -132,6 +142,18 @@ export default async function TransparencyPage({
         <div className="mt-6 space-y-2 text-xs text-text-tertiary" data-testid="transparency-caliber">
           <p>{t('transparency.caliberNote')}</p>
           <p>{t('transparency.hoursCaliberNote')}</p>
+          <p>
+            {t('transparency.co2Note')}{' '}
+            <a
+              href={CO2_METHODOLOGY_DOC_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+              data-testid="transparency-co2-link"
+            >
+              src/lib/co2-estimate.ts
+            </a>
+          </p>
           <p className="font-medium text-text-secondary">{t('transparency.privacyNote')}</p>
         </div>
 
@@ -147,7 +169,7 @@ export default async function TransparencyPage({
           <TransparencyShareButton
             intercepts={formatInt(snapshot.intercepts.week, locale)}
             savedUsd={formatInt(snapshot.savedUsd.week, locale)}
-            hoursWon={formatHours(snapshot.hoursWon.week, locale)}
+            hoursWon={formatDecimal(snapshot.hoursWon.week, locale)}
           />
         </div>
       </div>

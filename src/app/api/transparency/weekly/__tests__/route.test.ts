@@ -125,11 +125,12 @@ describe('GET /api/transparency/weekly — success', () => {
 
     expect(status).toBe(200);
     expect(Object.keys(body)).toEqual([
-      'weekStart', 'weekEnd', 'intercepts', 'savedUsd', 'hoursWon', 'guards', 'generatedAt', 'degraded',
+      'weekStart', 'weekEnd', 'intercepts', 'savedUsd', 'hoursWon', 'co2SavedKg', 'guards', 'generatedAt', 'degraded',
     ]);
     expect(body.intercepts).toEqual({ week: 2, total: 3 });
     expect(body.savedUsd).toEqual({ week: 100, total: 150 });
     expect(body.hoursWon).toEqual({ week: 4, total: 6 });
+    expect(body.co2SavedKg).toEqual({ week: 14, total: 21 }); // savedUsd × 单源 CO₂ 系数
     expect(body.guards).toBe(2); // profiles 注册序, 与挑战事件口径分离
     expect(body.degraded).toBe(false);
     // 金额红线: 聚合快照序列化产物无任何用户级字段
@@ -192,6 +193,7 @@ describe('GET /api/transparency/weekly — success', () => {
     const upsertArg = (snapshots.upsert as ReturnType<typeof vi.fn>).mock.calls[0][0] as { week_start: string; payload: TransparencySnapshot };
     expect(upsertArg.week_start).toBe((body.weekStart as string).slice(0, 10));
     expect(upsertArg.payload.intercepts).toEqual({ week: 2, total: 3 });
+    expect(upsertArg.payload.co2SavedKg).toEqual({ week: 14, total: 21 });
   });
 });
 
@@ -233,6 +235,7 @@ describe('GET /api/transparency/weekly — degrade ladder (always 200)', () => {
     expect(body.intercepts).toEqual({ week: 0, total: 0 });
     expect(body.savedUsd).toEqual({ week: 0, total: 0 });
     expect(body.hoursWon).toEqual({ week: 0, total: 0 });
+    expect(body.co2SavedKg).toEqual({ week: 0, total: 0 });
     expect(body.guards).toBe(0);
   });
 

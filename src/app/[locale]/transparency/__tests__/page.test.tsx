@@ -1,10 +1,11 @@
 /**
- * Tests for /transparency public page (batch81-a)
+ * Tests for /transparency public page (batch81-a / batch82-b)
  *
  * - zh/en 渲染冒烟: 真实生产词典 (messages json) 驱动 mock t() —
- *   标题/四张指标卡 hero 数字/口径注/页脚 slogan 均真实可见
+ *   标题/五张指标卡 hero 数字/口径注/页脚 slogan 均真实可见
  * - 金额红线: 页面渲染产物零用户级字段 (user_id/userId); 金额只以平台总额
  *   语境出现; 赢回小时口径注明 ($25/h) 随数可见
+ * - CO₂ (batch82-b): 第三北极星指标, 估算口径注明 + 开源仓库链接随数可见
  * - 降级态: degraded:true → 缓存快照提示可见
  */
 
@@ -67,6 +68,7 @@ const FIXTURE: TransparencySnapshot = {
   intercepts: { week: 7, total: 42 },
   savedUsd: { week: 120, total: 960 },
   hoursWon: { week: 4.8, total: 38.4 },
+  co2SavedKg: { week: 16.8, total: 134.4 },
   guards: 13,
   generatedAt: '2026-09-18T12:00:00.000Z',
   degraded: false,
@@ -92,10 +94,14 @@ describe('transparency page — zh', () => {
     expect(screen.getByTestId('transparency-intercepts-hero').textContent).toBe('7');
     expect(screen.getByTestId('transparency-saved-hero').textContent).toBe('$120');
     expect(screen.getByTestId('transparency-hours-hero').textContent).toBe('4.8');
+    expect(screen.getByTestId('transparency-co2-hero').textContent).toBe('16.8');
     expect(screen.getByTestId('transparency-guards-hero').textContent).toBe('13');
     // 口径随数注明 (hoursCaliberNote 含 $25 换算来源)
     expect(container.textContent).toContain('口径');
     expect(container.textContent).toContain('$25/小时');
+    // CO₂ 估算口径注明 + 开源仓库口径文件链接 (batch82-b)
+    expect(container.textContent).toContain('非实测');
+    expect(screen.getByTestId('transparency-co2-link').getAttribute('href')).toContain('co2-estimate.ts');
     expect(container.textContent).toContain('数据生成于 2026-09-18（UTC）');
     expect(screen.getByTestId('transparency-footer-slogan').textContent).toBe(
       '透明就是我们的内容引擎 — build in public',
@@ -111,11 +117,14 @@ describe('transparency page — en', () => {
 
     expect(screen.getByTestId('transparency-title').textContent).toBe('Weekly Transparency Report');
     expect(screen.getByTestId('transparency-saved-hero').textContent).toBe('$120');
+    expect(screen.getByTestId('transparency-co2-hero').textContent).toBe('16.8');
     expect(screen.getByTestId('transparency-guards-hero').textContent).toBe('13');
     expect(screen.getByTestId('transparency-footer-slogan').textContent).toBe(
       'Transparency is our content engine — build in public',
     );
     expect(container.textContent).toContain('$25/hour');
+    // CO₂ estimate caliber note visible in en as well
+    expect(container.textContent).toContain('not measured');
   });
 });
 

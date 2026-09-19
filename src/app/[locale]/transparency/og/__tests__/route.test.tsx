@@ -34,6 +34,7 @@ const FIXTURE: TransparencySnapshot = {
   intercepts: { week: 7, total: 42 },
   savedUsd: { week: 120, total: 960 },
   hoursWon: { week: 4.8, total: 38.4 },
+  co2SavedKg: { week: 16.8, total: 134.4 }, // batch82-b 快照契约字段; OG 卡面按红线不展示碳数值
   guards: 13,
   generatedAt: '2026-09-18T12:00:00.000Z',
   degraded: false,

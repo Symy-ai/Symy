@@ -1,8 +1,8 @@
 /**
  * Transparency Weekly — 每周透明度报告纯聚合层 (batch81-a)
  *
- * BP 承诺 (0918 p11): 拦截次数 / 为用户省下的总金额 / 赢回小时 — 北极星指标全公开,
- * 每周透明度报告 = 内容引擎。本模块是从既有表行到公开快照的纯函数层;
+ * BP 承诺 (0918 p11): 拦截次数 / 为用户省下的总金额 / CO₂ 减排量 — 北极星指标
+ * 全公开, 每周透明度报告 = 内容引擎。本模块是从既有表行到公开快照的纯函数层;
  * 服务端取数 + 降级阶梯在 transparency-weekly-server, HTTP 壳在 api/transparency/weekly。
  *
  * 口径 (全部对齐既有统计, 不新造数):
@@ -10,11 +10,15 @@
  *                按 (user_id, event_type, trigger_id|id) 去重 — 与 weeklyGuardCompare 同款防御。
  * - 省下金额   = active_challenges status='passed' 的 Σ amount (成功拦下的订单, 平台账本)。
  * - 赢回小时   = 省下金额 / 默认时薪 $25 (moneyToHours — 全局唯一金钱→时间换算口径)。
+ * - CO₂ 减排   = 省下金额 × 居民消费碳强度 (co2FromUsdSaved — 估算值非实测,
+ *                保守系数与推导链见 co2-estimate.ts 文件头; batch82-b 补全第三指标)。
  * - 守护者总数 = profiles 注册序列的最大序号 (guard number 口径)。
  *
  * 红线 (owner 09-06): 快照是平台级聚合 (我们自己的账), 结构上只有周/累计两个桶 —
  * 无任何用户级字段, 用户级金额永不出现。
  */
+
+import { co2FromUsdSaved } from '@/lib/co2-estimate';
 
 import { DEFAULT_HOURLY_RATE, moneyToHours } from '@/lib/freedom-time';
 
@@ -31,6 +35,8 @@ export interface TransparencySnapshot {
   intercepts: TransparencyMetric;
   savedUsd: TransparencyMetric;
   hoursWon: TransparencyMetric;
+  /** 估算减排量 (kg CO₂e) — 由 savedUsd 派生, 估算值非实测 (口径见 co2-estimate.ts) */
+  co2SavedKg: TransparencyMetric;
   guards: number;
   generatedAt: string;
   /** true = 聚合失败, 当前值来自缓存/降级快照而非实时聚合 */
@@ -76,6 +82,7 @@ export function emptyTransparency(now: Date, degraded: boolean): TransparencySna
     intercepts: { week: 0, total: 0 },
     savedUsd: { week: 0, total: 0 },
     hoursWon: { week: 0, total: 0 },
+    co2SavedKg: { week: 0, total: 0 },
     guards: 0,
     generatedAt: now.toISOString(),
     degraded,
@@ -145,6 +152,10 @@ export function aggregateTransparency(
       week: round2(moneyToHours(savedWeek, DEFAULT_HOURLY_RATE)),
       total: round2(moneyToHours(savedTotal, DEFAULT_HOURLY_RATE)),
     },
+    co2SavedKg: {
+      week: round2(co2FromUsdSaved(savedWeek)),
+      total: round2(co2FromUsdSaved(savedTotal)),
+    },
     guards,
     generatedAt: now.toISOString(),
     degraded: false,
@@ -162,5 +173,13 @@ export function asTransparencySnapshot(value: unknown): TransparencySnapshot | n
   if (typeof v.weekStart !== 'string' || typeof v.weekEnd !== 'string') return null;
   if (typeof v.generatedAt !== 'string' || typeof v.guards !== 'number') return null;
   if (!isMetric(v.intercepts) || !isMetric(v.savedUsd) || !isMetric(v.hoursWon)) return null;
-  return { ...(v as unknown as TransparencySnapshot), degraded: v.degraded === true };
+  // batch81-a 存量快照无 co2SavedKg — 由 savedUsd 回填派生 (纯函数同口径),
+  // 否则旧行回读失败会把降级阶梯打穿到零值骨架
+  const co2SavedKg = isMetric(v.co2SavedKg)
+    ? v.co2SavedKg
+    : {
+        week: round2(co2FromUsdSaved(v.savedUsd.week)),
+        total: round2(co2FromUsdSaved(v.savedUsd.total)),
+      };
+  return { ...(v as unknown as TransparencySnapshot), co2SavedKg, degraded: v.degraded === true };
 }
