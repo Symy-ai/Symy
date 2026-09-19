@@ -23,9 +23,18 @@ import {
 /** 进程内最后一份成功快照 (serverless 实例级, 表缺失时的最低保障) */
 let memorySnapshot: TransparencySnapshot | null = null;
 
+const PAGE_SIZE = 1000;
+
 /** @测试钩子 — 定型降级阶梯用例的进程内缓存初态 */
 export function __setTransparencyMemoryCacheForTests(snapshot: TransparencySnapshot | null): void {
   memorySnapshot = snapshot;
+}
+
+async function readPage<T>(
+  query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<{ rows: T[]; error: { message: string } | null }> {
+  const { data, error } = await query;
+  return { rows: data ?? [], error };
 }
 
 async function readPersistedSnapshot(supabase: NonNullable<ReturnType<typeof createAdminClient>['supabase']>): Promise<TransparencySnapshot | null> {
@@ -77,21 +86,78 @@ export async function loadTransparencyWeekly(now: Date = new Date()): Promise<Tr
     return degradedSnapshot(null, now);
   }
 
-  const [health, passed] = await Promise.all([
-    supabase.from('health_events').select('id,user_id,event_type,trigger_id,created_at'),
-    supabase.from('active_challenges').select('amount,completed_at').eq('status', 'passed'),
-  ]);
+  try {
+    const [health, passed, profiles] = await Promise.all([
+      (async () => {
+        const rows: Array<{
+          id: string;
+          user_id: string;
+          event_type: string;
+          trigger_id: string | null;
+          created_at: string;
+        }> = [];
+        for (let offset = 0; ; offset += PAGE_SIZE) {
+          const page = await readPage(
+            supabase
+              .from('health_events')
+              .select('id,user_id,event_type,trigger_id,created_at')
+              .order('created_at', { ascending: true })
+              .range(offset, offset + PAGE_SIZE - 1),
+          );
+          if (page.error) return { error: page.error, rows };
+          rows.push(...page.rows);
+          if (page.rows.length < PAGE_SIZE) break;
+        }
+        return { error: null, rows };
+      })(),
+      (async () => {
+        const rows: Array<{ amount: number | string | null; completed_at: string | null }> = [];
+        for (let offset = 0; ; offset += PAGE_SIZE) {
+          const page = await readPage(
+            supabase
+              .from('active_challenges')
+              .select('amount,completed_at')
+              .eq('status', 'passed')
+              .order('completed_at', { ascending: true })
+              .range(offset, offset + PAGE_SIZE - 1),
+          );
+          if (page.error) return { error: page.error, rows };
+          rows.push(...page.rows);
+          if (page.rows.length < PAGE_SIZE) break;
+        }
+        return { error: null, rows };
+      })(),
+      (async () => {
+        const rows: Array<{ created_at: string | null }> = [];
+        for (let offset = 0; ; offset += PAGE_SIZE) {
+          const page = await readPage(
+            supabase
+              .from('profiles')
+              .select('created_at')
+              .order('created_at', { ascending: true })
+              .range(offset, offset + PAGE_SIZE - 1),
+          );
+          if (page.error) return { error: page.error, rows };
+          rows.push(...page.rows);
+          if (page.rows.length < PAGE_SIZE) break;
+        }
+        return { error: null, rows };
+      })(),
+    ]);
 
-  if (health.error || passed.error) {
-    logger.warn(
-      '[transparency] aggregate query failed:',
-      health.error?.message ?? passed.error?.message,
-    );
+    const error = health.error ?? passed.error ?? profiles.error;
+    if (error) {
+      logger.warn('[transparency] aggregate query failed:', error.message);
+      return degradedSnapshot(supabase, now);
+    }
+
+    const snapshot = aggregateTransparency(health.rows, passed.rows, profiles.rows, now);
+    memorySnapshot = snapshot;
+    await persistSnapshot(supabase, snapshot);
+    return snapshot;
+  } catch (err) {
+    // safe to ignore: 聚合查询失败按简报降级到缓存快照（degradedSnapshot），不向公开端点抛 500
+    logger.warn('[transparency] aggregate query failed:', err instanceof Error ? err.message : String(err));
     return degradedSnapshot(supabase, now);
   }
-
-  const snapshot = aggregateTransparency(health.data ?? [], passed.data ?? [], now);
-  memorySnapshot = snapshot;
-  await persistSnapshot(supabase, snapshot);
-  return snapshot;
 }

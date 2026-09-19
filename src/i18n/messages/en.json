@@ -3797,7 +3797,7 @@
     "guardsLabel": "Guardians",
     "thisWeek": "This week",
     "allTime": "All time",
-    "guardsHint": "Total users who have completed at least one intercept challenge",
+    "guardsHint": "Total guardians in the registration sequence (guard number caliber)",
     "caliberNote": "Caliber: intercepts = settled impulse challenges (completed + failed, deduplicated); saved = value of successfully resisted orders. All figures come from the platform-aggregated ledger (our own books) — no personal data involved.",
     "hoursCaliberNote": "Hours won back are converted at the platform default rate of $25/hour (source: freedom-time caliber).",
     "privacyNote": "This page shows platform-level aggregates only — individual user amounts never appear.",

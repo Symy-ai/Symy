@@ -64,7 +64,7 @@ export function InducementStrategies({ strategies, isLoading, t, isDemo = false,
       ) : (
         source === 'sample' && (
           <p className="text-[9px] text-amber-400/60 mb-2">
-            {t('defense.sampleDataBadge', { defaultValue: '📋 Sample data' })}
+            {t('defense.sampleDataBadge')}
           </p>
         )
       )}

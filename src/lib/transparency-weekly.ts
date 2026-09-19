@@ -10,8 +10,7 @@
  *                按 (user_id, event_type, trigger_id|id) 去重 — 与 weeklyGuardCompare 同款防御。
  * - 省下金额   = active_challenges status='passed' 的 Σ amount (成功拦下的订单, 平台账本)。
  * - 赢回小时   = 省下金额 / 默认时薪 $25 (moneyToHours — 全局唯一金钱→时间换算口径)。
- * - 守护者总数 = 有过 ≥1 次 challenge_completed 的去重 user_id 数
- *                (guard number 最大值: 最新一名守护者的序号 = 累计守护者数)。
+ * - 守护者总数 = profiles 注册序列的最大序号 (guard number 口径)。
  *
  * 红线 (owner 09-06): 快照是平台级聚合 (我们自己的账), 结构上只有周/累计两个桶 —
  * 无任何用户级字段, 用户级金额永不出现。
@@ -45,6 +44,11 @@ export interface TransparencyHealthRow {
   event_type: string;
   trigger_id: string | null;
   created_at: string;
+}
+
+/** profiles 聚合输入最小列 — created_at 建立全局注册序 */
+export interface TransparencyProfileRow {
+  created_at: string | null;
 }
 
 /** active_challenges passed 聚合输入最小列 (numeric 可能以 string 透出) */
@@ -87,13 +91,13 @@ const INTERCEPT_EVENT_TYPES = new Set(['challenge_completed', 'challenge_failed'
 export function aggregateTransparency(
   healthRows: TransparencyHealthRow[] | null | undefined,
   passedRows: TransparencyPassedChallengeRow[] | null | undefined,
+  profileRows: TransparencyProfileRow[] | null | undefined,
   now: Date,
 ): TransparencySnapshot {
   const weekStartMs = utcWeekStart(now).getTime();
 
   let interceptsWeek = 0;
   let interceptsTotal = 0;
-  const guardians = new Set<string>();
   const seen = new Set<string>();
   for (const row of healthRows || []) {
     if (!row || !INTERCEPT_EVENT_TYPES.has(row.event_type)) continue;
@@ -104,7 +108,14 @@ export function aggregateTransparency(
     seen.add(key);
     interceptsTotal += 1;
     if (t >= weekStartMs) interceptsWeek += 1;
-    if (row.event_type === 'challenge_completed' && row.user_id) guardians.add(row.user_id);
+  }
+
+  let guards = 0;
+  for (const row of profileRows || []) {
+    if (!row) continue;
+    const t = new Date(row.created_at ?? '').getTime();
+    if (!Number.isFinite(t)) continue;
+    guards += 1;
   }
 
   const sumPassed = (filterWeek: boolean): number => {
@@ -134,7 +145,7 @@ export function aggregateTransparency(
       week: round2(moneyToHours(savedWeek, DEFAULT_HOURLY_RATE)),
       total: round2(moneyToHours(savedTotal, DEFAULT_HOURLY_RATE)),
     },
-    guards: guardians.size,
+    guards,
     generatedAt: now.toISOString(),
     degraded: false,
   };

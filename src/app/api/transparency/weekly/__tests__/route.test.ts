@@ -25,6 +25,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 import { __setTransparencyMemoryCacheForTests } from '@/lib/transparency-weekly-server';
 import {
   aggregateTransparency,
+  type TransparencyProfileRow,
   type TransparencyHealthRow,
   type TransparencyPassedChallengeRow,
   type TransparencySnapshot,
@@ -35,7 +36,7 @@ type Terminal = () => Promise<QueryResult>;
 
 function makeChain(terminal: Terminal) {
   const chain: Record<string, unknown> = {};
-  for (const m of ['select', 'eq', 'order', 'limit', 'upsert']) chain[m] = vi.fn(() => chain);
+  for (const m of ['select', 'eq', 'order', 'limit', 'range', 'upsert']) chain[m] = vi.fn(() => chain);
   // 链式 builder 被 await 时解析为 terminal 结果 (读/写共用)
   chain.then = (onFulfilled: (v: unknown) => unknown, onRejected: (e: unknown) => unknown) =>
     Promise.resolve().then(terminal).then(onFulfilled, onRejected);
@@ -72,6 +73,11 @@ const PASSED_ROWS: TransparencyPassedChallengeRow[] = [
   { amount: 50, completed_at: LAST_WEEK },
 ];
 
+const PROFILE_ROWS: TransparencyProfileRow[] = [
+  { created_at: new Date(NOW.getTime() - 86_400_000).toISOString() },
+  { created_at: IN_WEEK },
+];
+
 function okChain(rows: readonly unknown[]) {
   return makeChain(async () => ({ data: rows, error: null }));
 }
@@ -80,8 +86,18 @@ function errChain() {
   return makeChain(async () => ({ data: null, error: { message: 'boom' } }));
 }
 
+function pagedChain<T>(pages: readonly T[][]) {
+  let calls = 0;
+  return makeChain(async () => {
+    const page = pages[Math.min(calls, pages.length - 1)] ?? [];
+    const result = { data: page, error: null };
+    calls += 1;
+    return result;
+  });
+}
+
 function seededSnapshot(): TransparencySnapshot {
-  return { ...aggregateTransparency(HEALTH_ROWS, PASSED_ROWS, NOW), generatedAt: '2026-09-01T00:00:00.000Z' };
+  return { ...aggregateTransparency(HEALTH_ROWS, PASSED_ROWS, PROFILE_ROWS, NOW), generatedAt: '2026-09-01T00:00:00.000Z' };
 }
 
 async function getJson(): Promise<{ status: number; body: Record<string, unknown>; raw: string; cacheControl: string }> {
@@ -103,7 +119,7 @@ beforeEach(() => {
 describe('GET /api/transparency/weekly — success', () => {
   it('aggregates the three tables into the public snapshot contract', async () => {
     const snapshots = makeChain(async () => ({ data: null, error: null }));
-    mockAdmin(makeDb({ health_events: okChain(HEALTH_ROWS), active_challenges: okChain(PASSED_ROWS), transparency_snapshots: snapshots }));
+    mockAdmin(makeDb({ health_events: okChain(HEALTH_ROWS), active_challenges: okChain(PASSED_ROWS), profiles: okChain(PROFILE_ROWS), transparency_snapshots: snapshots }));
 
     const { status, body, raw, cacheControl } = await getJson();
 
@@ -114,16 +130,59 @@ describe('GET /api/transparency/weekly — success', () => {
     expect(body.intercepts).toEqual({ week: 2, total: 3 });
     expect(body.savedUsd).toEqual({ week: 100, total: 150 });
     expect(body.hoursWon).toEqual({ week: 4, total: 6 });
-    expect(body.guards).toBe(1); // 只有 u1 有 completed
+    expect(body.guards).toBe(2); // profiles 注册序, 与挑战事件口径分离
     expect(body.degraded).toBe(false);
     // 金额红线: 聚合快照序列化产物无任何用户级字段
     expect(raw).not.toMatch(/user/i);
     expect(cacheControl).toContain('s-maxage');
   });
 
+  it('reads every historical page and uses the profile sequence for the guard boundary', async () => {
+    const fullHealthPage = Array.from(
+      { length: 1000 },
+      (_, index): typeof HEALTH_ROWS[number] => ({
+        id: `h-${index}`,
+        user_id: 'u1',
+        event_type: 'challenge_completed',
+        trigger_id: `t-${index}`,
+        created_at: LAST_WEEK,
+      }),
+    );
+    const shortHealthPage: typeof HEALTH_ROWS[number][] = [
+      { id: 'h-short', user_id: 'u2', event_type: 'challenge_failed', trigger_id: 't-short', created_at: IN_WEEK },
+    ];
+    const fullPassedPage = Array.from(
+      { length: 1000 },
+      (): typeof PASSED_ROWS[number] => ({ amount: 1, completed_at: IN_WEEK }),
+    );
+    const shortPassedPage: typeof PASSED_ROWS[number][] = [{ amount: 2, completed_at: LAST_WEEK }];
+    const fullProfilePage = Array.from(
+      { length: 1000 },
+      (_, index): typeof PROFILE_ROWS[number] => ({ created_at: new Date(NOW.getTime() - index).toISOString() }),
+    );
+    const shortProfilePage: typeof PROFILE_ROWS[number][] = [{ created_at: IN_WEEK }];
+    const snapshots = makeChain(async () => ({ data: null, error: null }));
+    const health = pagedChain([fullHealthPage, shortHealthPage]);
+    const passed = pagedChain([fullPassedPage, shortPassedPage]);
+    const profiles = pagedChain([fullProfilePage, shortProfilePage]);
+    mockAdmin(makeDb({ health_events: health, active_challenges: passed, profiles, transparency_snapshots: snapshots }));
+
+    const { body } = await getJson();
+
+    expect(health.range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(health.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+    expect(passed.range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(passed.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+    expect(profiles.range).toHaveBeenNthCalledWith(1, 0, 999);
+    expect(profiles.range).toHaveBeenNthCalledWith(2, 1000, 1999);
+    expect(body.intercepts).toEqual({ week: 1, total: 1001 });
+    expect(body.savedUsd).toEqual({ week: 1000, total: 1002 });
+    expect(body.guards).toBe(1001);
+  });
+
   it('persists the fresh snapshot best-effort (upsert awaited, errors swallowed)', async () => {
     const snapshots = makeChain(async () => ({ data: null, error: { message: 'relation does not exist' } }));
-    mockAdmin(makeDb({ health_events: okChain(HEALTH_ROWS), active_challenges: okChain(PASSED_ROWS), transparency_snapshots: snapshots }));
+    mockAdmin(makeDb({ health_events: okChain(HEALTH_ROWS), active_challenges: okChain(PASSED_ROWS), profiles: okChain(PROFILE_ROWS), transparency_snapshots: snapshots }));
 
     const { status, body } = await getJson();
 
@@ -140,7 +199,7 @@ describe('GET /api/transparency/weekly — degrade ladder (always 200)', () => {
   it('falls back to the persisted snapshot row when aggregation fails', async () => {
     const persisted = seededSnapshot();
     const snapshots = makeChain(async () => ({ data: [{ payload: persisted }], error: null }));
-    mockAdmin(makeDb({ health_events: errChain(), active_challenges: okChain(PASSED_ROWS), transparency_snapshots: snapshots }));
+    mockAdmin(makeDb({ health_events: errChain(), active_challenges: okChain(PASSED_ROWS), profiles: okChain(PROFILE_ROWS), transparency_snapshots: snapshots }));
 
     const { status, body } = await getJson();
 
