@@ -1,7 +1,7 @@
 /**
  * Tests for /[locale]/transparency/og — 周报分享卡 (batch82-a)
  *
- * - 周报卡渲染冒烟: mock 聚合快照 → 四指标 + Week of <weekStart> + 品牌可见
+ * - 周报卡渲染冒烟: mock 聚合快照 → 无金额/碳指标 + Week of <weekStart> + 品牌可见
  * - 降级分支: loader 拒绝/返回 null → 静态骨架卡 (品牌 + 内容引擎 slogan),
  *   恒 200 不抛 500
  * - metadata 接线: /transparency 页 openGraph/twitter images 指向本 route
@@ -48,10 +48,10 @@ function context(locale = 'zh') {
   return { params: Promise.resolve({ locale }) };
 }
 
-/** 卡面四指标标签 (与 route copy.stats 同源的真实词典词) */
+/** 卡面公开指标标签 (与 route copy.stats 同源的真实词典词) */
 const FIXTURE_LABELS = {
-  zh: { interceptsLabel: '拦截次数', savedLabel: '为用户省下', hoursLabel: '赢回小时', guardsLabel: '守护者' },
-  en: { interceptsLabel: 'Intercepts', savedLabel: 'Saved for users', hoursLabel: 'Hours won back', guardsLabel: 'Guardians' },
+  zh: { interceptsLabel: '拦截次数', hoursLabel: '赢回小时', guardsLabel: '守护者' },
+  en: { interceptsLabel: 'Intercepts', hoursLabel: 'Hours won back', guardsLabel: 'Guardians' },
 } as const;
 
 beforeEach(() => {
@@ -60,7 +60,7 @@ beforeEach(() => {
 });
 
 describe('transparency og — weekly card', () => {
-  it('renders the four platform metrics with the week label and brand', () => {
+  it('renders share-safe platform metrics with the week label and brand', () => {
     for (const locale of ['zh', 'en'] as const) {
       const element = buildTransparencyOgContent(locale, FIXTURE);
       const serialized = JSON.stringify(element);
@@ -68,12 +68,14 @@ describe('transparency og — weekly card', () => {
       expect(serialized).toContain('Symy');
       expect(serialized).toContain('2026-09-14');
       expect(serialized).toContain('7');
-      expect(serialized).toContain('$120');
       expect(serialized).toContain('4.8');
       expect(serialized).toContain('13');
-      for (const key of ['interceptsLabel', 'savedLabel', 'hoursLabel', 'guardsLabel'] as const) {
+      for (const key of ['interceptsLabel', 'hoursLabel', 'guardsLabel'] as const) {
         expect(serialized).toContain(FIXTURE_LABELS[locale][key]);
       }
+      expect(serialized).not.toContain('$');
+      expect(serialized).not.toContain('120');
+      expect(serialized).not.toContain('16.8');
     }
   });
 

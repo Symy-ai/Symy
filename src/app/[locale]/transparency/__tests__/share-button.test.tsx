@@ -1,7 +1,7 @@
 /**
  * Tests for TransparencyShareButton (batch82-a)
  *
- * - 渲染 + 点击行为: 复制文案 (三数字 + 链接) + 打开 x.com/intent/tweet
+ * - 渲染 + 点击行为: 复制文案 (拦截/小时 + 链接) + 打开 x.com/intent/tweet
  * - 剪贴板拒权不阻断 intent 打开
  * - i18n: zh/en 真实词典驱动, 键双侧对称非空; 组件零 defaultValue
  * - 文案纪律: share 文案无 FOMO 词 (仅剩/最后/限时/hurry/last chance...)
@@ -41,7 +41,7 @@ function makeT(dict: Record<string, string>) {
   };
 }
 
-const PROPS = { intercepts: '7', savedUsd: '120', hoursWon: '4.8' };
+const PROPS = { intercepts: '7', hoursWon: '4.8' };
 
 const writeText = vi.fn<(text: string) => Promise<void>>();
 let openSpy: ReturnType<typeof vi.spyOn>;
@@ -83,9 +83,9 @@ describe('transparency share button — zh', () => {
     const pageUrl = `${window.location.origin}/transparency`;
     expect(parsed.searchParams.get('url')).toBe(pageUrl);
     const text = parsed.searchParams.get('text') ?? '';
-    for (const num of ['7', '120', '4.8']) expect(text).toContain(num);
+    for (const num of ['7', '4.8']) expect(text).toContain(num);
     expect(text).toBe(
-      makeT(flat(zhMsgs))('transparency.shareText', { intercepts: '7', saved: '120', hours: '4.8' }),
+      makeT(flat(zhMsgs))('transparency.shareText', { intercepts: '7', hours: '4.8' }),
     );
 
     expect(writeText).toHaveBeenCalledWith(`${text}\n${pageUrl}`);
@@ -137,8 +137,20 @@ describe('transparency share copy — discipline', () => {
     const texts = [
       msgs.transparency.shareButton,
       msgs.transparency.shareCopied,
-      String(msgs.transparency.shareText).replaceAll('{intercepts}', '7').replaceAll('{saved}', '120').replaceAll('{hours}', '4.8'),
+      String(msgs.transparency.shareText).replaceAll('{intercepts}', '7').replaceAll('{hours}', '4.8'),
     ];
     for (const text of texts) expect(text).not.toMatch(fomo);
+  });
+
+  it.each([
+    ['zh', zhMsgs],
+    ['en', enMsgs],
+  ])('keeps %s share copy free of money amounts', (_locale, msgs) => {
+    const text = String(msgs.transparency.shareText)
+      .replaceAll('{intercepts}', '7')
+      .replaceAll('{hours}', '4.8');
+
+    expect(text).not.toMatch(/[$¥€£]/);
+    expect(text).not.toContain('saved');
   });
 });

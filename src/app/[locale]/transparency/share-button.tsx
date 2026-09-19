@@ -19,15 +19,12 @@ import { useTranslations } from 'next-intl';
 interface TransparencyShareButtonProps {
   /** 本周拦截次数 (已按 locale 格式化) */
   intercepts: string;
-  /** 本周为用户省下金额，美元整数 (已格式化) */
-  savedUsd: string;
   /** 本周赢回小时 (已格式化，最多一位小数) */
   hoursWon: string;
 }
 
 export function TransparencyShareButton({
   intercepts,
-  savedUsd,
   hoursWon,
 }: TransparencyShareButtonProps) {
   const t = useTranslations();
@@ -36,7 +33,6 @@ export function TransparencyShareButton({
   const handleShare = async () => {
     const text = t('transparency.shareText', {
       intercepts,
-      saved: savedUsd,
       hours: hoursWon,
     });
     const url = `${window.location.origin}/transparency`;

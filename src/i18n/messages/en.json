@@ -3843,7 +3843,7 @@
     "footerNote": "Figures come from the platform-aggregated ledger, refreshed with each weekly report.",
     "shareButton": "Share on X",
     "shareCopied": "Text copied — please keep the link when you post",
-    "shareText": "This week Symy intercepted {intercepts} impulse buys, saved users ${saved} and won {hours} hours back. All in the open, every week — transparency is our content engine.",
+    "shareText": "This week Symy intercepted {intercepts} impulse buys and won {hours} hours back. All in the open, every week — transparency is our content engine.",
     "financeLink": "Financials: monthly revenue & costs, members, cost structure →",
     "financeTitle": "Financial Transparency",
     "financeSubtitle": "Monthly revenue & costs, members, cost structure — our own books, all in the open.",

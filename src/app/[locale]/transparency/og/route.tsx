@@ -29,12 +29,12 @@ const copy = {
   en: {
     weekOf: (date: string) => `Week of ${date}`,
     engine: 'Transparency is our content engine',
-    stats: ['Intercepts', 'Saved for users', 'Hours won back', 'Guardians (all time)'],
+    stats: ['Intercepts', 'Hours won back', 'Guardians (all time)'],
   },
   zh: {
     weekOf: (date: string) => `周报 · ${date} 起`,
     engine: '透明就是我们的内容引擎',
-    stats: ['拦截次数', '为用户省下', '赢回小时', '守护者（累计）'],
+    stats: ['拦截次数', '赢回小时', '守护者（累计）'],
   },
 } as const;
 
@@ -96,7 +96,6 @@ function metricTiles(snapshot: TransparencySnapshot, locale: string | undefined)
   const labels = getCopy(locale).stats;
   const values = [
     formatInt(snapshot.intercepts.week),
-    `$${formatInt(snapshot.savedUsd.week)}`,
     formatHours(snapshot.hoursWon.week),
     formatInt(snapshot.guards),
   ];

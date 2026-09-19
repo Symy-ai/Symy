@@ -3843,7 +3843,7 @@
     "footerNote": "数据源自平台聚合台账，随每周报告更新。",
     "shareButton": "分享到 X",
     "shareCopied": "文案已复制，发布时请保留链接",
-    "shareText": "本周 Symy 拦截了 {intercepts} 次冲动下单，为用户省下 ${saved}，帮用户赢回 {hours} 小时。每周数据全部公开——透明就是我们的内容引擎。",
+    "shareText": "本周 Symy 拦截了 {intercepts} 次冲动下单，帮用户赢回 {hours} 小时。每周数据全部公开——透明就是我们的内容引擎。",
     "financeLink": "财务公开：月度收支、会员数、成本结构 →",
     "financeTitle": "财务公开",
     "financeSubtitle": "月度收支、会员数、成本结构——我们自己的账，全部公开。",

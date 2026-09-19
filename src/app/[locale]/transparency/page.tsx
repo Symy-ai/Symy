@@ -238,7 +238,6 @@ export default async function TransparencyPage({
           <p className="mt-1 text-xs text-text-tertiary">{t('transparency.footerNote')}</p>
           <TransparencyShareButton
             intercepts={formatInt(snapshot.intercepts.week, locale)}
-            savedUsd={formatInt(snapshot.savedUsd.week, locale)}
             hoursWon={formatDecimal(snapshot.hoursWon.week, locale)}
           />
         </div>

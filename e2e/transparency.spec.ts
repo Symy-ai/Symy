@@ -1,8 +1,8 @@
 /**
  * E2E: transparency 域 build in public 主链路 (batch85-b)
  *
- * 覆盖 zh/en 双侧真验: 周报指标卡数字、CO₂ 口径行、增长区块 K 因子、订阅表单 +
- * 成功胶囊、分享按钮 window.open → x.com/intent/tweet (含周报数字)、财务页可达
+ * 覆盖 zh/en 双侧真验: 周报指标卡数字、CO₂ 口径声明、增长区块 K 因子、订阅表单 +
+ * 成功胶囊、分享按钮 window.open → x.com/intent/tweet (无金额红线)、财务页可达
  * 且渲染月账表、OG 卡恒 200 (正常 + 降级)、降级横幅 + 增长区块隐藏。
  *
  * 与简报的实现偏差: 页面数据是 RSC 服务端直调 loadTransparencyWeekly() — 浏览器
@@ -40,7 +40,6 @@ const EXPECTED = {
   savedWeek: 340,
   savedTotal: 1000,
   hoursWeek: 13.6,
-  co2Week: 47.6,
   guards: 42,
   invitesTotal: 6,
   invitesCompleted: 4,
@@ -68,9 +67,6 @@ async function expectMetricHeroes(page: Page, locale: 'zh' | 'en'): Promise<void
   );
   await expect(page.getByTestId('transparency-hours-hero')).toHaveText(
     fmtDecimal(EXPECTED.hoursWeek, locale)
-  );
-  await expect(page.getByTestId('transparency-co2-hero')).toHaveText(
-    fmtDecimal(EXPECTED.co2Week, locale)
   );
   await expect(page.getByTestId('transparency-guards-hero')).toHaveText(
     fmtInt(EXPECTED.guards, locale)
@@ -129,7 +125,6 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     });
     expect(snapshot.savedUsd).toEqual({ week: EXPECTED.savedWeek, total: 1000 });
     expect(snapshot.hoursWon).toEqual({ week: EXPECTED.hoursWeek, total: 40 });
-    expect(snapshot.co2SavedKg).toEqual({ week: EXPECTED.co2Week, total: 140 });
     expect(snapshot.guards).toBe(EXPECTED.guards);
     // weekStart = UTC 周一 00:00 (聚合口径)
     const weekStart = new Date(snapshot.weekStart);
@@ -204,16 +199,17 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     await expect(page.getByTestId('transparency-subscribe-success')).toHaveText('已订阅，下周见');
   });
 
-  test('zh 分享按钮: window.open 指向 x.com/intent/tweet 且含周报三数字', async ({ page }) => {
+  test('zh 分享按钮: window.open 指向 x.com/intent/tweet 且无金额红线', async ({ page }) => {
     await captureWindowOpen(page);
     await page.goto('/zh/transparency');
     await page.getByTestId('transparency-share').click();
     const intent = await expectShareIntentFired(page);
     expect(intent).toContain('https://x.com/intent/tweet');
     expect(intent).toContain('拦截了 12 次');
-    expect(intent).toContain('$340');
     expect(intent).toContain('13.6 小时');
     expect(intent).toContain('transparency');
+    expect(intent).not.toMatch(/[$¥€£]/);
+    expect(intent).not.toContain('saved');
   });
 
   test('en 周报页: 同链路英文渲染 (i18n 双侧真验)', async ({ page }) => {
@@ -235,15 +231,16 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     await expect(page.getByTestId('transparency-degraded')).toHaveCount(0);
   });
 
-  test('en 分享按钮: 英文文案 + 周报三数字', async ({ page }) => {
+  test('en 分享按钮: 英文文案且无金额红线', async ({ page }) => {
     await captureWindowOpen(page);
     await page.goto('/en/transparency');
     await page.getByTestId('transparency-share').click();
     const intent = await expectShareIntentFired(page);
     expect(intent).toContain('https://x.com/intent/tweet');
     expect(intent).toContain('intercepted 12 impulse buys');
-    expect(intent).toContain('$340');
     expect(intent).toContain('13.6 hours');
+    expect(intent).not.toMatch(/[$¥€£]/);
+    expect(intent).not.toContain('saved');
   });
 
   test('财务公开页: 从周报页链接可达, 渲染月账表 (zh)', async ({ page }) => {
