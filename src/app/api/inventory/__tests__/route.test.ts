@@ -8,6 +8,8 @@
  * - POST 42P01 → 503 TABLE_NOT_FOUND (未持久化的写不伪造成功)
  * - DELETE: uuid 校验 400 / 跨用户或不存在 0 行 → 404 / 命中 → 200
  * - RLS 纵深: 查询恒 .eq('user_id', auth uid); migration 四 policy + UPDATE WITH CHECK
+ * - await-reject 盲分支 (b87-b): 链 throw 而非 resolve error field → withAuth 统一 500, 原始错误不泄漏
+ * - 防御分支 (b87-b): GET data null → items []; DELETE count null → 404
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -26,6 +28,7 @@ vi.mock('@/lib/logger', () => ({
 
 import { GET, POST, DELETE } from '../route';
 import { createAuthenticatedClient } from '@/lib/supabase-api';
+import { logger } from '@/lib/logger';
 
 type Chain = Record<string, ReturnType<typeof vi.fn>> & { then: unknown };
 
@@ -217,6 +220,63 @@ describe('DELETE /api/inventory?id=', () => {
     authed(chain);
     const res = await DELETE(makeRequest('DELETE', undefined, '?id=11111111-1111-4111-8111-111111111111'));
     expect(res.status).toBe(503);
+  });
+});
+
+// b87-b: 壳测此前只 resolve { data, error } — 链直接 reject (连接断/驱动抛错) 的路径结构盲,
+// 异常会穿透 route 本体落进 withAuth 的 catch, 契约是统一 500 且不泄漏原始错误。
+describe('await-reject 路径 (链 throw 而非 error field) — withAuth 统一兜底', () => {
+  const REJECT = async () => {
+    throw new Error('connection reset by peer');
+  };
+
+  it('GET: 链 reject → 500 Internal server error, 原始错误不泄漏', async () => {
+    authed(makeChain(REJECT));
+    const res = await GET(makeRequest('GET'));
+    const json = await res.json();
+    expect(res.status).toBe(500);
+    expect(json.error).toBe('Internal server error');
+    expect(JSON.stringify(json)).not.toContain('connection reset');
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('POST: 校验通过后 insert 链 reject → 500 (非 201/503)', async () => {
+    authed(makeChain(REJECT));
+    const res = await POST(makeRequest('POST', { item_name: '收纳盒' }));
+    const json = await res.json();
+    expect(res.status).toBe(500);
+    expect(json.error).toBe('Internal server error');
+    expect(JSON.stringify(json)).not.toContain('connection reset');
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('DELETE: 合法 uuid 但链 reject → 500 (非 404/503)', async () => {
+    authed(makeChain(REJECT));
+    const res = await DELETE(makeRequest('DELETE', undefined, '?id=11111111-1111-4111-8111-111111111111'));
+    const json = await res.json();
+    expect(res.status).toBe(500);
+    expect(json.error).toBe('Internal server error');
+    expect(JSON.stringify(json)).not.toContain('connection reset');
+    expect(logger.error).toHaveBeenCalled();
+  });
+});
+
+// b87-b: 正常 resolve 下的空值形态 — (data || []) 与 !count 两个防御分支此前未走
+describe('防御分支 (resolve 但空值)', () => {
+  it('GET data null 且无 error → 200 { items: [], inventoryEnabled: true }', async () => {
+    const chain = makeChain(async () => ({ data: null, error: null }));
+    authed(chain);
+    const res = await GET(makeRequest('GET'));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json).toEqual({ items: [], inventoryEnabled: true });
+  });
+
+  it('DELETE count null 且无 error → 404 (!count 对 null 同样成立)', async () => {
+    const chain = makeChain(async () => ({ count: null, data: null, error: null }));
+    authed(chain);
+    const res = await DELETE(makeRequest('DELETE', undefined, '?id=11111111-1111-4111-8111-111111111111'));
+    expect(res.status).toBe(404);
   });
 });
 
