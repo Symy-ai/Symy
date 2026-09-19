@@ -21,6 +21,7 @@ import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import { loadGrowthStats } from '@/lib/growth-stats-server';
 import { CO2_METHODOLOGY_DOC_URL } from '@/lib/co2-estimate';
 import { TransparencyShareButton } from './share-button';
+import { TransparencyPostCopyButton } from './post-copy-button';
 import { TransparencySubscribeForm } from './subscribe-form';
 
 export async function generateMetadata({
@@ -239,6 +240,12 @@ export default async function TransparencyPage({
           <TransparencyShareButton
             intercepts={formatInt(snapshot.intercepts.week, locale)}
             hoursWon={formatDecimal(snapshot.hoursWon.week, locale)}
+          />
+          {/* 发帖文案复制 (batch89-a): 只传三个非金额指标 — 金额红线在入参类型层 */}
+          <TransparencyPostCopyButton
+            intercepts={snapshot.intercepts.week}
+            hoursWon={snapshot.hoursWon.week}
+            guards={snapshot.guards}
           />
         </div>
       </div>

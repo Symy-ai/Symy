@@ -220,6 +220,22 @@ describe('transparency page — growth section (batch82-c)', () => {
   });
 });
 
+describe('transparency page — post-copy block (batch89-a)', () => {
+  it('mounts the post-copy button next to the share button in zh and en', async () => {
+    for (const [locale, msgs] of [['zh', zhMsgs], ['en', enMsgs]] as const) {
+      mockMessages(flat(msgs));
+      const { unmount } = await renderPage(locale);
+
+      expect(screen.getByTestId('transparency-post-copy')).toBeTruthy();
+      expect(screen.getByTestId('transparency-post-copy-button').textContent).toBe(
+        msgs.transparency.postCopyButton,
+      );
+      expect(screen.getByTestId('transparency-share')).toBeTruthy();
+      unmount();
+    }
+  });
+});
+
 describe('transparency page — finance link (batch83-a)', () => {
   it('links to the financial transparency subpage in zh and en', async () => {
     for (const [locale, msgs, expectText] of [
