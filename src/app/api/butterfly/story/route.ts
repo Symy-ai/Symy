@@ -98,10 +98,12 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
   }
 
   if (session.status !== 'active') {
+    await releaseLock(storyLockKey).catch(() => {});
     return NextResponse.json({ error: 'Session is not active yet' }, { status: 409 });
   }
 
   if (!isStoryEngineReady()) {
+    await releaseLock(storyLockKey).catch(() => {});
     return NextResponse.json(
       { error: 'Story engine is not available. Please try again later.' },
       { status: 503 },
@@ -121,9 +123,11 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     sessionRow = freshRow;
     session = dbToSession(sessionRow);
     if (session.status !== 'active') {
+      await releaseLock(storyLockKey).catch(() => {});
       return NextResponse.json({ error: 'Session is not active' }, { status: 400 });
     }
     if (!session.outline) {
+      await releaseLock(storyLockKey).catch(() => {});
       return NextResponse.json({ error: 'Session has no outline' }, { status: 400 });
     }
   }
