@@ -28,6 +28,16 @@ function getAppBaseUrl(): string {
   return APP_BASE_URL;
 }
 
+function buildInviteLink(refCode: string): string {
+  const params = new URLSearchParams({
+    ref: refCode,
+    utm_source: 'invite',
+    utm_medium: 'direct',
+    utm_campaign: 'guardian_covenant',
+  });
+  return `${getAppBaseUrl()}/?${params.toString()}`;
+}
+
 export const GET = withAuth(async ({ supabase, user }) => {
   try {
     // 1. 查 profiles.ref_code
@@ -45,7 +55,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
       refCode = user.id.substring(0, 8);
       return NextResponse.json({
         refCode,
-        inviteLink: `${getAppBaseUrl()}/?ref=${refCode}`,
+        inviteLink: buildInviteLink(refCode),
         stats: { totalInvited: 0, completed: 0 },
         degraded: true,
       });
@@ -118,7 +128,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
 
     return NextResponse.json({
       refCode,
-      inviteLink: `${getAppBaseUrl()}/?ref=${refCode}`,
+      inviteLink: buildInviteLink(refCode),
       stats,
     });
       // safe to ignore: non-critical background operation, error already logged

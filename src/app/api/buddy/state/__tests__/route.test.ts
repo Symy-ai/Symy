@@ -122,6 +122,15 @@ describe('GET /api/buddy/state', () => {
           })),
         };
       }
+      if (table === 'invitations') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(async () => ({ count: 0, error: null })),
+            })),
+          })),
+        };
+      }
       return {};
     }) as never;
     vi.mocked(createAuthenticatedClient).mockResolvedValueOnce(authed as never);
@@ -161,6 +170,15 @@ describe('GET /api/buddy/state', () => {
           })),
         };
       }
+      if (table === 'invitations') {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(async () => ({ count: 3, error: null })),
+            })),
+          })),
+        };
+      }
       return {};
     }) as never;
     vi.mocked(createAuthenticatedClient).mockResolvedValueOnce(authed as never);
@@ -172,6 +190,7 @@ describe('GET /api/buddy/state', () => {
     expect(json.buddyState.vitality).toBe(80);
     expect(json.buddyState.tokens).toBe(200);
     expect(json.buddyState.version).toBe(3);
+    expect(json.buddyState.invitedCount).toBe(3);
     expect(json.buddyState.dreamFunds).toHaveLength(1);
     expect(json.buddyState.dreamFunds[0].id).toBe('df-1');
   });

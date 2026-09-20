@@ -127,6 +127,7 @@ export const BatteryIcon = memo(function BatteryIcon({ health }: { health: Buddy
 // ====== Badge Chip ======
 // batch3-c: 绿色荣誉库 — 旧章 emoji 从旧省钱口径 (💰🔥⚔️🏗️) 换成绿色意象, id 不变保持已解锁用户兼容
 export const BADGE_INFO: Record<string, { labelKey: string; emoji: string; color: string }> = {
+  referral_master: { labelKey: 'buddy.badgeNames.referral_master', emoji: '🌳', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
   impulse_shield: { labelKey: 'buddy.badgeNames.impulse_shield', emoji: '🛡️', color: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' },
   first_save: { labelKey: 'buddy.badgeNames.first_save', emoji: '🌾', color: 'bg-green-500/10 border-green-500/20 text-green-400' },
   streak_7: { labelKey: 'buddy.badgeNames.streak_7', emoji: '🍃', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
@@ -153,7 +154,7 @@ export interface BadgeDef {
   /** 🔧 P1-11 fix: 进度目标值 (用于 progress bar) */
   progressTarget: number;
   /** 🔧 P1-11 fix: 进度计算类型 — 决定如何从 buddyState 计算当前进度 */
-  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded';
+  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded' | 'invited_count';
   /** batch3-c: 收藏面板分组 — 守护 / 成长 / 里程碑 (纯前端分组, 不影响数据) */
   group: BadgeGroup;
 }
@@ -170,6 +171,15 @@ export const BADGE_GROUP_ORDER: BadgeGroup[] = ['guardian', 'growth', 'milestone
  * 旧 6 枚 id/progressTarget/progressType 不变, 只绿色化视觉与文案, 已解锁用户数据兼容。
  */
 export const ALL_BADGES: BadgeDef[] = [
+  {
+    id: 'referral_master',
+    emoji: '🌳',
+    color: 'bg-emerald-500/10 border-emerald-500/20',
+    unlockConditionKey: 'buddy.badgeUnlock.referral_master',
+    progressTarget: 10,
+    progressType: 'invited_count',
+    group: 'guardian',
+  },
   // ===== 守护勋章 — 看见并守住选择 =====
   {
     id: 'impulse_shield',

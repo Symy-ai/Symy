@@ -74,6 +74,16 @@ export const GET = withAuth(async ({ supabase, user }) => {
     emoji: r.emoji,
   }));
 
+  const { count: invitedCount, error: inviteError } = await supabase
+    .from('invitations')
+    .select('id', { count: 'exact', head: true })
+    .eq('referrer_user_id', user.id)
+    .eq('status', 'completed');
+  if (inviteError) {
+    // safe to ignore: covenant badge progress degrades to zero; buddy state remains usable
+    logger.warn('[Buddy State] invitations count query failed:', inviteError.message);
+  }
+
   // 转换数据库字段名为前端 camelCase 格式
   const buddyState = {
     vitality: data.vitality,
@@ -85,6 +95,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
     streak: data.streak,
     dreamFunds,
     badges: data.badges,
+    invitedCount: invitedCount ?? 0,
     totalSaved: data.total_saved,
     challengesCompleted: data.challenges_completed,
     lastDrainAt: data.last_drain_at,

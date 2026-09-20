@@ -47,6 +47,7 @@ function makeBuddyState(overrides: Partial<BuddyState> = {}): BuddyState {
     streak: 0,
     dreamFunds: [],
     badges: [],
+    invitedCount: 0,
     totalSaved: 0,
     challengesCompleted: 0,
     lastHealingKitAt: null,
@@ -225,6 +226,16 @@ describe('calcBadgeProgress — every progressType branch', () => {
       expect(calcBadgeProgress(def, makeBuddyState({ challengesCompleted: 99, totalSaved: 9999 }))).toBe(0);
       expect(isProgressTrackable(progressType as 'big_truth' | 'clear_mind_streak')).toBe(false);
     }
+  });
+});
+
+describe('guardian covenant badge wiring', () => {
+  it('maps completed invitations to the existing referral_master badge', () => {
+    const badge = ALL_BADGES.find((item) => item.id === 'referral_master');
+
+    expect(badge).toMatchObject({ progressType: 'invited_count', progressTarget: 10, group: 'guardian' });
+    expect(calcBadgeProgress(badge!, makeBuddyState({ invitedCount: 9 }))).toBe(9);
+    expect(BADGE_INFO.referral_master.labelKey).toBe('buddy.badgeNames.referral_master');
   });
 });
 

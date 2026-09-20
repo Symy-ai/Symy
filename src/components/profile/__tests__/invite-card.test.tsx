@@ -99,6 +99,11 @@ function msg(root: MsgTree, key: string): string {
 }
 
 const INVITE_KEYS = [
+  'invite.covenantPill',
+  'invite.covenantHeading',
+  'invite.covenantSubtitle',
+  'invite.covenantJoinLabel',
+  'invite.covenantFooter',
   'profile.inviteFriends',
   'profile.inviteFriendsDesc',
   'profile.inviteRewardDesc',
@@ -230,7 +235,7 @@ describe('guardian tier ladder (display-only mapping)', () => {
 // ============================================================
 describe('invite copy guard (honor, not hustle)', () => {
   it('no mercenary referral-commission wording in invite domain (en/zh)', () => {
-    const mercenary = /拉新|薅|佣金|返利|割韭菜|commission|cashback|affiliate|referral/i;
+    const mercenary = /拉新|薅|佣金|返利|割韭菜|奖励|返现|赚钱|commission|cashback|affiliate|referral|reward|rebate|make money/i;
     for (const key of INVITE_KEYS) {
       expect(msg(en as MsgTree, key)).not.toMatch(mercenary);
       expect(msg(zh as MsgTree, key)).not.toMatch(mercenary);

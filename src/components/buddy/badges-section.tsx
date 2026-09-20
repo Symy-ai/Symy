@@ -56,6 +56,8 @@ export function calcBadgeProgress(badge: BadgeDef, buddyState?: BuddyState | nul
       return buddyState.totalSaved || 0;
     case 'streak_days':
       return buddyState.streak || 0;
+    case 'invited_count':
+      return buddyState.invitedCount || 0;
     case 'big_truth':
     case 'clear_mind_streak':
       // 无后端追踪字段 — 徽章由 AI add_badge 授予, 非计数进度 (isProgressTrackable=false → UI 不渲染进度条)

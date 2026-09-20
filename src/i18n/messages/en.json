@@ -31,6 +31,16 @@
     "demoBannerEnhanced": "👁️ This is someone else's guarding. Sign up and Symy helps you guard your own.",
     "signUpFree": "Start guarding →"
   },
+  "invite": {
+    "covenantPill": "Guardian Covenant",
+    "covenantTitle": "I'm guarding your future time",
+    "covenantHeading": "I'm guarding your future time",
+    "covenantSubtitle": "Join guardian No. {guardianRank}",
+    "covenantJoinLabel": "Become the person who is guarded",
+    "covenantFooter": "Symy Guardian Forest",
+    "covenantToast": "You guarded another friend.",
+    "covenantBadgeProgress": "Guardian Forest badge: {completed}/10 guardians"
+  },
   "tabs": {
     "buddy": "🐘 Buddy",
     "chat": "Chat",
@@ -601,7 +611,8 @@
       "money_meadow_100": "Money Meadow",
       "money_forest_500": "Money Forest",
       "first_dream_funded": "First Seed",
-      "dream_gardener_3": "Dream Gardener"
+      "dream_gardener_3": "Dream Gardener",
+      "referral_master": "Covenant Grove"
     },
     "badgeDescriptions": {
       "impulse_shield": "Your first guarded choice. One less thing bought — and one less thing made.",
@@ -617,7 +628,8 @@
       "money_meadow_100": "The first 100 you kept. A meadow of possibility is starting to grow.",
       "money_forest_500": "500 kept from guarded choices. What started as a meadow now shades you.",
       "first_dream_funded": "The first money you kept went where you chose. A seed is in the ground.",
-      "dream_gardener_3": "Three dreams growing side by side. You tend a whole garden now."
+      "dream_gardener_3": "Three dreams growing side by side. You tend a whole garden now.",
+      "referral_master": "Ten friends accepted your covenant. Your Guardian Forest is growing."
     },
     "badgeUnlock": {
       "impulse_shield": "Hold your first gate — pause, look at the item, choose not to buy",
@@ -633,7 +645,8 @@
       "money_meadow_100": "Save $100 in total",
       "money_forest_500": "Save $500 in total",
       "first_dream_funded": "Move your first kept money into a dream fund",
-      "dream_gardener_3": "Grow 3 dream funds at the same time"
+      "dream_gardener_3": "Grow 3 dream funds at the same time",
+      "referral_master": "Invite 10 friends who complete their first challenge"
     },
     "unlockCondition": "Unlock:",
     "progress": "Progress",

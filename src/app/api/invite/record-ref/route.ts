@@ -25,6 +25,8 @@ const refSchema = z.object({
   refCode: z.string().trim().min(1).max(100),
 });
 
+const REFERRAL_BADGE_TARGET = 10;
+
 export const POST = withAuth(async ({ supabase, user, request }) => {
   const body = await validateBody(request, refSchema);
   if (isValidationError(body)) return body;
@@ -118,7 +120,26 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     }
 
     logger.info(`[Invite RecordRef] Recorded: referrer=${referrerId}, referee=${user.id}`);
-    return NextResponse.json({ success: true, recorded: true });
+    const { count: completedCount, error: countError } = await supabase
+      .from('invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('referrer_user_id', referrerId)
+      .eq('status', 'completed');
+    if (countError) {
+      logger.warn('[Invite RecordRef] completed-count query error:', countError.message);
+      return NextResponse.json({ success: true, recorded: true, guardian: { badgeLinked: false } });
+    }
+
+    const completed = completedCount ?? 0;
+    return NextResponse.json({
+      success: true,
+      recorded: true,
+      guardian: {
+        completedCount: completed,
+        badgeProgress: Math.min(1, completed / REFERRAL_BADGE_TARGET),
+        badgeLinked: true,
+      },
+    });
   } catch (err) {
     // 🔧 ARCH fix Round 75: Don't swallow unexpected errors — return 500 via createApiError
     logger.error('[Invite RecordRef] Unhandled error:', err);

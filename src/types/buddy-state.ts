@@ -74,6 +74,8 @@ export interface BuddyState {
   streak: number;
   dreamFunds: DreamFund[];
   badges: string[];
+  /** Completed invitations — powers the Guardian Covenant badge progress. */
+  invitedCount?: number;
   totalSaved: number;
   challengesCompleted: number;
   lastHealingKitAt: string | null;

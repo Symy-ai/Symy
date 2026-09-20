@@ -107,9 +107,10 @@ export function InviteCard() {
         stats: { totalInvited: number; completed: number };
       }>('/api/invite/link');
       const refCode = data.refCode;
-      const currentOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://symy.ai';
       setRefCode(refCode);
-      setInviteLink(`${currentOrigin}/?ref=${refCode}`);
+      setInviteLink(typeof window === 'undefined'
+        ? data.inviteLink
+        : `${window.location.origin}/${new URL(data.inviteLink).search}`);
       setStats(data.stats);
     } catch (err) {
       logger.warn('[InviteCard] Failed to fetch invite link:', err);

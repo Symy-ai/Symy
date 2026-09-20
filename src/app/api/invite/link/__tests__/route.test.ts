@@ -123,7 +123,11 @@ describe('GET /api/invite/link', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.refCode).toBe('existing1');
-    expect(json.inviteLink).toContain('?ref=existing1');
+    const link = new URL(json.inviteLink);
+    expect(link.searchParams.get('ref')).toBe('existing1');
+    expect(link.searchParams.get('utm_source')).toBe('invite');
+    expect(link.searchParams.get('utm_medium')).toBe('direct');
+    expect(link.searchParams.get('utm_campaign')).toBe('guardian_covenant');
     expect(json.degraded).toBeUndefined();
   });
 
