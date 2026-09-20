@@ -1,7 +1,9 @@
 /**
- * Tests for /[locale]/transparency/og — 周报分享卡 (batch82-a)
+ * Tests for /[locale]/transparency/og — 周报分享卡 (batch82-a / batch104-c)
  *
  * - 周报卡渲染冒烟: mock 聚合快照 → 无金额/碳指标 + Week of <weekStart> + 品牌可见
+ * - 环比行 (batch104-c): 拦截/小时两 tile 带 ↑↓→ 趋势; 无上周基线 → 中性态不渲染;
+ *   守护者 (累计) 无环比; 趋势行同样无金额
  * - 降级分支: loader 拒绝/返回 null → 静态骨架卡 (品牌 + 内容引擎 slogan),
  *   恒 200 不抛 500
  * - metadata 接线: /transparency 页 openGraph/twitter images 指向本 route
@@ -35,6 +37,7 @@ const FIXTURE: TransparencySnapshot = {
   savedUsd: { week: 120, total: 960 },
   hoursWon: { week: 4.8, total: 38.4 },
   co2SavedKg: { week: 16.8, total: 134.4 }, // batch82-b 快照契约字段; OG 卡面按红线不展示碳数值
+  lastWeek: { intercepts: 5, savedUsd: 100, hoursWon: 4, co2SavedKg: 14 },
   guards: 13,
   generatedAt: '2026-09-18T12:00:00.000Z',
   degraded: false,
@@ -99,6 +102,8 @@ describe('transparency og — fallback', () => {
     expect(serialized).toContain('透明就是我们的内容引擎');
     expect(serialized).not.toContain('$');
     expect(serialized).not.toContain('2026-09-14');
+    // 骨架卡无指标自然无环比行
+    expect(serialized).not.toContain('较上周');
   });
 
   it('keeps serving 200 image/* when the loader rejects', async () => {
@@ -109,6 +114,47 @@ describe('transparency og — fallback', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toMatch(/^image\//);
     expect(ImageResponse).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('transparency og — trend lines (batch104-c)', () => {
+  it('renders up-trend lines on the two week tiles only (intercepts + hours), delta without any amount', () => {
+    for (const locale of ['zh', 'en'] as const) {
+      const serialized = JSON.stringify(buildTransparencyOgContent(locale, FIXTURE));
+      const expected = {
+        zh: { intercepts: '↑ 较上周 +2', hours: '↑ 较上周 +0.8' },
+        en: { intercepts: '↑ +2 vs last week', hours: '↑ +0.8 vs last week' },
+      }[locale];
+      expect(serialized).toContain(expected.intercepts);
+      expect(serialized).toContain(expected.hours);
+    }
+  });
+
+  it('renders down and flat trend lines with the same calm compact form', () => {
+    const downFlat: TransparencySnapshot = {
+      ...FIXTURE,
+      lastWeek: { intercepts: 9, savedUsd: 100, hoursWon: 4.8, co2SavedKg: 14 },
+    };
+    for (const locale of ['zh', 'en'] as const) {
+      const serialized = JSON.stringify(buildTransparencyOgContent(locale, downFlat));
+      const expected = {
+        zh: { intercepts: '↓ 较上周 -2', hours: '→ 与上周持平' },
+        en: { intercepts: '↓ -2 vs last week', hours: '→ Level with last week' },
+      }[locale];
+      expect(serialized).toContain(expected.intercepts);
+      expect(serialized).toContain(expected.hours);
+    }
+  });
+
+  it('renders no trend line when there is no last-week baseline (neutral)', () => {
+    const neutral: TransparencySnapshot = { ...FIXTURE, lastWeek: null };
+    const serialized = JSON.stringify(buildTransparencyOgContent('zh', neutral));
+
+    expect(serialized).not.toContain('较上周');
+    expect(serialized).not.toContain('vs last week');
+    // 指标本身照常可见
+    expect(serialized).toContain('7');
+    expect(serialized).toContain('4.8');
   });
 });
 

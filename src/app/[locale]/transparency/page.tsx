@@ -20,6 +20,7 @@ import { getTranslations } from 'next-intl/server';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import { loadGrowthStats } from '@/lib/growth-stats-server';
 import { CO2_METHODOLOGY_DOC_URL } from '@/lib/co2-estimate';
+import { transparencyTrend, type TransparencyTrend } from '@/lib/transparency-weekly';
 import { TransparencyShareButton } from './share-button';
 import { TransparencyPostCopyButton } from './post-copy-button';
 import { TransparencySubscribeForm } from './subscribe-form';
@@ -62,6 +63,30 @@ function formatK(n: number, locale: string): string {
   }).format(Math.max(0, n));
 }
 
+type TrendKind = 'int' | 'usd' | 'decimal';
+
+/** 环比差值绝对值 — 小数指标允许两位小数, 避免 0.04 被舍成 "0" 却仍标 ↑ */
+function formatTrendDelta(delta: number, kind: TrendKind, locale: string): string {
+  const abs = Math.abs(delta);
+  const formatted = new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    maximumFractionDigits: kind === 'decimal' ? 2 : 0,
+  }).format(kind === 'decimal' ? abs : Math.round(abs));
+  return kind === 'usd' ? `$${formatted}` : formatted;
+}
+
+/** 环比指示 (batch104-c): 有上周基线才给三态; neutral (无基线) 不渲染箭头。
+ *  上涨=守护力增强叙事, 下降=平静呈现 — 无焦虑话术 (反 FOMO 铁律) */
+function trendOf(
+  current: number,
+  lastWeek: number | null,
+  kind: TrendKind,
+  locale: string,
+): { state: TransparencyTrend; delta: string } | null {
+  const state = transparencyTrend(current, lastWeek);
+  if (state === 'neutral') return null;
+  return { state, delta: formatTrendDelta(current - (lastWeek ?? 0), kind, locale) };
+}
+
 export default async function TransparencyPage({
   params,
 }: {
@@ -77,6 +102,7 @@ export default async function TransparencyPage({
   const generatedDate = snapshot.generatedAt.slice(0, 10);
 
   const weekTag = t('transparency.thisWeek');
+  const last = snapshot.lastWeek;
   const cards = [
     {
       testId: 'transparency-intercepts',
@@ -84,6 +110,7 @@ export default async function TransparencyPage({
       hero: formatInt(snapshot.intercepts.week, locale),
       heroTag: weekTag,
       sub: `${t('transparency.allTime')} ${formatInt(snapshot.intercepts.total, locale)}`,
+      trend: trendOf(snapshot.intercepts.week, last?.intercepts ?? null, 'int', locale),
     },
     {
       testId: 'transparency-saved',
@@ -91,6 +118,7 @@ export default async function TransparencyPage({
       hero: `$${formatInt(snapshot.savedUsd.week, locale)}`,
       heroTag: weekTag,
       sub: `${t('transparency.allTime')} $${formatInt(snapshot.savedUsd.total, locale)}`,
+      trend: trendOf(snapshot.savedUsd.week, last?.savedUsd ?? null, 'usd', locale),
     },
     {
       testId: 'transparency-hours',
@@ -98,6 +126,7 @@ export default async function TransparencyPage({
       hero: formatDecimal(snapshot.hoursWon.week, locale),
       heroTag: weekTag,
       sub: `${t('transparency.allTime')} ${formatDecimal(snapshot.hoursWon.total, locale)}`,
+      trend: trendOf(snapshot.hoursWon.week, last?.hoursWon ?? null, 'decimal', locale),
     },
     {
       testId: 'transparency-co2',
@@ -105,6 +134,7 @@ export default async function TransparencyPage({
       hero: formatDecimal(snapshot.co2SavedKg.week, locale),
       heroTag: weekTag,
       sub: `${t('transparency.allTime')} ${formatDecimal(snapshot.co2SavedKg.total, locale)}`,
+      trend: trendOf(snapshot.co2SavedKg.week, last?.co2SavedKg ?? null, 'decimal', locale),
     },
     {
       testId: 'transparency-guards',
@@ -112,6 +142,7 @@ export default async function TransparencyPage({
       hero: formatInt(snapshot.guards, locale),
       heroTag: '',
       sub: t('transparency.guardsHint'),
+      trend: null,
     },
   ];
 
@@ -149,6 +180,24 @@ export default async function TransparencyPage({
               {card.heroTag && (
                 <p className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                   {card.heroTag}
+                </p>
+              )}
+              {/* 环比行 (batch104-c): 上涨用品牌绿 (守护力增强), 下降/持平走中性灰 —
+                  不做红绿情绪编码, 下降态平静呈现 (反 FOMO 铁律) */}
+              {card.trend && (
+                <p
+                  className={`mt-1 text-[11px] font-medium ${
+                    card.trend.state === 'up'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-text-tertiary'
+                  }`}
+                  data-testid={`${card.testId}-trend`}
+                >
+                  {card.trend.state === 'up'
+                    ? t('transparency.trendUp', { delta: card.trend.delta })
+                    : card.trend.state === 'down'
+                      ? t('transparency.trendDown', { delta: card.trend.delta })
+                      : t('transparency.trendFlat')}
                 </p>
               )}
             </div>

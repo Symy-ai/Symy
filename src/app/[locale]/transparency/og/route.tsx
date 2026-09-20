@@ -7,6 +7,8 @@
  *
  * 数据层: 与页面共用 loadTransparencyWeekly (服务端直调，不自我 fetch)。
  * 降级红线: loader 任何失败 → 静态骨架卡 (品牌 + 内容引擎 slogan)，恒 200 不抛 500。
+ * 环比行 (batch104-c): 拦截/小时两个周值 tile 带 ↑↓→ 趋势 (空间允许的最小形态);
+ * 无上周基线 → 中性态不渲染; 守护者是累计口径, 无环比。
  *
  * 红线: 四指标全部是平台聚合 (我们自己的账)，结构上无用户级字段；
  * 无 FOMO 话术 — 守护叙事平静呈现。
@@ -15,7 +17,7 @@
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
-import type { TransparencySnapshot } from '@/lib/transparency-weekly';
+import { transparencyTrend, type TransparencySnapshot } from '@/lib/transparency-weekly';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,11 +32,17 @@ const copy = {
     weekOf: (date: string) => `Week of ${date}`,
     engine: 'Transparency is our content engine',
     stats: ['Intercepts', 'Hours won back', 'Guardians (all time)'],
+    trendUp: (delta: string) => `↑ +${delta} vs last week`,
+    trendDown: (delta: string) => `↓ -${delta} vs last week`,
+    trendFlat: '→ Level with last week',
   },
   zh: {
     weekOf: (date: string) => `周报 · ${date} 起`,
     engine: '透明就是我们的内容引擎',
     stats: ['拦截次数', '赢回小时', '守护者（累计）'],
+    trendUp: (delta: string) => `↑ 较上周 +${delta}`,
+    trendDown: (delta: string) => `↓ 较上周 -${delta}`,
+    trendFlat: '→ 与上周持平',
   },
 } as const;
 
@@ -92,12 +100,33 @@ function brandRow(locale: string | undefined, weekDate: string | null) {
   );
 }
 
+function trendLine(
+  locale: string | undefined,
+  current: number,
+  lastWeek: number | null,
+  format: (value: number) => string,
+) {
+  const trend = transparencyTrend(current, lastWeek);
+  if (trend === 'neutral') return null;
+  const content = getCopy(locale);
+  if (trend === 'flat') return content.trendFlat;
+  const delta = format(Math.abs(current - (lastWeek ?? 0)));
+  return trend === 'up' ? content.trendUp(delta) : content.trendDown(delta);
+}
+
 function metricTiles(snapshot: TransparencySnapshot, locale: string | undefined) {
   const labels = getCopy(locale).stats;
   const values = [
     formatInt(snapshot.intercepts.week),
     formatHours(snapshot.hoursWon.week),
     formatInt(snapshot.guards),
+  ];
+  // 环比行 (batch104-c): 只给两个周值 tile — guards 是累计口径, 无环比可言;
+  // 无上周基线 (lastWeek=null) → 中性态不渲染。趋势行无金额 (82-a 卡面口径)
+  const trends = [
+    trendLine(locale, snapshot.intercepts.week, snapshot.lastWeek?.intercepts ?? null, formatInt),
+    trendLine(locale, snapshot.hoursWon.week, snapshot.lastWeek?.hoursWon ?? null, formatHours),
+    null,
   ];
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, justifyContent: 'center', width: '100%' }}>
@@ -124,6 +153,11 @@ function metricTiles(snapshot: TransparencySnapshot, locale: string | undefined)
           <div style={{ fontSize: 24, fontWeight: 600, marginTop: 16, opacity: 0.82 }}>
             {label}
           </div>
+          {trends[index] && (
+            <div style={{ fontSize: 20, fontWeight: 600, marginTop: 10, opacity: 0.7 }}>
+              {trends[index]}
+            </div>
+          )}
         </div>
       ))}
     </div>

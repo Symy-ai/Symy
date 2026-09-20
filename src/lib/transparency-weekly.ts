@@ -28,6 +28,15 @@ export interface TransparencyMetric {
   total: number;
 }
 
+/** 上周对照段 (batch104-c): 上个完整周 (UTC 周一起 7 天) 的各指标值。
+ *  null = 无上周基线 (首周 / 存量快照 / 坏行) — 页面对应中性态, 不渲染箭头 */
+export interface TransparencyLastWeek {
+  intercepts: number;
+  savedUsd: number;
+  hoursWon: number;
+  co2SavedKg: number;
+}
+
 /** 公开快照 — 键面即契约, 结构上无用户级字段 (红线) */
 export interface TransparencySnapshot {
   weekStart: string;
@@ -37,6 +46,8 @@ export interface TransparencySnapshot {
   hoursWon: TransparencyMetric;
   /** 估算减排量 (kg CO₂e) — 由 savedUsd 派生, 估算值非实测 (口径见 co2-estimate.ts) */
   co2SavedKg: TransparencyMetric;
+  /** 上周对照 (batch104-c) — 环比箭头数据源, 与本周同为平台聚合桶 */
+  lastWeek: TransparencyLastWeek | null;
   guards: number;
   generatedAt: string;
   /** true = 聚合失败, 当前值来自缓存/降级快照而非实时聚合 */
@@ -74,6 +85,8 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+const WEEK_MS = 7 * 86_400_000;
+
 /** 零值骨架 — 全链路降级的最终兜底 (仍满足键面契约) */
 export function emptyTransparency(now: Date, degraded: boolean): TransparencySnapshot {
   return {
@@ -83,10 +96,24 @@ export function emptyTransparency(now: Date, degraded: boolean): TransparencySna
     savedUsd: { week: 0, total: 0 },
     hoursWon: { week: 0, total: 0 },
     co2SavedKg: { week: 0, total: 0 },
+    lastWeek: null,
     guards: 0,
     generatedAt: now.toISOString(),
     degraded,
   };
+}
+
+/**
+ * 环比三态 (batch104-c): up=守护力在增强 (上涨叙事, 非 FOMO); down=平静呈现;
+ * flat=持平; neutral=无上周基线 (null/非有限数) — 页面对中性态不渲染箭头。
+ */
+export type TransparencyTrend = 'up' | 'down' | 'flat' | 'neutral';
+
+export function transparencyTrend(current: number, previous: number | null): TransparencyTrend {
+  if (previous === null || !Number.isFinite(previous) || !Number.isFinite(current)) return 'neutral';
+  if (current > previous) return 'up';
+  if (current < previous) return 'down';
+  return 'flat';
 }
 
 const INTERCEPT_EVENT_TYPES = new Set(['challenge_completed', 'challenge_failed']);
@@ -102,8 +129,10 @@ export function aggregateTransparency(
   now: Date,
 ): TransparencySnapshot {
   const weekStartMs = utcWeekStart(now).getTime();
+  const lastWeekStartMs = weekStartMs - WEEK_MS;
 
   let interceptsWeek = 0;
+  let interceptsLastWeek = 0;
   let interceptsTotal = 0;
   const seen = new Set<string>();
   for (const row of healthRows || []) {
@@ -115,6 +144,7 @@ export function aggregateTransparency(
     seen.add(key);
     interceptsTotal += 1;
     if (t >= weekStartMs) interceptsWeek += 1;
+    else if (t >= lastWeekStartMs) interceptsLastWeek += 1;
   }
 
   let guards = 0;
@@ -125,23 +155,25 @@ export function aggregateTransparency(
     guards += 1;
   }
 
-  const sumPassed = (filterWeek: boolean): number => {
+  /** range=null 表示全量 (累计); 否则取 [fromMs, toMs) 半开窗 */
+  const sumPassed = (range: { fromMs: number; toMs: number } | null): number => {
     let sum = 0;
     for (const row of passedRows || []) {
       if (!row) continue;
       const amount = Number(row.amount);
       if (!Number.isFinite(amount) || amount <= 0) continue;
-      if (filterWeek) {
+      if (range) {
         const t = new Date(row.completed_at ?? '').getTime();
-        if (!Number.isFinite(t) || t < weekStartMs) continue;
+        if (!Number.isFinite(t) || t < range.fromMs || t >= range.toMs) continue;
       }
       sum += amount;
     }
     return round2(sum);
   };
 
-  const savedWeek = sumPassed(true);
-  const savedTotal = sumPassed(false);
+  const savedWeek = sumPassed({ fromMs: weekStartMs, toMs: Number.POSITIVE_INFINITY });
+  const savedLastWeek = sumPassed({ fromMs: lastWeekStartMs, toMs: weekStartMs });
+  const savedTotal = sumPassed(null);
 
   return {
     weekStart: utcWeekStart(now).toISOString(),
@@ -155,6 +187,12 @@ export function aggregateTransparency(
     co2SavedKg: {
       week: round2(co2FromUsdSaved(savedWeek)),
       total: round2(co2FromUsdSaved(savedTotal)),
+    },
+    lastWeek: {
+      intercepts: interceptsLastWeek,
+      savedUsd: savedLastWeek,
+      hoursWon: round2(moneyToHours(savedLastWeek, DEFAULT_HOURLY_RATE)),
+      co2SavedKg: round2(co2FromUsdSaved(savedLastWeek)),
     },
     guards,
     generatedAt: now.toISOString(),
@@ -170,6 +208,13 @@ export function asTransparencySnapshot(value: unknown): TransparencySnapshot | n
     !!m && typeof m === 'object' &&
     typeof (m as TransparencyMetric).week === 'number' &&
     typeof (m as TransparencyMetric).total === 'number';
+  // batch104-c 存量快照无 lastWeek — 归一为 null (中性态), 不打穿降级阶梯
+  const isLastWeekSegment = (w: unknown): w is TransparencyLastWeek =>
+    !!w && typeof w === 'object' &&
+    typeof (w as TransparencyLastWeek).intercepts === 'number' &&
+    typeof (w as TransparencyLastWeek).savedUsd === 'number' &&
+    typeof (w as TransparencyLastWeek).hoursWon === 'number' &&
+    typeof (w as TransparencyLastWeek).co2SavedKg === 'number';
   if (typeof v.weekStart !== 'string' || typeof v.weekEnd !== 'string') return null;
   if (typeof v.generatedAt !== 'string' || typeof v.guards !== 'number') return null;
   if (!isMetric(v.intercepts) || !isMetric(v.savedUsd) || !isMetric(v.hoursWon)) return null;
@@ -181,5 +226,10 @@ export function asTransparencySnapshot(value: unknown): TransparencySnapshot | n
         week: round2(co2FromUsdSaved(v.savedUsd.week)),
         total: round2(co2FromUsdSaved(v.savedUsd.total)),
       };
-  return { ...(v as unknown as TransparencySnapshot), co2SavedKg, degraded: v.degraded === true };
+  return {
+    ...(v as unknown as TransparencySnapshot),
+    co2SavedKg,
+    lastWeek: isLastWeekSegment(v.lastWeek) ? v.lastWeek : null,
+    degraded: v.degraded === true,
+  };
 }

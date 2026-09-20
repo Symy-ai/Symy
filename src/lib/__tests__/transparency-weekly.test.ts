@@ -1,13 +1,16 @@
 /**
- * Tests for transparency-weekly pure aggregation (batch81-a / batch82-b)
+ * Tests for transparency-weekly pure aggregation (batch81-a / batch82-b / batch104-c)
  *
  * - utcWeekStart: 周一 00:00 UTC 边界 (周五/周一/周日)
  * - aggregateTransparency: 周窗切分 / (user,event_type,trigger) 幂等去重 /
  *   guards 注册序号 / 金额清洗 (string/0/负/NaN) + round2 /
- *   hoursWon = saved / $25 / co2SavedKg = saved × CO₂ 系数 (batch82-b)
- * - 快照键面契约: 恰好 9 个顶层键, 序列化产物零 "user" — 无个人级字段 (红线)
+ *   hoursWon = saved / $25 / co2SavedKg = saved × CO₂ 系数 (batch82-b) /
+ *   lastWeek 上周对照段: [weekStart-7d, weekStart) 半开窗 (batch104-c)
+ * - transparencyTrend: up/down/flat/neutral 四态, 无基线 → neutral (batch104-c)
+ * - 快照键面契约: 恰好 10 个顶层键, 序列化产物零 "user" — 无个人级字段 (红线)
  * - asTransparencySnapshot: 快照表 jsonb 回读验形, 坏行 → null;
- *   batch81-a 存量行 (无 co2SavedKg) 由 savedUsd 回填, 不打穿降级阶梯
+ *   batch81-a 存量行 (无 co2SavedKg) 由 savedUsd 回填, 不打穿降级阶梯;
+ *   batch104-c 存量行 (无 lastWeek) 归一为 null (中性态)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -15,6 +18,7 @@ import {
   aggregateTransparency,
   asTransparencySnapshot,
   emptyTransparency,
+  transparencyTrend,
   utcWeekStart,
   type TransparencyHealthRow,
   type TransparencyPassedChallengeRow,
@@ -141,6 +145,7 @@ describe('aggregateTransparency', () => {
       'savedUsd',
       'hoursWon',
       'co2SavedKg',
+      'lastWeek',
       'guards',
       'generatedAt',
       'degraded',
@@ -164,12 +169,82 @@ describe('aggregateTransparency', () => {
   });
 });
 
+describe('aggregateTransparency — lastWeek segment (batch104-c)', () => {
+  const lastWeekStartMs = WEEK_START_MS - 7 * 86_400_000; // 2026-09-07 00:00 UTC
+
+  it('counts intercepts in the [weekStart-7d, weekStart) half-open window', () => {
+    const rows = [
+      healthRow({ id: 'this-week', created_at: inWeek }),
+      healthRow({ id: 'last-week', created_at: lastWeek }),
+      // 边界: 周一 00:00 整点归本周; 差 1ms 归上周; 上周一起点整点归上周
+      healthRow({ id: 'boundary-week-start', created_at: new Date(WEEK_START_MS).toISOString() }),
+      healthRow({ id: 'boundary-week-start-minus-1', created_at: new Date(WEEK_START_MS - 1).toISOString() }),
+      healthRow({ id: 'boundary-last-week-start', created_at: new Date(lastWeekStartMs).toISOString() }),
+      // 上上周: 只进 total, 不进 lastWeek
+      healthRow({ id: 'two-weeks-ago', created_at: new Date(lastWeekStartMs - 86_400_000).toISOString() }),
+    ];
+    const snap = aggregateTransparency(rows, [], [], NOW);
+    expect(snap.intercepts.week).toBe(2);
+    expect(snap.lastWeek?.intercepts).toBe(3);
+    expect(snap.intercepts.total).toBe(6);
+  });
+
+  it('dedups (user, event_type, trigger) globally — a key seen this week never re-counts in last week', () => {
+    const rows = [
+      healthRow({ id: 'a', user_id: 'u1', trigger_id: 'tr-1', created_at: inWeek }),
+      healthRow({ id: 'a-dup', user_id: 'u1', trigger_id: 'tr-1', created_at: lastWeek }),
+      // dedup 键含 event_type — 失败态是独立事件, 各周正常计数
+      healthRow({ id: 'b', user_id: 'u1', event_type: 'challenge_failed', trigger_id: 'tr-1', created_at: lastWeek }),
+    ];
+    const snap = aggregateTransparency(rows, [], [], NOW);
+    expect(snap.intercepts.week).toBe(1);
+    expect(snap.lastWeek?.intercepts).toBe(1);
+    expect(snap.intercepts.total).toBe(2);
+  });
+
+  it('sums savedUsd from last week and derives hoursWon / co2SavedKg on the same calibers', () => {
+    const rows: TransparencyPassedChallengeRow[] = [
+      passedRow(100, inWeek),
+      passedRow('50.5', lastWeek),
+      passedRow(200, new Date(lastWeekStartMs - 86_400_000).toISOString()), // 上上周
+    ];
+    const snap = aggregateTransparency([], rows, [], NOW);
+    expect(snap.lastWeek).toEqual({ intercepts: 0, savedUsd: 50.5, hoursWon: 2.02, co2SavedKg: 7.07 });
+  });
+
+  it('yields an all-zero segment (not null) when history only has this week — first-week honesty', () => {
+    const snap = aggregateTransparency([healthRow({ id: 'a', created_at: inWeek })], [], [], NOW);
+    expect(snap.lastWeek).toEqual({ intercepts: 0, savedUsd: 0, hoursWon: 0, co2SavedKg: 0 });
+  });
+});
+
+describe('transparencyTrend (batch104-c)', () => {
+  it('maps current vs previous onto up / down / flat', () => {
+    expect(transparencyTrend(12, 5)).toBe('up');
+    expect(transparencyTrend(3, 20)).toBe('down');
+    expect(transparencyTrend(4.8, 4.8)).toBe('flat');
+  });
+
+  it('returns neutral when there is no usable baseline (null / NaN on either side)', () => {
+    expect(transparencyTrend(7, null)).toBe('neutral');
+    expect(transparencyTrend(Number.NaN, 5)).toBe('neutral');
+    expect(transparencyTrend(7, Number.NaN)).toBe('neutral');
+  });
+
+  it('treats a zero baseline honestly: 0 → 0 is flat, 0 → anything is up', () => {
+    expect(transparencyTrend(0, 0)).toBe('flat');
+    expect(transparencyTrend(5, 0)).toBe('up');
+    expect(transparencyTrend(0, 5)).toBe('down');
+  });
+});
+
 describe('emptyTransparency', () => {
-  it('returns a zeroed snapshot with the given degraded flag', () => {
+  it('returns a zeroed snapshot with the given degraded flag and no last-week baseline', () => {
     const snap = emptyTransparency(NOW, true);
     expect(snap.guards).toBe(0);
     expect(snap.savedUsd).toEqual({ week: 0, total: 0 });
     expect(snap.co2SavedKg).toEqual({ week: 0, total: 0 });
+    expect(snap.lastWeek).toBeNull();
     expect(snap.degraded).toBe(true);
     expect(snap.weekStart).toBe('2026-09-14T00:00:00.000Z');
   });
@@ -208,5 +283,27 @@ describe('asTransparencySnapshot', () => {
     const snap = aggregateTransparency([], [passedRow(100, inWeek)], [], NOW);
     const stored = { ...snap, co2SavedKg: { week: 1, total: 2 } };
     expect(asTransparencySnapshot(stored)?.co2SavedKg).toEqual({ week: 1, total: 2 });
+  });
+
+  it('normalizes a missing/garbage lastWeek on legacy rows to null instead of rejecting (batch104-c)', () => {
+    const full = aggregateTransparency([], [passedRow(100, inWeek)], [], NOW);
+    const { lastWeek: _dropped, ...legacy } = full;
+    expect(_dropped).toBeDefined();
+
+    const restored = asTransparencySnapshot(legacy);
+    expect(restored).not.toBeNull();
+    expect(restored?.lastWeek).toBeNull();
+    expect(asTransparencySnapshot({ ...legacy, lastWeek: 'garbage' })?.lastWeek).toBeNull();
+    expect(asTransparencySnapshot({ ...legacy, lastWeek: { intercepts: 1 } })?.lastWeek).toBeNull();
+  });
+
+  it('round-trips a valid lastWeek segment unchanged', () => {
+    const full = aggregateTransparency(
+      [healthRow({ id: 'a', created_at: lastWeek })],
+      [passedRow(50, lastWeek)],
+      [],
+      NOW,
+    );
+    expect(asTransparencySnapshot(full)?.lastWeek).toEqual(full.lastWeek);
   });
 });

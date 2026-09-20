@@ -1,5 +1,5 @@
 /**
- * Tests for /transparency public page (batch81-a / batch82-b)
+ * Tests for /transparency public page (batch81-a / batch82-b / batch104-c)
  *
  * - zh/en 渲染冒烟: 真实生产词典 (messages json) 驱动 mock t() —
  *   标题/五张指标卡 hero 数字/口径注/页脚 slogan 均真实可见
@@ -7,6 +7,8 @@
  *   语境出现; 赢回小时口径注明 ($25/h) 随数可见
  * - CO₂ (batch82-b): 第三北极星指标, 估算口径注明 + 开源仓库链接随数可见
  * - 降级态: degraded:true → 缓存快照提示可见
+ * - 环比行 (batch104-c): 四周指标 ↑↓→ 三态 + 无基线中性态不渲染;
+ *   下降态平静呈现, 全页焦虑词 grep 红线 (落后/警示/警告/behind/warning…)
  */
 
 // @vitest-environment happy-dom
@@ -78,6 +80,7 @@ const FIXTURE: TransparencySnapshot = {
   savedUsd: { week: 120, total: 960 },
   hoursWon: { week: 4.8, total: 38.4 },
   co2SavedKg: { week: 16.8, total: 134.4 },
+  lastWeek: { intercepts: 5, savedUsd: 100, hoursWon: 4, co2SavedKg: 14 },
   guards: 13,
   generatedAt: '2026-09-18T12:00:00.000Z',
   degraded: false,
@@ -217,6 +220,105 @@ describe('transparency page — growth section (batch82-c)', () => {
     expect(text).not.toMatch(/user_id|userId|referee|referrer_user/);
     expect(text).not.toMatch(/reward|amount/i);
     expect(text).not.toContain('50'); // 邀请奖励 50 代币不是钱, 任何形式都不出现
+  });
+});
+
+describe('transparency page — trend arrows (batch104-c)', () => {
+  /** 焦虑词红名单: 环比行 (尤其下降态) 与全页禁止出现 — 反 FOMO 铁律 */
+  const ANXIETY_WORDS = /落后|警示|警告|告警|焦虑|预警|behind|warning|alert|alarm|anxiety|fear/i;
+
+  it('keeps trendUp/trendDown/trendFlat non-empty in both real dictionaries and anxiety-free', () => {
+    for (const key of ['trendUp', 'trendDown', 'trendFlat'] as const) {
+      expect(typeof zhMsgs.transparency[key]).toBe('string');
+      expect(typeof enMsgs.transparency[key]).toBe('string');
+      expect((zhMsgs.transparency[key] as string).length).toBeGreaterThan(0);
+      expect((enMsgs.transparency[key] as string).length).toBeGreaterThan(0);
+      expect(zhMsgs.transparency[key]).not.toMatch(ANXIETY_WORDS);
+      expect(enMsgs.transparency[key]).not.toMatch(ANXIETY_WORDS);
+    }
+  });
+
+  it('renders the up state on all four week metrics with the strengthening-protection narrative (zh)', async () => {
+    mockMessages(flat(zhMsgs));
+
+    const { container } = await renderPage('zh');
+
+    expect(screen.getByTestId('transparency-intercepts-trend').textContent).toBe(
+      '↑ 较上周多 2 — 守护力在增强',
+    );
+    expect(screen.getByTestId('transparency-saved-trend').textContent).toBe(
+      '↑ 较上周多 $20 — 守护力在增强',
+    );
+    expect(screen.getByTestId('transparency-hours-trend').textContent).toBe(
+      '↑ 较上周多 0.8 — 守护力在增强',
+    );
+    expect(screen.getByTestId('transparency-co2-trend').textContent).toBe(
+      '↑ 较上周多 2.8 — 守护力在增强',
+    );
+    // 守护者卡是累计口径 — 无环比行
+    expect(screen.queryByTestId('transparency-guards-trend')).toBeNull();
+    expect(container.textContent).not.toMatch(ANXIETY_WORDS);
+  });
+
+  it('renders the en up state from the real dictionary', async () => {
+    mockMessages(flat(enMsgs));
+
+    await renderPage('en');
+
+    expect(screen.getByTestId('transparency-intercepts-trend').textContent).toBe(
+      '↑ 2 more than last week — protection is growing',
+    );
+    expect(screen.getByTestId('transparency-saved-trend').textContent).toBe(
+      '↑ $20 more than last week — protection is growing',
+    );
+  });
+
+  it('renders the down state calmly — no anxiety wording anywhere on the page (zh + en)', async () => {
+    const downWeek: TransparencySnapshot = {
+      ...FIXTURE,
+      lastWeek: { intercepts: 20, savedUsd: 500, hoursWon: 20, co2SavedKg: 70 },
+    };
+    for (const [locale, msgs] of [['zh', zhMsgs], ['en', enMsgs]] as const) {
+      mockMessages(flat(msgs));
+      (loadTransparencyWeekly as ReturnType<typeof vi.fn>).mockResolvedValue(downWeek);
+      const { container, unmount } = await renderPage(locale);
+
+      expect(screen.getByTestId('transparency-intercepts-trend').textContent).toBe(
+        locale === 'zh'
+          ? '↓ 较上周少 13 — 平静的一周也是守护'
+          : '↓ 13 less than last week — a calm week still counts',
+      );
+      expect(container.textContent ?? '').not.toMatch(ANXIETY_WORDS);
+      unmount();
+    }
+  });
+
+  it('renders the flat state when a metric is level with last week', async () => {
+    mockMessages(flat(zhMsgs));
+    (loadTransparencyWeekly as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...FIXTURE,
+      lastWeek: { ...(FIXTURE.lastWeek as { intercepts: number; savedUsd: number; hoursWon: number; co2SavedKg: number }), hoursWon: 4.8 },
+    });
+
+    await renderPage('zh');
+
+    expect(screen.getByTestId('transparency-hours-trend').textContent).toBe('→ 与上周持平');
+  });
+
+  it('renders the neutral state as no trend line when there is no last-week baseline', async () => {
+    mockMessages(flat(zhMsgs));
+    (loadTransparencyWeekly as ReturnType<typeof vi.fn>).mockResolvedValue({ ...FIXTURE, lastWeek: null });
+
+    await renderPage('zh');
+
+    for (const id of [
+      'transparency-intercepts-trend',
+      'transparency-saved-trend',
+      'transparency-hours-trend',
+      'transparency-co2-trend',
+    ]) {
+      expect(screen.queryByTestId(id)).toBeNull();
+    }
   });
 });
 

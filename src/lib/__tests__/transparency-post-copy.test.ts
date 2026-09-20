@@ -27,6 +27,7 @@ const FULL_SNAPSHOT: TransparencySnapshot = {
   savedUsd: { week: 3200, total: 24000 },
   hoursWon: { week: 32.5, total: 240 },
   co2SavedKg: { week: 112, total: 840 },
+  lastWeek: { intercepts: 100, savedUsd: 3000, hoursWon: 30, co2SavedKg: 105 },
   guards: 1042,
   generatedAt: '2026-09-18T12:00:00.000Z',
   degraded: false,
