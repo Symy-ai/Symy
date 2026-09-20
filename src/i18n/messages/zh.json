@@ -2722,6 +2722,7 @@
     },
     "heroStats": "守护者统计",
     "hoursTogether": "共同赢回 {hours}",
+    "collectiveWonBack": "Won back together：{hours} · {guards} 位守护者",
     "founderLine": "你是第 {number} 位守护者"
   },
   "family": {

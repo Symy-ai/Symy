@@ -26,6 +26,7 @@ describe('defense hero stats i18n guard', () => {
     const keys = [
       'defense.heroStats',
       'defense.hoursTogether',
+      'defense.collectiveWonBack',
       'defense.founderLine',
     ];
 

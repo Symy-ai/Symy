@@ -25,6 +25,7 @@ vi.mock('@/i18n/provider', () => ({
         'defense.subtitle': 'A community of green spenders.',
         'defense.defenders': 'guards',
         'defense.hoursTogether': 'Won back together: {hours}',
+        'defense.collectiveWonBack': 'Won back together: {hours} · {guards} guards',
         'defense.yourContribution': 'Your contribution',
         'defense.founderLine': 'You are Guard #{number}',
         'defense.notEnoughData': 'Be one of the first guards!',
@@ -55,10 +56,24 @@ const sampleStats: CommunityStats = {
   hasData: true,
 };
 
+function mockDefenseApi(collective: unknown = { hours: 9.56, guards: 1234 }) {
+  vi.mocked(apiFetch).mockImplementation((url: string) => {
+    if (url === '/api/community/stats') return Promise.resolve(sampleStats as never);
+    if (url === '/api/community/platform-index') {
+      return Promise.resolve({ platforms: [], hasData: false } as never);
+    }
+    if (url === '/api/community/inducement-strategies') {
+      return Promise.resolve({ strategies: [], source: 'sample', totalEvents: 0 } as never);
+    }
+    if (url === '/api/defense/collective') return Promise.resolve(collective as never);
+    return Promise.reject(new Error(`unexpected API: ${url}`));
+  });
+}
+
 describe('Defense hero stats', () => {
   it('renders community and personal guard stats without currency', async () => {
     locale = 'en';
-    vi.mocked(apiFetch).mockResolvedValue(sampleStats as never);
+    mockDefenseApi();
 
     render(
       <Wrapper>
@@ -76,6 +91,26 @@ describe('Defense hero stats', () => {
     expect(screen.getByText('Won back together: 1936 hours')).toBeTruthy();
     expect(screen.getByText('8.0 hours')).toBeTruthy();
     expect(screen.getByText('You are Guard #12')).toBeTruthy();
+    expect(screen.getByTestId('defense-collective-line').textContent).toBe(
+      'Won back together: 9.6 hours · 1,234 guards',
+    );
+    expect(document.querySelector('section[aria-label="defense.heroStats"]')?.textContent).not.toMatch(/[$¥€]|\bUSD\b|\bCNY\b/);
+  });
+
+  it('hides the collective line without surfacing an error when its API fails', async () => {
+    locale = 'en';
+    mockDefenseApi(() => {
+      throw new Error('network down');
+    });
+
+    render(
+      <Wrapper>
+        <DefenseTab isDemo={false} onAuthPrompt={() => {}} />
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText('1247')).toBeTruthy();
+    expect(screen.queryByTestId('defense-collective-line')).toBeNull();
     expect(document.querySelector('section[aria-label="defense.heroStats"]')?.textContent).not.toMatch(/[$¥€]|\bUSD\b|\bCNY\b/);
   });
 

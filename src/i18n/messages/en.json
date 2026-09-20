@@ -2722,6 +2722,7 @@
     },
     "heroStats": "Guardian stats",
     "hoursTogether": "Won back together: {hours}",
+    "collectiveWonBack": "Won back together: {hours} · {guards} guards",
     "founderLine": "You are Guard #{number}"
   },
   "family": {

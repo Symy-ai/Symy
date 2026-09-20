@@ -41,7 +41,7 @@ export function DefenseTabDemo({ onAuthPrompt, stats, platformIndex: _platformIn
         </p>
       </div>
 
-      <DefenseHeroStats stats={stats} isLoading={false} t={t} locale={locale} />
+      <DefenseHeroStats stats={stats} isLoading={false} isDemo t={t} locale={locale} />
 
       {/* Demo badge */}
       <div className="px-4 mb-3">
