@@ -23,6 +23,12 @@ describe('sitemap', () => {
     expect(all).toContain(`${BASE}/zh/transparency`);
   });
 
+  it('trust 双 locale 均收录', () => {
+    const all = urls();
+    expect(all).toContain(`${BASE}/en/trust`);
+    expect(all).toContain(`${BASE}/zh/trust`);
+  });
+
   it('finance 页双 locale 均收录', () => {
     const all = urls();
     expect(all).toContain(`${BASE}/en/transparency/finance`);

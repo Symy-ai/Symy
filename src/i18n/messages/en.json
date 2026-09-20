@@ -3694,7 +3694,8 @@
         "text": "On a night when my emotions were running high, I almost checked out with a full cart. Symy translated the impulse into free hours, and I stopped myself. My weekly recap showed 20 hours won back.",
         "stat": "20 hours won back"
       }
-    ]
+    ],
+    "footerTrust": "Trust"
   },
   "meta": {
     "title": "Symy — Buy less. Live more.",
@@ -3888,5 +3889,34 @@
     "subscribeSuccess": "Subscribed — see you next week",
     "subscribeUnavailable": "Subscription coming soon",
     "subscribeError": "Subscription failed, please try again later"
+  },
+  "trust": {
+    "title": "Trust",
+    "subtitle": "Three disclosures in one place: business, finance, and governance. Numbers, methodologies, and boundaries stay visible.",
+    "disclosuresTitle": "Three disclosures",
+    "businessTitle": "Business disclosure",
+    "businessDescription": "Weekly intercepts, money saved, hours won back, CO₂ estimates, and growth metrics.",
+    "businessLink": "View the weekly transparency report",
+    "financeTitle": "Financial disclosure",
+    "financeDescription": "Membership revenue, infrastructure and AI costs, net and cumulative net disclosed monthly.",
+    "financeLink": "View financial transparency",
+    "governanceTitle": "Governance disclosure",
+    "governanceDescription": "The GitHub public repository remains the single source of truth; this site keeps only an index.",
+    "governanceDocs": {
+      "readme": "Index: Symy Lab",
+      "constitution": "Symy Lab constitution",
+      "daojing": "Symy Dao Jing",
+      "governancebrief": "What we are building together",
+      "symbioticai": "Symy AI",
+      "dividendmechanism": "Dividend mechanism"
+    },
+    "antiGreenwashingTitle": "Three anti-greenwashing principles",
+    "antiGreenwashingEstimates": "CO₂ is always labeled an estimate, never measured data.",
+    "antiGreenwashingCaliber": "Methodology stays with the numbers, including conversion sources.",
+    "antiGreenwashingNoOffset": "We count reduced consumption only; carbon offsets do not create exemptions.",
+    "neutralityTitle": "Structural neutrality",
+    "neutralityAds": "Zero ads.",
+    "neutralityBidding": "Zero bidding.",
+    "neutralityPlacement": "Zero placement."
   }
 }

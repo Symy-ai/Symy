@@ -3694,7 +3694,8 @@
         "text": "情绪快要淹没我的那晚，我准备下单清空购物车。Symy 把这次冲动换算成自由小时，我自己按住了手。上周结算，我赢回了 20 个小时。",
         "stat": "赢回 20 小时"
       }
-    ]
+    ],
+    "footerTrust": "信任"
   },
   "meta": {
     "title": "Symy — 少买一点，多活一点。",
@@ -3888,5 +3889,34 @@
     "subscribeSuccess": "已订阅，下周见",
     "subscribeUnavailable": "订阅即将上线",
     "subscribeError": "订阅失败, 请稍后再试"
+  },
+  "trust": {
+    "title": "信任",
+    "subtitle": "三重公开放在同一个入口：业务、财务、治理。数字、口径和边界都留在明处。",
+    "disclosuresTitle": "三重公开",
+    "businessTitle": "业务公开",
+    "businessDescription": "每周拦截、省下金额、赢回小时、CO₂ 估算与增长指标。",
+    "businessLink": "查看每周透明度报告",
+    "financeTitle": "财务公开",
+    "financeDescription": "会员收入、基础设施与 AI 成本、净额与累计净额按月公开。",
+    "financeLink": "查看财务公开",
+    "governanceTitle": "治理公开",
+    "governanceDescription": "治理文档以 GitHub 公开仓为单一真源，站内只保留清单。",
+    "governanceDocs": {
+      "readme": "目录：Symy Lab",
+      "constitution": "Symy Lab 总则",
+      "daojing": "Symy 道经",
+      "governancebrief": "我们在一起做什么",
+      "symbioticai": "Symy AI（共生 AI）",
+      "dividendmechanism": "分红机制"
+    },
+    "antiGreenwashingTitle": "防漂绿三原则",
+    "antiGreenwashingEstimates": "CO₂ 一律标注估算，不冒充实测。",
+    "antiGreenwashingCaliber": "口径随数可见，换算来源跟着数字走。",
+    "antiGreenwashingNoOffset": "只计量减少的消费，不用碳抵消购买豁免。",
+    "neutralityTitle": "结构性中立",
+    "neutralityAds": "零广告。",
+    "neutralityBidding": "零竞价。",
+    "neutralityPlacement": "零推荐位。"
   }
 }

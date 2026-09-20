@@ -285,6 +285,12 @@ export function LandingPage({ forceShow = false }: { forceShow?: boolean }) {
               Blog — Algorithm Decode
             </Link>
             <Link
+              href={`/${locale}/trust`}
+              className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
+            >
+              {t('landing.footerTrust')}
+            </Link>
+            <Link
               href={`/${locale}/legal/privacy`}
               className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
             >

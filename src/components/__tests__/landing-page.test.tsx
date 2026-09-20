@@ -50,4 +50,10 @@ describe('LandingPage', () => {
     expect(pushMock).toHaveBeenCalledTimes(1);
     expect(pushMock).toHaveBeenCalledWith('/zh?guest=true');
   });
+
+  it('shows the trust entry in the footer', () => {
+    render(<LandingPage />);
+
+    expect(screen.getByText('landing.footerTrust').getAttribute('href')).toBe('/zh/trust');
+  });
 });
