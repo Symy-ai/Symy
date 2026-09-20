@@ -12,7 +12,8 @@
  *  - 双击防护: giveUp in-flight 时二次调用被吞; 共享 ref 也挡住 handleChooseToBuy
  *  - complete API 失败: retry info toast、不触发勋章/完成回调 (Round 19 H3)
  *  - 无 challengeId (demo): 零 API、success toast、onChallengePassed demo-* id
- *  - handleChooseToBuy: isBuyPath=true + status='failed'; E3 现状固化 — API 失败仅 warn, 无 toast 无 onChallengeBought
+ *  - handleChooseToBuy: isBuyPath=true + status='failed'; E3 fix (batch94-c) — API 失败复用 passed
+ *    分支 retry toast (同 key), onChallengeBought/事件仍零触发 (照 passed 模式仅成功路径)
  *  - handleResume: 100ms timer 后 sendMessage (P0-3 时薪 2.0 hours)、skipNextHistoryLoad、
  *    双击防护、失败释放锁、无 challenge 数据释放锁、卸载清 timer (H3)
  *  - handleDismiss: 成功 challengeDismissed 事件 + 清屏; 失败 info toast 但仍清屏 (Round 19 C3)
@@ -340,7 +341,7 @@ describe('useChallengeActions — handleChooseToBuy', () => {
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
-  it('E3 现状固化: API 失败仅 logger.warn — 零 toast、零 onChallengeBought、零事件', async () => {
+  it('E3 fix (batch94-c): API 失败 → 复用 passed 分支 retry toast (同 key 同文案, info); onChallengeBought/事件仍零触发 (照 passed 模式仅成功路径)', async () => {
     const { result, args } = setup();
     vi.mocked(apiFetchVoid).mockRejectedValueOnce(new Error('HTTP 500'));
 
@@ -349,7 +350,12 @@ describe('useChallengeActions — handleChooseToBuy', () => {
     });
 
     expect(args.sendMessage).toHaveBeenCalledTimes(1);
-    expect(args.onToast).not.toHaveBeenCalled();
+    expect(args.onToast).toHaveBeenCalledTimes(1);
+    // 同 key 复用: 文案与 handleGiveUp 失败用例完全一致 (t mock 对未登记 key 回落 defaultValue)
+    expect(args.onToast).toHaveBeenCalledWith(
+      'Challenge marked as passed locally, but server save failed. Please retry or refresh.',
+      'info'
+    );
     expect(args.onChallengeBought).not.toHaveBeenCalled();
     expect(vi.mocked(symyEvents.challengeCompleted)).not.toHaveBeenCalled();
     expect(args.onBuddyStateRefresh).not.toHaveBeenCalled();

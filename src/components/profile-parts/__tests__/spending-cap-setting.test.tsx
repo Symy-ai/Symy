@@ -1,12 +1,12 @@
 /**
- * SpendingCapSetting tests (batch75-b — testgap 盲区补测, v8 #9 / E6)
+ * SpendingCapSetting tests (batch75-b — testgap 盲区补测, v8 #9 / E6; batch94-c 收尾)
  *
  * 覆盖 (断言与现状对齐):
  *  - useSpendingCapForm 清洗链 (真实实现): 非法字符剥离 / 多小数点 / 负号剥离
  *  - save() PUT 请求体: capCents = Math.round(draft*100), warningPct, resetPeriod
- *  - toggle off → capCents: 0 (draft 被忽略); toggle on + 空 draft → capCents: 0
- *    且 refetch 后仍 0 → 开关落回 off (E6-① 现状: 静默无效切换)
- *  - save() 无 catch (E6-③): apiFetch reject → refetch 不执行, unhandled rejection
+ *  - toggle off → capCents: 0 (draft 被忽略; 解析失败残值也不受守卫影响)
+ *  - save 失败 (E6-③ batch94-c 修复): catch + 失败 toast + 零 unhandledRejection + saving 复位可重试
+ *  - 非法金额阻止提交 (E6 残尾 "abc"→0 batch94-c): 解析失败/空 draft 在开启路径零 PUT + 提示 toast
  *  - 回填: capCents/100 无浮点尾差; warningPct 回填
  *  - 进度条条件渲染: state=null 不渲染; pctUsed>100 钳 100%; 状态配色
  *  - demo 模式: save no-op
@@ -86,6 +86,15 @@ function progressFill() {
 }
 function putCalls() {
   return vi.mocked(apiFetch).mock.calls.filter(([url]) => url === '/api/buddy/spending-cap');
+}
+
+// 点击 + 把 save() 的 await 链冲进稳态 (守卫路径同步生效, reject 路径两个微任务足够)
+async function clickAct(button: HTMLElement) {
+  await act(async () => {
+    fireEvent.click(button);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 
 beforeEach(() => {
@@ -197,50 +206,87 @@ describe('SpendingCapSetting — save 请求体', () => {
     expect(putCalls()[0]![1]!.body).toMatchObject({ capCents: 0 });
   });
 
-  it('E6-① 现状: 开关开启时 draft 为空 → PUT capCents=0; refetch 回 0 后开关落回 off (静默无效切换)', async () => {
+  it('E6-① batch94-c 修复: 开关开启时 draft 为空 → 守卫阻止提交 (零 PUT) + 非法金额 toast, 不再静默无效切换', async () => {
     const { refetch } = setup(capData({ setting: { capCents: 0 } })); // 初始关闭, draft 空
-    refetch.mockImplementation(() => {
-      // 模拟服务端确认 capCents=0 (PUT 的就是 0)
-      vi.mocked(useSpendingCap).mockReturnValue({
-        data: capData({ setting: { capCents: 0 } }),
-        refetch,
-        isLoading: false,
-      } as unknown as ReturnType<typeof useSpendingCap>);
-      return Promise.resolve(undefined);
-    });
 
-    fireEvent.click(toggle()); // save(true) → capCents: round(Number('')||0 * 100) = 0
+    await clickAct(toggle()); // 旧代码: save(true) → capCents: round(Number('')||0*100)=0 上送
 
+    expect(putCalls()).toHaveLength(0); // 对旧代码恰 1 真阳性红
+    expect(refetch).not.toHaveBeenCalled();
+    expect(screen.getByTestId('spending-cap-toast').textContent).toBe('profile.spendingCapInvalidAmount');
+    expect(toggle().className).toContain('bg-white/20'); // 服务端数据未变, 开关保持 off
+  });
+
+  it('E6 残尾 "abc"→0 代表路径: draft "." 解析失败 → Save 阻止提交 + 提示 toast (不静默关闭面板)', async () => {
+    const { refetch } = setup(capData());
+    changeAmount('.'); // setAmount 只剥非法字符, 单点残留 → draft="."; toCapCents(".")=0
+    expect(amountInput().value).toBe('.');
+    expect(saveButton().disabled).toBe(false); // draft 非空仍可点 (守卫在 save 内)
+
+    await clickAct(saveButton());
+
+    expect(putCalls()).toHaveLength(0); // 对旧代码恰 1 真阳性红 (旧代码 PUT capCents=0 → 面板收起)
+    expect(refetch).not.toHaveBeenCalled();
+    expect(screen.getByTestId('spending-cap-toast').textContent).toBe('profile.spendingCapInvalidAmount');
+  });
+
+  it('toggle off 不受守卫影响: draft 残 "." (解析失败) 仍 PUT capCents=0 (关闭路径忽略 draft)', async () => {
+    setup(capData());
+    changeAmount('.');
+    fireEvent.click(toggle());
     await waitFor(() => expect(putCalls()).toHaveLength(1));
-    expect(putCalls()[0]![1]!.body).toMatchObject({ capCents: 0, resetPeriod: false });
-    await waitFor(() => expect(toggle().className).toContain('bg-white/20')); // 用户开了, UI 又弹回关
+    expect(putCalls()[0]![1]!.body).toMatchObject({ capCents: 0 });
+    expect(screen.queryByTestId('spending-cap-toast')).toBeNull();
   });
 });
 
-describe('SpendingCapSetting — save 失败 (E6-③ 无 catch 固化)', () => {
-  it('apiFetch reject → refetch 不执行; rejection 无处理者捕获 (现状: 无 catch + 无用户提示)', async () => {
+describe('SpendingCapSetting — save 失败 (E6-③ batch94-c 修复: catch + toast + 可重试)', () => {
+  it('apiFetch reject → 组件 catch 处理 (零 unhandledRejection) + 失败 toast + refetch 不执行', async () => {
     const { refetch } = setup(capData());
     vi.mocked(apiFetch).mockRejectedValueOnce(new Error('network down'));
 
-    // save() 无 catch: 捕获 process 级 unhandledRejection 以固化现状且不污染测试进程
-    const prevListeners = process.listeners('unhandledRejection');
-    process.removeAllListeners('unhandledRejection');
+    // 旧代码无 catch: rejection 逃逸到 process 级; 修复后应被组件 catch 吞掉 (零 unhandledRejection)
     const rejections: unknown[] = [];
-    const mine = (reason: unknown) => { rejections.push(reason); };
-    process.on('unhandledRejection', mine);
-
+    const onRejection = (reason: unknown) => { rejections.push(reason); };
+    process.on('unhandledRejection', onRejection);
     try {
       await act(async () => {
         fireEvent.click(saveButton());
         await new Promise((r) => setTimeout(r, 0));
       });
-      expect(refetch).not.toHaveBeenCalled();
-      expect(saveButton().disabled).toBe(false); // finally 恢复
-      expect(rejections).toHaveLength(1);
-      expect((rejections[0] as Error).message).toBe('network down');
     } finally {
-      process.removeListener('unhandledRejection', mine);
-      for (const l of prevListeners) process.on('unhandledRejection', l);
+      process.removeListener('unhandledRejection', onRejection);
+    }
+
+    expect(rejections).toHaveLength(0); // 对旧代码 (无 catch) 恰 1 真阳性红
+    expect(refetch).not.toHaveBeenCalled();
+    expect(saveButton().disabled).toBe(false); // finally 复位 saving → 保持可重试
+    expect(screen.getByTestId('spending-cap-toast').textContent).toBe('profile.spendingCapSaveFailed');
+  });
+
+  it('失败后可重试: 再次保存成功 → PUT + refetch 恰一次', async () => {
+    const { refetch } = setup(capData());
+    vi.mocked(apiFetch).mockRejectedValueOnce(new Error('network down'));
+    await clickAct(saveButton());
+    expect(screen.getByTestId('spending-cap-toast')).toBeTruthy();
+
+    vi.mocked(apiFetch).mockResolvedValueOnce({} as SpendingCapResponse);
+    await clickAct(saveButton());
+    await waitFor(() => expect(refetch).toHaveBeenCalledTimes(1));
+    expect(putCalls()).toHaveLength(2);
+  });
+
+  it('失败 toast 3s 自动消失 (重触发时旧 timer 清理)', async () => {
+    vi.useFakeTimers();
+    try {
+      setup(capData());
+      vi.mocked(apiFetch).mockRejectedValueOnce(new Error('network down'));
+      await clickAct(saveButton());
+      expect(screen.getByTestId('spending-cap-toast')).toBeTruthy();
+      act(() => { vi.advanceTimersByTime(3000); });
+      expect(screen.queryByTestId('spending-cap-toast')).toBeNull();
+    } finally {
+      vi.useRealTimers();
     }
   });
 });
@@ -251,6 +297,8 @@ describe('SpendingCapSetting — batch91-c E6 负上限钳制', () => {
     expect(toCapCents('0')).toBe(0);
     expect(toCapCents('12.34')).toBe(1234);
     expect(toCapCents('')).toBe(0); // Number('')=NaN → ||0 → 0
+    expect(toCapCents('.')).toBe(0); // Number('.')=NaN → 0 (E6 残尾: 解析失败静默变 0, 组件层守卫拦)
+    expect(toCapCents('abc')).toBe(0); // 简报 "abc"→0 同源
   });
 
   it('输入框带 min=0 提示属性', () => {

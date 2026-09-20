@@ -1866,6 +1866,8 @@
     "spendingCapWarning": "Warning level",
     "spendingCapSave": "Save",
     "spendingCapReset": "Start a new period",
+    "spendingCapSaveFailed": "Save failed — check your connection and try again.",
+    "spendingCapInvalidAmount": "Enter a valid amount greater than zero.",
     "guardRuleCoverageTitle": "Guard rule self-check",
     "guardRuleCoverageDesc": "Read-only diagnosis of your green rule library and recent events.",
     "guardRuleCoverageRate": "Event coverage",

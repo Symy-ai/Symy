@@ -407,10 +407,15 @@ WHEN THE USER DECIDES:
           //   期间用户不确定挑战是否结束 (V4-5: 挑战无结算反馈)
           //   修复: 用 onToast 即时反馈 (addMcpNotification 不在此 hook 参数中, 用 onToast 替代)
           onToast?.(t('chat.mcpNotifications.challengeRecorded', { defaultValue: '📋 Challenge recorded. Symy noted this purchase.' }), 'info');
-      // safe to ignore: non-critical background operation, error already logged
         } catch (err) {
-                        // safe to ignore: non-critical background operation, error already logged
           logger.warn('[ChatTab] complete_challenge (failed) API error:', err);
+          // 🔧 E3 fix (batch94-c): bought 分支 API 失败不再零反馈 — 复用 passed 分支 (Round 19 H3-audit1)
+          //    的 retry toast 模式与 i18n key (en/zh 文案 "Marked locally" 不区分 passed/bought, 同 key 复用)。
+          //    onChallengeBought 照 passed 模式仅在成功路径触发 (失败不弹沉默时刻)。
+          const failToast = t('chat.challengeSaveFailedToast', {
+            defaultValue: 'Challenge marked as passed locally, but server save failed. Please retry or refresh.',
+          });
+          onToast?.(failToast, 'info');
         }
       }
     } finally {

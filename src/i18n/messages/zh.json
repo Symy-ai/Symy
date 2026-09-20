@@ -1866,6 +1866,8 @@
     "spendingCapWarning": "预警线",
     "spendingCapSave": "保存",
     "spendingCapReset": "重置为新周期",
+    "spendingCapSaveFailed": "保存失败——请检查网络后重试。",
+    "spendingCapInvalidAmount": "请输入大于 0 的有效金额。",
     "guardRuleCoverageTitle": "守护规则自检",
     "guardRuleCoverageDesc": "只读诊断绿色规则词库与近期事件。",
     "guardRuleCoverageRate": "事件覆盖率",

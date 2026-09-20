@@ -5,6 +5,7 @@ import { Gauge } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import { useSpendingCapForm, useSpendingCap, toCapCents, type SpendingCapResponse } from '@/lib/hooks/use-spending-cap';
 import { apiFetch } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import type { SpendingCapState } from '@/lib/spending-cap-tracker';
 
 const WARNINGS = [80, 85, 90, 95];
@@ -38,6 +39,8 @@ export function SpendingCapSetting({ isDemo = false }: { isDemo?: boolean }) {
   const { draft, setAmount } = useSpendingCapForm();
   const [warningPct, setWarningPct] = useState(80);
   const [saving, setSaving] = useState(false);
+  // 🔧 E6 fix (batch94-c): 保存失败/非法金额的内联错误 toast (模式同 inventory-list-card 回滚 toast)
+  const [errorToast, setErrorToast] = useState<string | null>(null);
   const enabled = (data?.setting.capCents ?? 0) > 0;
 
   useEffect(() => {
@@ -45,15 +48,33 @@ export function SpendingCapSetting({ isDemo = false }: { isDemo?: boolean }) {
     if (data?.setting.capCents) setAmount(String(data.setting.capCents / 100));
   }, [data?.setting.capCents, data?.setting.warningPct, setAmount]);
 
+  useEffect(() => {
+    if (!errorToast) return;
+    const timer = setTimeout(() => setErrorToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [errorToast]);
+
   async function save(nextEnabled = true, resetPeriod = false) {
     if (isDemo) return;
+    const nextCents = toCapCents(draft);
+    // 🔧 E6 fix (batch94-c): "abc"/"." 等解析失败经 toCapCents 变 0, 上送即静默关闭功能
+    //    (capCents=0 ⇒ enabled=false, 面板整体收起) — 开启/保存路径阻止提交
+    if (nextEnabled && nextCents <= 0) {
+      setErrorToast(t('profile.spendingCapInvalidAmount'));
+      return;
+    }
     setSaving(true);
     try {
       await apiFetch<SpendingCapResponse>('/api/buddy/spending-cap', {
         method: 'PUT',
-        body: { capCents: nextEnabled ? toCapCents(draft) : 0, warningPct, resetPeriod },
+        body: { capCents: nextEnabled ? nextCents : 0, warningPct, resetPeriod },
       });
       await refetch();
+    } catch (err) {
+      // 🔧 E6 残尾 fix (batch94-c): 旧代码 try/finally 无 catch, apiFetch reject 即 unhandled
+      //    rejection 且无提示; 现在 toast 告知 + finally 复位 saving 保持可重试
+      logger.warn('[SpendingCapSetting] save failed:', err);
+      setErrorToast(t('profile.spendingCapSaveFailed'));
     } finally {
       setSaving(false);
     }
@@ -121,6 +142,11 @@ export function SpendingCapSetting({ isDemo = false }: { isDemo?: boolean }) {
           </>
         )}
       </div>
+      {errorToast && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[330] px-4 py-2.5 rounded-xl text-sm font-medium shadow-lg bg-red-500/90 text-white" data-testid="spending-cap-toast">
+          {errorToast}
+        </div>
+      )}
     </div>
   );
 }
