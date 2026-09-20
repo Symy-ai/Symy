@@ -11,8 +11,21 @@ export function DuplicateReuseFollowup({ card, decisionId, onResolved }: { card:
   const itemName = card.itemTitle === 'it' ? t('chat.duplicatePrecheck.genericItem') : card.itemTitle;
 
   const answer = (avoided: boolean) => {
+    let pending: string | null = null;
+    try {
+      pending = window.localStorage.getItem('symy-duplicate-precheck-reuse-pending');
+    } catch {
+      // A storage read failure leaves no recoverable pending answer.
+    }
     clearPendingReuseConfirmation();
-    reportReuseConclusion(decisionId, avoided);
+    reportReuseConclusion(decisionId, avoided, () => {
+      if (!pending) return;
+      try {
+        window.localStorage.setItem('symy-duplicate-precheck-reuse-pending', pending);
+      } catch {
+        // Retaining the pending follow-up remains best-effort.
+      }
+    });
     setAnswered(avoided ? 'avoided' : 'bought');
     onResolved?.();
   };
