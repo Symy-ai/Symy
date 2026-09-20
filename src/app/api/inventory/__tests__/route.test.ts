@@ -4,6 +4,7 @@
  * - GET 200: 列表 created_at desc + inventoryEnabled: true
  * - GET 42P01: migration 未执行 → 200 { items: [], inventoryEnabled: false } 优雅降级
  * - POST 201: user_id 恒取 auth (body 注入 user_id 不生效), source 默认 chat
+ * - POST 幂等 (b93a): 同 user + item_name trim/lowercase 去重 → 200 已有条目
  * - POST zod: item_name 1-100 (trim 后), 100 字边界过 / 101 拒, category 可选 ≤50
  * - POST 42P01 → 503 TABLE_NOT_FOUND (未持久化的写不伪造成功)
  * - DELETE: uuid 校验 400 / 跨用户或不存在 0 行 → 404 / 命中 → 200
@@ -31,12 +32,14 @@ import { createAuthenticatedClient } from '@/lib/supabase-api';
 import { logger } from '@/lib/logger';
 
 type Chain = Record<string, ReturnType<typeof vi.fn>> & { then: unknown };
+type Terminal = (state: { index: number }) => Promise<unknown> | unknown;
 
 const TABLE_MISSING = { code: '42P01', message: 'relation "user_inventory" does not exist' };
 const USER = 'user-123';
 
-function makeChain(terminal: () => Promise<unknown> = async () => ({ data: null, error: null })): Chain {
+function makeChain(terminal: Terminal = async () => ({ data: null, error: null })): Chain {
   const chain = {} as Chain;
+  let callIndex = 0;
   const method = () => vi.fn(() => chain);
   chain.from = method();
   chain.select = method();
@@ -45,9 +48,14 @@ function makeChain(terminal: () => Promise<unknown> = async () => ({ data: null,
   chain.insert = method();
   chain.delete = method();
   chain.single = method();
+  chain.ilike = method();
+  chain.limit = method();
+  chain.maybeSingle = method();
   // 链式查询被 await 时 (无 single 的 GET / DELETE 路径), 解析为 terminal 结果
   chain.then = (onFulfilled: (v: unknown) => unknown, onRejected: (e: unknown) => unknown) =>
-    Promise.resolve().then(terminal).then(onFulfilled, onRejected);
+    Promise.resolve()
+      .then(() => terminal({ index: ++callIndex }))
+      .then(onFulfilled, onRejected);
   return chain;
 }
 
@@ -110,8 +118,10 @@ describe('GET /api/inventory', () => {
 
 describe('POST /api/inventory', () => {
   it('201: inserts with auth user_id (body 注入的 user_id 不生效) + source 默认 chat', async () => {
-    const chain = makeChain(async () => ({
-      data: { id: 'inv-9', item_name: '数据线', category: 'electronics', source: 'chat', created_at: '2026-09-19T00:00:00Z' },
+    const chain = makeChain(({ index }) => ({
+      data: index === 1
+        ? null
+        : { id: 'inv-9', item_name: '数据线', category: 'electronics', source: 'chat', created_at: '2026-09-19T00:00:00Z' },
       error: null,
     }));
     authed(chain);
@@ -119,6 +129,8 @@ describe('POST /api/inventory', () => {
     expect(res.status).toBe(201);
     const json = await res.json();
     expect(json.item.id).toBe('inv-9');
+    expect(json.deduplicated).toBe(false);
+    expect(chain.ilike).toHaveBeenCalledWith('item_name', '数据线');
     expect(chain.insert).toHaveBeenCalledWith({
       user_id: USER, // ← 恒取 auth, 不是 body 里的 'victim-user'
       item_name: '数据线', // ← trim
@@ -143,10 +155,51 @@ describe('POST /api/inventory', () => {
   });
 
   it('100 chars (边界) → 201; category 50 chars (边界) → 201', async () => {
-    const chain = makeChain(async () => ({ data: { id: 'inv-1' }, error: null }));
+    const chain = makeChain(({ index }) => ({ data: index === 1 ? null : { id: 'inv-1' }, error: null }));
     authed(chain);
     const res = await POST(makeRequest('POST', { item_name: 'a'.repeat(100), category: 'c'.repeat(50) }));
     expect(res.status).toBe(201);
+  });
+
+  it('200 idempotent on exact repeat after refresh — 只插入一条并返回已有条目', async () => {
+    const inserted = { id: 'inv-1', item_name: 'storage box', category: 'home', source: 'chat', created_at: '2026-09-19T00:00:00Z' };
+    const chain = makeChain(({ index }) => ({ data: index === 1 ? null : inserted, error: null }));
+    authed(chain);
+
+    const first = await POST(makeRequest('POST', { item_name: 'storage box', category: 'home' }));
+    const second = await POST(makeRequest('POST', { item_name: '  STORAGE BOX  ', category: 'home' }));
+
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(200);
+    expect(await second.json()).toEqual({ item: inserted, deduplicated: true });
+    expect(chain.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it('大小写/空格变体命中已有条目 — ilike 精确匹配并转义通配符', async () => {
+    const existing = { id: 'inv-2', item_name: 'Storage_Box 100%', category: 'home', source: 'manual', created_at: '2026-09-19T00:00:00Z' };
+    const chain = makeChain(async () => ({ data: existing, error: null }));
+    authed(chain);
+
+    const res = await POST(makeRequest('POST', { item_name: '  storage_box 100%  ' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ item: existing, deduplicated: true });
+    expect(chain.eq).toHaveBeenCalledWith('user_id', USER);
+    expect(chain.ilike).toHaveBeenCalledWith('item_name', 'storage\\_box 100\\%');
+    expect(chain.limit).toHaveBeenCalledWith(1);
+    expect(chain.maybeSingle).toHaveBeenCalledTimes(1);
+    expect(chain.insert).not.toHaveBeenCalled();
+  });
+
+  it('不同 item_name → 正常插入新条目', async () => {
+    const chain = makeChain(({ index }) => ({
+      data: index === 1 ? null : { id: 'inv-3', item_name: 'ladder', category: 'home', source: 'chat', created_at: '2026-09-19T00:00:00Z' },
+      error: null,
+    }));
+    authed(chain);
+    const res = await POST(makeRequest('POST', { item_name: 'ladder' }));
+    expect(res.status).toBe(201);
+    expect(chain.insert).toHaveBeenCalledTimes(1);
+    expect(chain.insert).toHaveBeenCalledWith({ user_id: USER, item_name: 'ladder', source: 'chat' });
   });
 
   it('invalid JSON → 400', async () => {

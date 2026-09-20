@@ -19,6 +19,10 @@ import { inventoryItemSchema, isInventoryTableMissing, type InventoryItemRow } f
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function escapeLikePattern(value: string): string {
+  return value.replace(/([\\%_])/g, '\\$1');
+}
+
 function tableMissingResponse() {
   return NextResponse.json(
     { error: 'Inventory table is not set up. Run migration 142_user_inventory.sql in Supabase.', error_code: 'TABLE_NOT_FOUND' },
@@ -58,6 +62,25 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
   }
 
+  const normalizedItemName = parsed.data.item_name.toLowerCase();
+  const { data: existingItem, error: queryError } = await supabase
+    .from('user_inventory')
+    .select('id, item_name, category, source, created_at')
+    .eq('user_id', user.id)
+    .ilike('item_name', escapeLikePattern(normalizedItemName))
+    .limit(1)
+    .maybeSingle();
+
+  if (queryError) {
+    if (isInventoryTableMissing(queryError)) return tableMissingResponse();
+    logger.warn('[inventory] POST lookup failed:', queryError.message);
+    return NextResponse.json({ error: 'Failed to save item' }, { status: 500 });
+  }
+
+  if (existingItem) {
+    return NextResponse.json({ item: existingItem, deduplicated: true });
+  }
+
   const { data, error } = await supabase
     .from('user_inventory')
     .insert({ user_id: user.id, ...parsed.data })
@@ -70,7 +93,7 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     return NextResponse.json({ error: 'Failed to save item' }, { status: 500 });
   }
 
-  return NextResponse.json({ item: data }, { status: 201 });
+  return NextResponse.json({ item: data, deduplicated: false }, { status: 201 });
 });
 
 export const DELETE = withAuth(async ({ supabase, user, request }) => {
