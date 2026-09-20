@@ -12,6 +12,9 @@ import { createPortal } from 'react-dom';
 import { ChevronRight, Share2, X } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import { BadgeChip, ALL_BADGES, BADGE_GROUP_ORDER, type BadgeDef, type BadgeGroup } from './constants';
+import { isDreamFundAchieved } from './dream-achievement';
+import { DEFAULT_HOURLY_RATE, moneyToHours } from '@/lib/freedom-time';
+import { useHourlyRate } from '@/hooks/use-hourly-rate';
 import type { BuddyState } from '@/types/buddy-state';
 import { ShareModal } from '@/components/share/share-modal';
 import { getBadgeGoal, setBadgeGoal } from '@/lib/badge-goal';
@@ -40,6 +43,10 @@ const BADGE_GROUP_TITLE_KEYS: Record<BadgeGroup, string> = {
  *   不应显示数字进度条。新增 isProgressTrackable 区分, UI 据此隐藏进度条。
  * batch3-c: 导出供单测使用; 新增 dream_fund_funded 分支 — 读现有 dreamFunds[].current,
  *   零 DDL, 区分"建了空基金"与"真把钱存进去"。
+ * batch106-b (BP p19): 新增 won_back_hours — totalSaved 按用户时薪换算赢回小时
+ *   (向下取整, 进度显示与达标判定同口径); dream_fund_completed — 复用
+ *   isDreamFundAchieved 权威完成语义 (current ≥ target 且 target > 0, 排除默认储蓄池),
+ *   "建了基金"不算完成。hourlyRate 缺省回落默认时薪 — 无数据诚实归 0, 徽章不亮。
  */
 const UNTRACKABLE_PROGRESS_TYPES = new Set(['big_truth', 'clear_mind_streak']);
 
@@ -47,7 +54,11 @@ export function isProgressTrackable(progressType: BadgeDef['progressType']): boo
   return !UNTRACKABLE_PROGRESS_TYPES.has(progressType);
 }
 
-export function calcBadgeProgress(badge: BadgeDef, buddyState?: BuddyState | null): number {
+export function calcBadgeProgress(
+  badge: BadgeDef,
+  buddyState?: BuddyState | null,
+  hourlyRate: number = DEFAULT_HOURLY_RATE
+): number {
   if (!buddyState) return 0;
   switch (badge.progressType) {
     case 'challenge_wins':
@@ -66,6 +77,12 @@ export function calcBadgeProgress(badge: BadgeDef, buddyState?: BuddyState | nul
     case 'dream_fund_funded':
       // batch3-c: 有实际存入金额的基金数 (current > 0) — 第一笔钱进基金才算数
       return buddyState.dreamFunds?.filter((f) => (f.current || 0) > 0).length || 0;
+    case 'won_back_hours':
+      // batch106-b: 面子只认时间 — totalSaved → 赢回小时 (向下取整, 99.6h 显示 99/100 不虚标)
+      return Math.floor(moneyToHours(buddyState.totalSaved || 0, hourlyRate));
+    case 'dream_fund_completed':
+      // batch106-b: 走到 target 才算完成 — isDreamFundAchieved 是全站权威完成语义
+      return buddyState.dreamFunds?.filter(isDreamFundAchieved).length || 0;
     default:
       return 0;
   }
@@ -81,6 +98,7 @@ function BadgeCollectionCard({
   badge,
   badges,
   buddyState,
+  hourlyRate,
   onShare,
   activeGoalId,
   onSetGoal,
@@ -88,12 +106,14 @@ function BadgeCollectionCard({
   badge: BadgeDef;
   badges: string[];
   buddyState?: BuddyState | null;
+  /** 用户时薪 — won_back_hours 判定用 (缺省回落默认时薪) */
+  hourlyRate: number;
   onShare?: (badge: BadgeDef) => void;
   activeGoalId?: string | null;
   onSetGoal?: (badgeId: string) => void;
 }) {
   const { t } = useI18n();
-  const currentProgress = calcBadgeProgress(badge, buddyState);
+  const currentProgress = calcBadgeProgress(badge, buddyState, hourlyRate);
   const target = badge.progressTarget;
   const progressMet = currentProgress >= target && target > 0;
   const earned = badges.includes(badge.id) || progressMet;
@@ -184,6 +204,9 @@ function BadgeCollectionCard({
 
 export function BadgesSection({ badges, buddyState }: BadgesSectionProps) {
   const { t } = useI18n();
+  // batch106-b: 用户时薪 — Money Forest (won_back_hours) 进度与达标判定按真实时薪换算;
+  // 与 share-card-modal 同源 hook, Profile 改时薪后此处即时跟随
+  const { hourlyRate } = useHourlyRate(false);
   const [showBadgeDetail, setShowBadgeDetail] = useState(false);
   // batch4-a: 当前晒的勋章 — 非空时渲染 ShareModal (badge 模板, 面子-only)
   const [shareBadge, setShareBadge] = useState<BadgeDef | null>(null);
@@ -250,7 +273,7 @@ export function BadgesSection({ badges, buddyState }: BadgesSectionProps) {
       {activeGoalId && (() => {
         const def = ALL_BADGES.find((b) => b.id === activeGoalId);
         if (!def) return null;
-        const currentProgress = calcBadgeProgress(def, buddyState);
+        const currentProgress = calcBadgeProgress(def, buddyState, hourlyRate);
         const target = def.progressTarget;
         const progressPct = target > 0 ? Math.min(100, Math.round((currentProgress / target) * 100)) : 0;
         return (
@@ -327,6 +350,7 @@ export function BadgesSection({ badges, buddyState }: BadgesSectionProps) {
                           badge={b}
                           badges={badges}
                           buddyState={buddyState}
+                          hourlyRate={hourlyRate}
                           onShare={setShareBadge}
                           activeGoalId={activeGoalId}
                           onSetGoal={(id) => setBadgeGoal(id === activeGoalId ? null : id)}
@@ -359,7 +383,7 @@ export function BadgesSection({ badges, buddyState }: BadgesSectionProps) {
           }}
           streakDays={buddyState?.streak ?? 0}
           interceptCount={buddyState?.challengesCompleted}
-          badgeCard={{ badge: shareBadge, progressValue: calcBadgeProgress(shareBadge, buddyState) }}
+          badgeCard={{ badge: shareBadge, progressValue: calcBadgeProgress(shareBadge, buddyState, hourlyRate) }}
         />
       )}
     </>

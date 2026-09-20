@@ -58,6 +58,8 @@ export function getBadgeDisplayName(badgeId: string, t: TFn): string {
  * progressType → 面子统计 chip 文案。
  * total_saves 进度是金额 (¥) — 分享图禁钱数, 换算赢回小时由英雄数字承担, 不出 chip;
  * big_truth/clear_mind_streak 为 AI 授予型, 无后端计数, 不出数字 (荣誉不靠数字撑)。
+ * batch106-b: won_back_hours (Money Forest) 与 dream_fund_completed (Dream Gardener)
+ * 的进度本体就是面子数字 (小时/完成数), 照常出 chip。
  */
 function getBadgeStatChip(badge: BadgeDef, progressValue: number, t: TFn): string | null {
   const v = Number.isFinite(progressValue) ? Math.max(0, Math.floor(progressValue)) : 0;
@@ -71,6 +73,10 @@ function getBadgeStatChip(badge: BadgeDef, progressValue: number, t: TFn): strin
       return t('share.badgeCard.statDreams', { count: v, defaultValue: `${v} dreams growing` });
     case 'dream_fund_funded':
       return t('share.badgeCard.statDreamsFunded', { count: v, defaultValue: `${v} dreams funded` });
+    case 'won_back_hours':
+      return t('share.badgeCard.statHours', { hours: v, defaultValue: `${v} hours won back in total` });
+    case 'dream_fund_completed':
+      return t('share.badgeCard.statDreamsCompleted', { count: v, defaultValue: `${v} dreams completed` });
     default:
       return null;
   }

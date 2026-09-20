@@ -63,9 +63,12 @@ vi.mock('@/i18n/provider', () => ({
         'share.badgeCard.statDays': '{days} days in a row',
         'share.badgeCard.statDreams': '{count} dreams growing',
         'share.badgeCard.statDreamsFunded': '{count} dreams funded',
+        'share.badgeCard.statHours': '{hours} hours won back in total',
+        'share.badgeCard.statDreamsCompleted': '{count} dreams completed',
         'buddy.badgeNames.green_guardian_10': 'Green Guardian',
         'buddy.badgeNames.streak_7': '7 Days of Guarding',
         'buddy.badgeNames.money_forest_500': 'Money Forest',
+        'buddy.badgeNames.money_meadow_100': 'Money Meadow',
         'share.template.challenge': 'Challenge Win',
         'share.challengeCard.pill': 'Guard Challenge',
         'share.challengeCard.warm': 'The gate held because you showed up. This little elephant is doing a happy trunk dance.',
@@ -287,15 +290,57 @@ describe('BadgeCard (batch4-a)', () => {
   it('converts total_saves face to won-back hours — money never renders on the card', () => {
     const { container } = render(
       <BadgeCard
-        badge={badgeDef({ id: 'money_forest_500', emoji: '🌳', progressType: 'total_saves', progressTarget: 500, group: 'growth' })}
-        progressValue={500}
+        badge={badgeDef({ id: 'money_meadow_100', emoji: '🌱', progressType: 'total_saves', progressTarget: 100, group: 'growth' })}
+        progressValue={100}
         savedHours={20}
       />
     );
     expect(container.textContent).toContain('20 hours won back');
-    // 不出任何金额痕迹 (进度值 500 是钱数, 不得出现)
+    // 不出任何金额痕迹 (进度值 100 是钱数, 不得出现)
     expect(container.textContent).not.toMatch(/[$¥€£]/);
-    expect(container.textContent).not.toContain('500');
+    expect(container.textContent).not.toContain('100');
+  });
+
+  // batch106-b (BP p19): Money Forest / Dream Gardener 的新口径 chip — 进度本体就是面子数字
+  it('shows the won-back-hours chip for Money Forest and hides it at zero (honest degradation)', () => {
+    const { container } = render(
+      <BadgeCard
+        badge={badgeDef({ id: 'money_forest_500', emoji: '🌳', progressType: 'won_back_hours', progressTarget: 100, group: 'growth' })}
+        progressValue={100}
+        savedHours={100}
+      />
+    );
+    expect(container.textContent).toContain('100 hours won back in total');
+    expect(container.textContent).not.toMatch(/[$¥€£]/);
+
+    const zero = render(
+      <BadgeCard
+        badge={badgeDef({ id: 'money_forest_500', emoji: '🌳', progressType: 'won_back_hours', progressTarget: 100, group: 'growth' })}
+        progressValue={0}
+        savedHours={0}
+      />
+    );
+    expect(zero.container.textContent).not.toContain('hours won back in total');
+  });
+
+  it('shows the dreams-completed chip for Dream Gardener and hides it at zero', () => {
+    const { container } = render(
+      <BadgeCard
+        badge={badgeDef({ id: 'dream_gardener_3', emoji: '🌷', progressType: 'dream_fund_completed', progressTarget: 3, group: 'growth' })}
+        progressValue={3}
+        savedHours={12}
+      />
+    );
+    expect(container.textContent).toContain('3 dreams completed');
+
+    const zero = render(
+      <BadgeCard
+        badge={badgeDef({ id: 'dream_gardener_3', emoji: '🌷', progressType: 'dream_fund_completed', progressTarget: 3, group: 'growth' })}
+        progressValue={0}
+        savedHours={0}
+      />
+    );
+    expect(zero.container.textContent).not.toContain('dreams completed');
   });
 
   it('falls back to a human-readable name for unknown badge ids', () => {

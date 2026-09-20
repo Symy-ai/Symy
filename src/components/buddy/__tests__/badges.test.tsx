@@ -15,6 +15,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ALL_BADGES, BADGE_GROUP_ORDER, BADGE_INFO, BadgeChip } from '../constants';
+import {
+  EVERGREEN_STREAK_DAYS,
+  MONEY_FOREST_WON_BACK_HOURS,
+  DREAM_GARDENER_COMPLETED_FUNDS,
+} from '../../../lib/badge-constants';
 import { BadgesSection, calcBadgeProgress, isProgressTrackable } from '../badges-section';
 import type { BuddyState } from '@/types/buddy-state';
 import en from '../../../i18n/messages/en.json';
@@ -187,7 +192,7 @@ describe('calcBadgeProgress — every progressType branch', () => {
     expect(calcBadgeProgress(def, makeBuddyState({ challengesCompleted: 4 }))).toBe(4);
   });
 
-  it('total_saves reads totalSaved (money_meadow_100 / money_forest_500)', () => {
+  it('total_saves reads totalSaved (money_meadow_100)', () => {
     const def = defFor('total_saves');
     expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 500 }))).toBe(500);
     expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 137 }))).toBe(137);
@@ -199,7 +204,7 @@ describe('calcBadgeProgress — every progressType branch', () => {
     expect(calcBadgeProgress(def, makeBuddyState({ streak: 12 }))).toBe(12);
   });
 
-  it('dream_fund_count reads dreamFunds length (dream_gardener_3)', () => {
+  it('dream_fund_count reads dreamFunds length (dream_builder)', () => {
     const def = defFor('dream_fund_count');
     const funds = [
       { id: 'a', name: 'A', target: 100, current: 10, emoji: '🌱' },
@@ -228,19 +233,91 @@ describe('calcBadgeProgress — every progressType branch', () => {
   });
 });
 
+// ===== batch106-b (BP p19 荣誉资产): 四枚荣誉徽章判定口径 =====
+describe('batch106-b — BP p19 honor badge criteria', () => {
+  const defById = (id: string) => ALL_BADGES.find((b) => b.id === id)!;
+  const fund = (id: string, current: number, target = 100) => ({ id, name: id, target, current, emoji: '🌱' });
+
+  it('pins thresholds to configurable constants (BP values)', () => {
+    expect(EVERGREEN_STREAK_DAYS).toBe(30);
+    expect(MONEY_FOREST_WON_BACK_HOURS).toBe(100);
+    expect(DREAM_GARDENER_COMPLETED_FUNDS).toBe(3);
+    expect(defById('streak_guardian_30').progressTarget).toBe(EVERGREEN_STREAK_DAYS);
+    expect(defById('money_forest_500').progressTarget).toBe(MONEY_FOREST_WON_BACK_HOURS);
+    expect(defById('dream_gardener_3').progressTarget).toBe(DREAM_GARDENER_COMPLETED_FUNDS);
+  });
+
+  it('Evergreen Guardian boundary: 29 days not earned, 30 days earned', () => {
+    const def = defById('streak_guardian_30');
+    expect(calcBadgeProgress(def, makeBuddyState({ streak: 29 }))).toBe(29);
+    expect(calcBadgeProgress(def, makeBuddyState({ streak: 30 }))).toBe(30);
+    expect(calcBadgeProgress(def, makeBuddyState({ streak: 29 }))).toBeLessThan(def.progressTarget);
+    expect(calcBadgeProgress(def, makeBuddyState({ streak: 30 }))).toBeGreaterThanOrEqual(def.progressTarget);
+  });
+
+  it('Money Forest boundary: 99h not earned, 100h earned — hours, not currency', () => {
+    const def = defById('money_forest_500');
+    // 默认时薪 $25: 99h = 2475, 100h = 2500
+    expect(def.progressType).toBe('won_back_hours');
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 2475 }))).toBe(99);
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 2475 }))).toBeLessThan(def.progressTarget);
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 2500 }))).toBe(100);
+    // 亚小时向下取整 — 99.96h 显示 99, 不虚标达标
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 2499 }))).toBe(99);
+    // 用户自设时薪跟随: $50/h 时 5000 才到 100h, 2475 只算 49h
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 5000 }), 50)).toBe(100);
+    expect(calcBadgeProgress(def, makeBuddyState({ totalSaved: 2475 }), 50)).toBe(49);
+  });
+
+  it('Dream Gardener boundary: 2 completed funds not earned, 3 earned — completion is current ≥ target', () => {
+    const def = defById('dream_gardener_3');
+    expect(def.progressType).toBe('dream_fund_completed');
+    const twoDone = [fund('a', 100), fund('b', 130), fund('c', 99)];
+    expect(calcBadgeProgress(def, makeBuddyState({ dreamFunds: twoDone }))).toBe(2);
+    expect(calcBadgeProgress(def, makeBuddyState({ dreamFunds: twoDone }))).toBeLessThan(def.progressTarget);
+    const threeDone = [fund('a', 100), fund('b', 130), fund('c', 100)];
+    expect(calcBadgeProgress(def, makeBuddyState({ dreamFunds: threeDone }))).toBe(3);
+    // 恰好等于 target 算完成; 建了没走完不算; target=0 的空壳不算
+    expect(calcBadgeProgress(def, makeBuddyState({ dreamFunds: [fund('a', 99), fund('b', 100), fund('c', 40)] }))).toBe(1);
+    expect(calcBadgeProgress(def, makeBuddyState({ dreamFunds: [fund('a', 0), fund('b', 0), fund('c', 0)] }))).toBe(0);
+    // 默认储蓄池 (savings) 不计入梦想基金完成 — 与 isDreamFundAchieved 权威语义一致
+    expect(
+      calcBadgeProgress(def, makeBuddyState({ dreamFunds: [fund('a', 100), fund('b', 100), fund('savings', 500)] }))
+    ).toBe(2);
+  });
+
+  it('honest degradation: no data → progress 0, badge stays locked, no share entry', () => {
+    // 纯函数层 — 数据缺失全部归 0
+    expect(calcBadgeProgress(defById('money_forest_500'), null)).toBe(0);
+    expect(calcBadgeProgress(defById('money_forest_500'), makeBuddyState({ totalSaved: 0 }))).toBe(0);
+    expect(calcBadgeProgress(defById('dream_gardener_3'), makeBuddyState({ dreamFunds: [] }))).toBe(0);
+    expect(calcBadgeProgress(defById('dream_gardener_3'), undefined)).toBe(0);
+
+    // 组件层 — 零数据不出晒入口, 看到的是进度引导而非虚假荣誉
+    openCollection(['streak_7'], makeBuddyState());
+    expect(screen.queryByTestId('badge-share-money_forest_500')).toBeNull();
+    expect(screen.queryByTestId('badge-share-dream_gardener_3')).toBeNull();
+    expect(screen.getAllByText('0/100').length).toBeGreaterThanOrEqual(1); // meadow 与 forest 同目标值
+    expect(screen.getByText('0/3')).toBeTruthy();
+  });
+});
+
 describe('marks collection panel', () => {
   it('shows every trackable new badge as earned when the mock state reaches its target', () => {
     const funded = (id: string, current: number) => ({ id, name: id, target: 100, current, emoji: '🌱' });
     const high = makeBuddyState({
       challengesCompleted: 10,
-      totalSaved: 500,
+      // 100h × 默认时薪 $25 = 2500 — batch106-b Money Forest 按 won_back_hours 判定
+      totalSaved: 2500,
       streak: 30,
-      dreamFunds: [funded('a', 60), funded('b', 30), funded('c', 10)],
+      // batch106-b Dream Gardener 按「完成」判定 — 3 个基金全部走到 target
+      dreamFunds: [funded('a', 120), funded('b', 100), funded('c', 150)],
     });
     // 传入 streak_7 是因为 View All 按钮仅在已有徽章时渲染; streak_30=30 时它本就进度达标, Seen 计数不变
     openCollection(['streak_7'], high);
     // 10 枚数据达标: impulse_shield, green_guardian_10, streak_7, streak_guardian_30,
-    // first_save, money_meadow_100, money_forest_500, first_dream_funded, dream_builder, dream_gardener_3
+    // first_save, money_meadow_100, money_forest_500 (100h), first_dream_funded,
+    // dream_builder, dream_gardener_3 (3 个完成)
     expect(screen.getAllByText('Seen')).toHaveLength(10);
     for (const name of ['Green Guardian', 'Evergreen Guardian', 'Money Forest', 'First Seed', 'Dream Gardener']) {
       expect(screen.getByText(name)).toBeTruthy();

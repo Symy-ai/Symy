@@ -615,9 +615,9 @@
       "streak_guardian_30": "30 days of showing up. Your green streak has grown deep roots.",
       "quiet_night_master": "Seven evenings in a row the night stayed quiet. Your evenings belong to you.",
       "money_meadow_100": "The first 100 you kept. A meadow of possibility is starting to grow.",
-      "money_forest_500": "500 kept from guarded choices. What started as a meadow now shades you.",
+      "money_forest_500": "100 hours won back from guarded choices. What started as a meadow now shades you.",
       "first_dream_funded": "The first money you kept went where you chose. A seed is in the ground.",
-      "dream_gardener_3": "Three dreams growing side by side. You tend a whole garden now."
+      "dream_gardener_3": "Three dream funds brought to full bloom. You tend a whole garden now."
     },
     "badgeUnlock": {
       "impulse_shield": "Hold your first gate — pause, look at the item, choose not to buy",
@@ -631,9 +631,9 @@
       "streak_guardian_30": "Keep a 30-day guardian streak with Symy",
       "quiet_night_master": "7 impulse-free nights in a row — awarded by Symy",
       "money_meadow_100": "Save $100 in total",
-      "money_forest_500": "Save $500 in total",
+      "money_forest_500": "Win back 100 hours in total",
       "first_dream_funded": "Move your first kept money into a dream fund",
-      "dream_gardener_3": "Grow 3 dream funds at the same time"
+      "dream_gardener_3": "Fully fund 3 dream funds"
     },
     "unlockCondition": "Unlock:",
     "progress": "Progress",
@@ -3573,6 +3573,8 @@
       "statDays": "{days} days in a row",
       "statDreams": "{count} dreams growing",
       "statDreamsFunded": "{count} dreams funded",
+      "statHours": "{hours} hours won back in total",
+      "statDreamsCompleted": "{count} dreams completed",
       "privateHint": "Behind this honor, {amount} of your life stayed with you — just your little secret",
       "shareText": "The {name} honor is unlocked — won back {hours}. Buy less. Live more."
     },

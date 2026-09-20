@@ -640,9 +640,9 @@
       "streak_guardian_30": "连续 30 天守护。你的绿色连续已经扎根。",
       "quiet_night_master": "连续七个夜晚安然度过。夜晚属于你自己。",
       "money_meadow_100": "省下的第一个 100。一片可能性的草甸开始生长。",
-      "money_forest_500": "累计省下 500。从草甸长成的小树林，开始为你遮荫。",
+      "money_forest_500": "累计赢回 100 小时。从草甸长成的小树林，开始为你遮荫。",
       "first_dream_funded": "第一笔省下的钱，去了你选的地方。种子已经落进土里。",
-      "dream_gardener_3": "三个梦想一起生长。你打理的是一整座花园。"
+      "dream_gardener_3": "三个梦想基金先后开花结果。你打理的是一整座花园。"
     },
     "badgeUnlock": {
       "impulse_shield": "守住你的第一次选择——停在物品前，选择不买",
@@ -656,9 +656,9 @@
       "streak_guardian_30": "和 Symy 保持 30 天守护 streak",
       "quiet_night_master": "连续 7 个晚间零冲动——由 Symy 授予",
       "money_meadow_100": "累计省下 ¥100",
-      "money_forest_500": "累计省下 ¥500",
+      "money_forest_500": "累计赢回 100 小时",
       "first_dream_funded": "把第一笔省下的钱存进梦想基金",
-      "dream_gardener_3": "同时培育 3 个梦想基金"
+      "dream_gardener_3": "陪伴 3 个梦想基金走到完成"
     },
     "unlockCondition": "解锁条件：",
     "progress": "进度",
@@ -3573,6 +3573,8 @@
       "statDays": "连续 {days} 天",
       "statDreams": "{count} 个心愿在生长",
       "statDreamsFunded": "点亮了 {count} 个心愿",
+      "statHours": "累计赢回 {hours} 小时",
+      "statDreamsCompleted": "完成了 {count} 个心愿",
       "privateHint": "这份荣誉背后，你留住了 {amount} —— 只属于你的小秘密",
       "shareText": "解锁「{name}」勋章——已赢回 {hours}。少买一点，多活一点。"
     },

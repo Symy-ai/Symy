@@ -171,7 +171,7 @@ export const GUARDIAN_CHALLENGES: GuardianChallenge[] = [
     rewardBadgeId: 'money_meadow_100',
   },
   {
-    // batch6-a: $100 进阶档 — 走向 money_forest_500 的里程碑
+    // batch6-a: $100 进阶档 — batch106-b 起 money_forest_500 判定改为赢回小时, 此挑战是其提前授予路径
     id: 'weekly_hundred_left',
     period: 'weekly',
     titleKey: 'buddy.challengeLib.challenges.weekly_hundred_left.title',
@@ -229,7 +229,7 @@ export const GUARDIAN_CHALLENGES: GuardianChallenge[] = [
     rewardBadgeId: 'money_meadow_100',
   },
   {
-    // batch6-a: $500 ⇔ money_forest_500 勋章阈值 — 完成即点亮, 承诺兑现
+    // batch6-a: $500 里程碑 — batch106-b 起为 money_forest_500 的提前授予路径 (徽章自身判定已改为赢回 100 小时)
     id: 'milestone_five_hundred_left',
     period: 'all_time',
     titleKey: 'buddy.challengeLib.challenges.milestone_five_hundred_left.title',
@@ -241,7 +241,8 @@ export const GUARDIAN_CHALLENGES: GuardianChallenge[] = [
     rewardBadgeId: 'money_forest_500',
   },
   {
-    // batch6-a: 3 个有真实存入的基金 — 完成即 ⊆ 已建 3 基金 ⇒ dream_gardener_3 必已点亮
+    // batch6-a: 3 个有真实存入的基金 — batch106-b 起 dream_gardener_3 判定为「3 个基金完成」,
+    // 此挑战达成 (3 个已存入) 是提前授予荣誉路径, 不再蕴含徽章自身进度达标
     id: 'milestone_three_seeds',
     period: 'all_time',
     titleKey: 'buddy.challengeLib.challenges.milestone_three_seeds.title',

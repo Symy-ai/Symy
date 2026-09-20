@@ -127,3 +127,69 @@ describe('b89-c guardian-forest badge brand i18n guard', () => {
     }
   });
 });
+
+/**
+ * b106-b (BP p19 荣誉资产): 四枚荣誉徽章的「判定口径」文案守卫。
+ * 徽章名/品牌串由上方 b89-c 守卫锁死; 这里锁判定语义 — 判定改了文案没跟上 (或回潮) 即红:
+ * Money Forest = 赢回小时 (永不出现金额口径), Dream Gardener = 基金完成 (非"建了就算"),
+ * Evergreen Guardian = 30 天 streak, 四枚 zh/en 双语齐全 + 新晒卡 chip key 双侧在位。
+ */
+describe('b106-b BP p19 honor badge criteria copy', () => {
+  const FOUR_HONOR_IDS = ['green_guardian_10', 'streak_guardian_30', 'money_forest_500', 'dream_gardener_3'] as const;
+
+  it('keeps all four BP honor badges fully present in zh and en (names/descriptions/unlock)', () => {
+    for (const id of FOUR_HONOR_IDS) {
+      for (const locale of ['zh', 'en'] as const) {
+        for (const subtree of SUBTREES) {
+          const value = dictionaries[locale][`buddy.${subtree}.${id}`];
+          expect(isNonEmptyString(value), `${locale}.${subtree}.${id} must exist and be non-empty`).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('states Money Forest in won-back hours and never in currency terms', () => {
+    for (const locale of ['zh', 'en'] as const) {
+      for (const subtree of ['badgeUnlock', 'badgeDescriptions'] as const) {
+        const text = dictionaries[locale][`buddy.${subtree}.money_forest_500`] as string;
+        expect(text, `${locale}.${subtree}.money_forest_500 must name the 100h threshold`).toContain('100');
+        expect(text, `${locale}.${subtree}.money_forest_500 must speak in hours`).toMatch(/小时|hour/i);
+        expect(text, `${locale}.${subtree}.money_forest_500 must not carry currency symbols`).not.toMatch(/[$¥€£]/);
+        expect(text, `${locale}.${subtree}.money_forest_500 must not regress to the saved-amount criterion`).not.toMatch(/省下|Save \$|saved \$|kept from/i);
+      }
+    }
+  });
+
+  it('states Dream Gardener as funds brought to completion, not merely created', () => {
+    const zhUnlock = dictionaries.zh['buddy.badgeUnlock.dream_gardener_3'] as string;
+    const enUnlock = dictionaries.en['buddy.badgeUnlock.dream_gardener_3'] as string;
+    expect(zhUnlock).toContain('3');
+    expect(zhUnlock).toContain('完成');
+    expect(zhUnlock).not.toContain('同时培育');
+    expect(enUnlock).toContain('3');
+    expect(enUnlock).toMatch(/fund|complet|bloom/i);
+    expect(enUnlock).not.toContain('at the same time');
+    // 描述侧同语义 — 走到完成/开花结果, 不再是"一起生长"
+    expect(dictionaries.zh['buddy.badgeDescriptions.dream_gardener_3'] as string).toMatch(/完成|开花结果/);
+    expect(dictionaries.en['buddy.badgeDescriptions.dream_gardener_3'] as string).toMatch(/bloom|complet|finish/i);
+  });
+
+  it('pins Evergreen Guardian to the 30-day streak phrasing on both sides', () => {
+    for (const locale of ['zh', 'en'] as const) {
+      const unlock = dictionaries[locale]['buddy.badgeUnlock.streak_guardian_30'] as string;
+      expect(unlock).toContain('30');
+      expect(unlock, `${locale} unlock must keep the streak wording`).toMatch(/streak|连续|天/i);
+    }
+  });
+
+  it('defines the new share stat chips for the honor progress types on both sides', () => {
+    for (const locale of ['zh', 'en'] as const) {
+      const hours = dictionaries[locale]['share.badgeCard.statHours'];
+      const completed = dictionaries[locale]['share.badgeCard.statDreamsCompleted'];
+      expect(isNonEmptyString(hours), `${locale} share.badgeCard.statHours must exist`).toBe(true);
+      expect(hours as string).toContain('{hours}');
+      expect(isNonEmptyString(completed), `${locale} share.badgeCard.statDreamsCompleted must exist`).toBe(true);
+      expect(completed as string).toContain('{count}');
+    }
+  });
+});

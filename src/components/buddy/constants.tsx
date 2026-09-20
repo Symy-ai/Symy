@@ -3,7 +3,7 @@
  *
  * 提取自 src/components/buddy-tab.tsx (Round 82 拆分)
  * 包含: HealthEvent type, HEALTH_EVENT_ICONS, HEALTH_CONFIG, BatteryIcon,
- *       BADGE_INFO, ALL_BADGES, BadgeChip, formatTimeAgo
+ *       BADGE_INFO, BadgeChip, formatTimeAgo (ALL_BADGES 等注册表 re-export 自 lib/badge-constants)
  */
 
 'use client';
@@ -144,162 +144,11 @@ export const BADGE_INFO: Record<string, { labelKey: string; emoji: string; color
   dream_gardener_3: { labelKey: 'buddy.badgeNames.dream_gardener_3', emoji: '🌷', color: 'bg-pink-500/10 border-pink-500/20 text-pink-400' },
 };
 
-export interface BadgeDef {
-  id: string;
-  emoji: string;
-  color: string;
-  /** 🔧 P1-11 fix: 解锁条件描述 (显示给用户) */
-  unlockConditionKey: string;
-  /** 🔧 P1-11 fix: 进度目标值 (用于 progress bar) */
-  progressTarget: number;
-  /** 🔧 P1-11 fix: 进度计算类型 — 决定如何从 buddyState 计算当前进度 */
-  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded';
-  /** batch3-c: 收藏面板分组 — 守护 / 成长 / 里程碑 (纯前端分组, 不影响数据) */
-  group: BadgeGroup;
-}
-
-/** batch3-c: 勋章分组 — 标题文案在 i18n buddy.badgeGroups.* */
-export type BadgeGroup = 'guardian' | 'growth' | 'milestone';
-
-/** batch3-c: 分组渲染顺序 — 收藏面板按此排序 (与 ALL_BADGES 内顺序解耦) */
-export const BADGE_GROUP_ORDER: BadgeGroup[] = ['guardian', 'growth', 'milestone'];
-
-/**
- * batch3-c: 绿色荣誉库 — 14 枚, 每枚绑定真实行为数据 (拦截次数/省钱/连续天数/基金),
- * AI 授予型 (big_truth / clear_mind_streak) 由 Symy 识别真实行为后经 add_badge 发放。
- * 旧 6 枚 id/progressTarget/progressType 不变, 只绿色化视觉与文案, 已解锁用户数据兼容。
- */
-export const ALL_BADGES: BadgeDef[] = [
-  // ===== 守护勋章 — 看见并守住选择 =====
-  {
-    id: 'impulse_shield',
-    emoji: '🛡️',
-    color: 'bg-cyan-500/10 border-cyan-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.impulse_shield',
-    progressTarget: 1,
-    progressType: 'challenge_wins',
-    group: 'guardian',
-  },
-  {
-    id: 'green_guardian_10',
-    emoji: '🌿',
-    color: 'bg-green-500/10 border-green-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.green_guardian_10',
-    progressTarget: 10,
-    progressType: 'challenge_wins',
-    group: 'guardian',
-  },
-  {
-    id: 'streak_7',
-    emoji: '🍃',
-    color: 'bg-emerald-500/10 border-emerald-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.streak_7',
-    progressTarget: 7,
-    progressType: 'streak_days',
-    group: 'guardian',
-  },
-  {
-    id: 'streak_guardian_30',
-    emoji: '🍀',
-    color: 'bg-emerald-500/10 border-emerald-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.streak_guardian_30',
-    progressTarget: 30,
-    progressType: 'streak_days',
-    group: 'guardian',
-  },
-  {
-    id: 'quiet_night_master',
-    emoji: '🌙',
-    color: 'bg-indigo-500/10 border-indigo-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.quiet_night_master',
-    progressTarget: 7,
-    progressType: 'clear_mind_streak',
-    group: 'guardian',
-  },
-  // ===== 成长勋章 — 留下的钱与长出的基金 =====
-  {
-    id: 'first_save',
-    emoji: '🌾',
-    color: 'bg-green-500/10 border-green-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.first_save',
-    progressTarget: 1,
-    progressType: 'total_saves',
-    group: 'growth',
-  },
-  {
-    id: 'money_meadow_100',
-    emoji: '🌱',
-    color: 'bg-lime-500/10 border-lime-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.money_meadow_100',
-    progressTarget: 100,
-    progressType: 'total_saves',
-    group: 'growth',
-  },
-  {
-    id: 'money_forest_500',
-    emoji: '🌳',
-    color: 'bg-green-500/10 border-green-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.money_forest_500',
-    progressTarget: 500,
-    progressType: 'total_saves',
-    group: 'growth',
-  },
-  {
-    id: 'first_dream_funded',
-    emoji: '🎁',
-    color: 'bg-teal-500/10 border-teal-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.first_dream_funded',
-    progressTarget: 1,
-    progressType: 'dream_fund_funded',
-    group: 'growth',
-  },
-  {
-    id: 'dream_builder',
-    emoji: '🪴',
-    color: 'bg-pink-500/10 border-pink-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.dream_builder',
-    progressTarget: 1,
-    progressType: 'dream_fund_count',
-    group: 'growth',
-  },
-  {
-    id: 'dream_gardener_3',
-    emoji: '🌷',
-    color: 'bg-pink-500/10 border-pink-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.dream_gardener_3',
-    progressTarget: 3,
-    progressType: 'dream_fund_count',
-    group: 'growth',
-  },
-  // ===== 里程碑勋章 — 被看见的关键时刻 =====
-  {
-    id: 'boss_slayer',
-    emoji: '🦉',
-    color: 'bg-purple-500/10 border-purple-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.boss_slayer',
-    progressTarget: 1,
-    progressType: 'big_truth',
-    group: 'milestone',
-  },
-  {
-    id: 'rational_lawyer',
-    emoji: '⚖️',
-    color: 'bg-cyan-500/10 border-cyan-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.rational_lawyer',
-    progressTarget: 3,
-    progressType: 'clear_mind_streak',
-    group: 'milestone',
-  },
-  {
-    id: 'light_bearer',
-    emoji: '🕯️',
-    color: 'bg-amber-500/10 border-amber-500/20',
-    unlockConditionKey: 'buddy.badgeUnlock.light_bearer',
-    progressTarget: 1,
-    progressType: 'big_truth',
-    group: 'milestone',
-  },
-];
+// ====== Badge registry ======
+// batch106-b: 注册表单一来源收敛到 lib/badge-constants (纯数据归 lib, 本文件只留 UI 层)。
+// 此前两份 ALL_BADGES 手工同步, lib 头注释声称的 re-export 从未成立 — 现在补上, 判定口径改一处即全局生效。
+export { ALL_BADGES, BADGE_GROUP_ORDER } from '@/lib/badge-constants';
+export type { BadgeDef, BadgeGroup } from '@/lib/badge-constants';
 
 // 🔧 TECH-DEBT-C: React.memo — 纯展示，badge 是稳定 string
 export const BadgeChip = memo(function BadgeChip({ badge }: { badge: string }) {

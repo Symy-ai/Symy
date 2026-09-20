@@ -17,10 +17,21 @@ export interface BadgeDef {
   /** Target value for progress bars */
   progressTarget: number;
   /** How progress is calculated from buddyState */
-  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded';
+  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded' | 'won_back_hours' | 'dream_fund_completed';
   /** Collection panel group */
   group: BadgeGroup;
 }
+
+/**
+ * batch106-b (BP p19 荣誉资产): 四枚荣誉徽章的判定门槛 — 可配置常量。
+ * Green Guardian 已由 green_guardian_10 (challenge_wins ≥ 10) 承担, 门槛沿用注册表现值。
+ */
+export const GREEN_GUARDIAN_WINS = 10;
+export const EVERGREEN_STREAK_DAYS = 30;
+/** 累计赢回 ≥100 小时 (totalSaved / 时薪), 金额口径不进判定 — 面子只认时间 */
+export const MONEY_FOREST_WON_BACK_HOURS = 100;
+/** 守护 3 个梦想基金「完成」(current ≥ target), 建了不算 */
+export const DREAM_GARDENER_COMPLETED_FUNDS = 3;
 
 export const BADGE_GROUP_ORDER: BadgeGroup[] = ['guardian', 'growth', 'milestone'];
 
@@ -40,7 +51,7 @@ export const ALL_BADGES: BadgeDef[] = [
     emoji: '🌿',
     color: 'bg-green-500/10 border-green-500/20',
     unlockConditionKey: 'buddy.badgeUnlock.green_guardian_10',
-    progressTarget: 10,
+    progressTarget: GREEN_GUARDIAN_WINS,
     progressType: 'challenge_wins',
     group: 'guardian',
   },
@@ -58,7 +69,7 @@ export const ALL_BADGES: BadgeDef[] = [
     emoji: '🍀',
     color: 'bg-emerald-500/10 border-emerald-500/20',
     unlockConditionKey: 'buddy.badgeUnlock.streak_guardian_30',
-    progressTarget: 30,
+    progressTarget: EVERGREEN_STREAK_DAYS,
     progressType: 'streak_days',
     group: 'guardian',
   },
@@ -91,12 +102,14 @@ export const ALL_BADGES: BadgeDef[] = [
     group: 'growth',
   },
   {
+    // batch106-b (BP p19): 判定改为「累计赢回 ≥100 小时」(原: 累计省下 500)。
+    // id 保留 _500 — 已授予用户的 badges 数组存的是 id, 改 id = 收回荣誉; 荣誉不迁移也不收回。
     id: 'money_forest_500',
     emoji: '🌳',
     color: 'bg-green-500/10 border-green-500/20',
     unlockConditionKey: 'buddy.badgeUnlock.money_forest_500',
-    progressTarget: 500,
-    progressType: 'total_saves',
+    progressTarget: MONEY_FOREST_WON_BACK_HOURS,
+    progressType: 'won_back_hours',
     group: 'growth',
   },
   {
@@ -118,12 +131,13 @@ export const ALL_BADGES: BadgeDef[] = [
     group: 'growth',
   },
   {
+    // batch106-b (BP p19): 判定改为「3 个梦想基金完成」(原: 同时培育 3 个) — 钱到目标才算守护完成。
     id: 'dream_gardener_3',
     emoji: '🌷',
     color: 'bg-pink-500/10 border-pink-500/20',
     unlockConditionKey: 'buddy.badgeUnlock.dream_gardener_3',
-    progressTarget: 3,
-    progressType: 'dream_fund_count',
+    progressTarget: DREAM_GARDENER_COMPLETED_FUNDS,
+    progressType: 'dream_fund_completed',
     group: 'growth',
   },
   // ===== 里程碑勋章 — 被看见的关键时刻 =====
