@@ -4,7 +4,7 @@
  * 覆盖真实用户链路: 登录 → Me tab → 右上角设置按钮 → settings overlay。
  * 默认区锚点选 batch95 重构前后都保留的三项: 显示名称、绿色守护总开关、
  * 深色模式开关。高级设置折叠区当前基线尚未存在, 用探测式断言兼容两态:
- * 存在则展开并验证高级内容; 不存在则记录 skip 说明, 不让基线变红。
+ * 存在则先验证默认收起、展开后高级内容可见; 不存在则记录 skip 说明。
  *
  * 本地 mock 模式 (未设开关时整体跳过):
  *   MOCK_POSTGREST_AUTH=1 node e2e/fixtures/mock-postgrest.mjs &
@@ -96,6 +96,7 @@ test('profile 设置入口可打开 overlay, 且默认三锚点与高级折叠�
     .getByTestId('settings-advanced-toggle')
     .or(page.getByRole('button', { name: advancedLabel, exact: true }))
     .first();
+  const advancedItem = page.getByText(locale === 'zh' ? '绿色偏好' : 'Green Preferences').first();
   let advancedPresent = false;
   try {
     await advancedToggle.waitFor({ state: 'visible', timeout: 1_000 });
@@ -105,6 +106,7 @@ test('profile 设置入口可打开 overlay, 且默认三锚点与高级折叠�
   }
 
   if (!advancedPresent) {
+    // TODO(batch95): night-main merges into main 后, 删除本兼容分支并强制断言折叠区存在。
     test.info().annotations.push({
       type: 'skip',
       description: 'advanced settings region is absent in the pre-batch95 baseline',
@@ -112,6 +114,8 @@ test('profile 设置入口可打开 overlay, 且默认三锚点与高级折叠�
     return;
   }
 
+  await expect(advancedItem).toBeHidden();
+  await expect(advancedToggle).toHaveAttribute('aria-expanded', 'false');
   await advancedToggle.click();
-  await expect(page.getByText(locale === 'zh' ? '绿色偏好' : 'Green Preferences')).toBeVisible();
+  await expect(advancedItem).toBeVisible();
 });
