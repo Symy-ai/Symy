@@ -119,6 +119,12 @@ export async function POST(req: NextRequest) {
   if (!['ban', 'unban', 'set_plan', 'reset_onboarding'].includes(action)) {
     return NextResponse.json({ error: `Invalid action: ${action}` }, { status: 400 });
   }
+  if (action === 'ban' && body.bannedUntil !== undefined) {
+    const bannedUntil = new Date(body.bannedUntil);
+    if (typeof body.bannedUntil !== 'string' || Number.isNaN(bannedUntil.getTime())) {
+      return NextResponse.json({ error: 'bannedUntil must be a valid date' }, { status: 400 });
+    }
+  }
 
   return withAdminAudit(
     req,

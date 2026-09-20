@@ -56,6 +56,21 @@ describe('calculateHealthDelta', () => {
     });
   });
 
+  it('impulse_damage: preserves explicit zero impulseScore and amount (N1)', () => {
+    const input: HealthEventInput = {
+      userId: 'u1',
+      eventType: 'impulse_damage',
+      triggerSource: 'email_receipt',
+      description: 'test',
+      metadata: { impulseScore: 0, amount: 0 },
+    };
+
+    expect(calculateHealthDelta(input, null)).toEqual({
+      vitalityChange: 0,
+      tokenChange: -1,
+    });
+  });
+
   it('impulse_damage: falls back to default amount 0 when missing', () => {
     const input: HealthEventInput = {
       userId: 'u1',
