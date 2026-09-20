@@ -12,8 +12,7 @@ import { createPortal } from 'react-dom';
 import { ChevronRight, Share2, X } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import { BadgeChip, ALL_BADGES, BADGE_GROUP_ORDER, type BadgeDef, type BadgeGroup } from './constants';
-import { isDreamFundAchieved } from './dream-achievement';
-import { DEFAULT_HOURLY_RATE, moneyToHours } from '@/lib/freedom-time';
+import { calcBadgeProgress, isProgressTrackable } from '@/lib/badge-progress';
 import { useHourlyRate } from '@/hooks/use-hourly-rate';
 import type { BuddyState } from '@/types/buddy-state';
 import { ShareModal } from '@/components/share/share-modal';
@@ -32,61 +31,6 @@ const BADGE_GROUP_TITLE_KEYS: Record<BadgeGroup, string> = {
   growth: 'buddy.badgeGroups.growth',
   milestone: 'buddy.badgeGroups.milestone',
 };
-
-/**
- * 🔧 P1-11 fix: 计算成就当前进度
- * 根据 badge.progressType 从 buddyState 中提取对应数值
- * 🔧 Round 97 P1-3 fix: 修正字段映射 — challengeWins→challengesCompleted, totalSaves→totalSaved
- * 🔧 2026-07-21 audit fix (agent-1 P2-3): big_truth/clear_mind_streak 无后端追踪字段,
- *   之前返回 0 导致 rational_lawyer (clear_mind_streak, target 3) 永久卡在 0% 进度条。
- *   这些徽章是 "AI 识别授予型" (通过 add_badge 工具由 AI 授予, 非计数指标),
- *   不应显示数字进度条。新增 isProgressTrackable 区分, UI 据此隐藏进度条。
- * batch3-c: 导出供单测使用; 新增 dream_fund_funded 分支 — 读现有 dreamFunds[].current,
- *   零 DDL, 区分"建了空基金"与"真把钱存进去"。
- * batch106-b (BP p19): 新增 won_back_hours — totalSaved 按用户时薪换算赢回小时
- *   (向下取整, 进度显示与达标判定同口径); dream_fund_completed — 复用
- *   isDreamFundAchieved 权威完成语义 (current ≥ target 且 target > 0, 排除默认储蓄池),
- *   "建了基金"不算完成。hourlyRate 缺省回落默认时薪 — 无数据诚实归 0, 徽章不亮。
- */
-const UNTRACKABLE_PROGRESS_TYPES = new Set(['big_truth', 'clear_mind_streak']);
-
-export function isProgressTrackable(progressType: BadgeDef['progressType']): boolean {
-  return !UNTRACKABLE_PROGRESS_TYPES.has(progressType);
-}
-
-export function calcBadgeProgress(
-  badge: BadgeDef,
-  buddyState?: BuddyState | null,
-  hourlyRate: number = DEFAULT_HOURLY_RATE
-): number {
-  if (!buddyState) return 0;
-  switch (badge.progressType) {
-    case 'challenge_wins':
-      return buddyState.challengesCompleted || 0;
-    case 'total_saves':
-      return buddyState.totalSaved || 0;
-    case 'streak_days':
-      return buddyState.streak || 0;
-    case 'big_truth':
-    case 'clear_mind_streak':
-      // 无后端追踪字段 — 徽章由 AI add_badge 授予, 非计数进度 (isProgressTrackable=false → UI 不渲染进度条)
-      return 0;
-    case 'dream_fund_count':
-      // dreamFundCount 可从 dreamFunds 数组长度计算
-      return buddyState.dreamFunds?.length || 0;
-    case 'dream_fund_funded':
-      // batch3-c: 有实际存入金额的基金数 (current > 0) — 第一笔钱进基金才算数
-      return buddyState.dreamFunds?.filter((f) => (f.current || 0) > 0).length || 0;
-    case 'won_back_hours':
-      // batch106-b: 面子只认时间 — totalSaved → 赢回小时 (向下取整, 99.6h 显示 99/100 不虚标)
-      return Math.floor(moneyToHours(buddyState.totalSaved || 0, hourlyRate));
-    case 'dream_fund_completed':
-      // batch106-b: 走到 target 才算完成 — isDreamFundAchieved 是全站权威完成语义
-      return buddyState.dreamFunds?.filter(isDreamFundAchieved).length || 0;
-    default:
-      return 0;
-  }
-}
 
 /**
  * batch3-c: 收藏面板单枚勋章卡片 — 从 BadgesSection 内联 map 体抽出, 便于按分组渲染

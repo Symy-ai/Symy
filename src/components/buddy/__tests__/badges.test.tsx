@@ -20,7 +20,8 @@ import {
   MONEY_FOREST_WON_BACK_HOURS,
   DREAM_GARDENER_COMPLETED_FUNDS,
 } from '../../../lib/badge-constants';
-import { BadgesSection, calcBadgeProgress, isProgressTrackable } from '../badges-section';
+import { BadgesSection } from '../badges-section';
+import { calcBadgeProgress, isProgressTrackable } from '@/lib/badge-progress';
 import type { BuddyState } from '@/types/buddy-state';
 import en from '../../../i18n/messages/en.json';
 import zh from '../../../i18n/messages/zh.json';

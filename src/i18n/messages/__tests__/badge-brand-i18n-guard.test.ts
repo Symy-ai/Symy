@@ -192,4 +192,15 @@ describe('b106-b BP p19 honor badge criteria copy', () => {
       expect(completed as string).toContain('{count}');
     }
   });
+
+  it('does not use default value fallbacks for the new honor stat chips', () => {
+    const source = readFileSync('src/components/share/badge-card.tsx', 'utf-8');
+    const hoursCall = source.match(/t\('share\.badgeCard\.statHours'[^)]*\)/);
+    const completedCall = source.match(/t\('share\.badgeCard\.statDreamsCompleted'[^)]*\)/);
+
+    expect(hoursCall).not.toBeNull();
+    expect(completedCall).not.toBeNull();
+    expect(hoursCall?.[0]).not.toContain('defaultValue');
+    expect(completedCall?.[0]).not.toContain('defaultValue');
+  });
 });

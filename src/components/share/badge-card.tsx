@@ -74,9 +74,9 @@ function getBadgeStatChip(badge: BadgeDef, progressValue: number, t: TFn): strin
     case 'dream_fund_funded':
       return t('share.badgeCard.statDreamsFunded', { count: v, defaultValue: `${v} dreams funded` });
     case 'won_back_hours':
-      return t('share.badgeCard.statHours', { hours: v, defaultValue: `${v} hours won back in total` });
+      return t('share.badgeCard.statHours', { hours: v });
     case 'dream_fund_completed':
-      return t('share.badgeCard.statDreamsCompleted', { count: v, defaultValue: `${v} dreams completed` });
+      return t('share.badgeCard.statDreamsCompleted', { count: v });
     default:
       return null;
   }

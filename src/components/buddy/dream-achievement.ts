@@ -1,4 +1,5 @@
 import type { DreamFund } from '@/types/buddy-state';
+import { isDreamFundAchieved } from '@/lib/dream-achievement';
 
 export const DREAM_ACHIEVEMENT_PREFIX = 'symy-dream-achieved:';
 export type DreamAchievementState = 'unachieved' | '1';
@@ -7,9 +8,7 @@ export function dreamAchievementKey(fundId: string): string {
   return `${DREAM_ACHIEVEMENT_PREFIX}${fundId}`;
 }
 
-export function isDreamFundAchieved(fund: DreamFund): boolean {
-  return fund.id !== 'savings' && fund.target > 0 && fund.current >= fund.target;
-}
+export { isDreamFundAchieved };
 
 export function resetDreamAchievement(fundId: string): void {
   if (typeof window === 'undefined') return;
