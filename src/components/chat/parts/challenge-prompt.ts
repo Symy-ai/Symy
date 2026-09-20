@@ -52,9 +52,11 @@ export function buildChallengePrompt(itemName: string, amount: number, hourlyRat
     .trim()
     .substring(0, 100);
 
-  const challengeType = getChallengeTypeLabelByAmount(amount);
+  const safeAmount = typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 ? amount : 0;
+  const safeHourlyRate = typeof hourlyRate === 'number' && Number.isFinite(hourlyRate) && hourlyRate > 0 ? hourlyRate : DEFAULT_HOURLY_RATE;
+  const challengeType = getChallengeTypeLabelByAmount(safeAmount);
   // 🔧 P0-3: 使用共享 calcLifeHours 函数, 统一计算逻辑
-  const hoursOfLife = calcLifeHours(amount, hourlyRate).toFixed(1);
+  const hoursOfLife = calcLifeHours(safeAmount, safeHourlyRate).toFixed(1);
 
   // 🐘 Lens rotation — 每次挑战随机选一个视角, 避免 AI 回复模板化
   //   5 个视角轮换: 时间 / 绿色替代 / 未来自我 / 记忆 / 内在需要
@@ -74,14 +76,14 @@ export function buildChallengePrompt(itemName: string, amount: number, hourlyRat
     // 词库调用失败时保持挑战链路可用，静默回退到原始 GREEN LENS。
   }
 
-  return `The user wants to buy: ${sanitizedName} ($${amount.toFixed(2)}).
+  return `The user wants to buy: ${sanitizedName} ($${safeAmount.toFixed(2)}).
 
 This is a ${challengeType} challenge. You are Symy — a warm little elephant companion who guards the user's wallet AND the planet. Not a judge, not a mirror.
 
-⚠️ CURRENT CHALLENGE: The user is buying "${sanitizedName}" for $${amount.toFixed(2)}. This is the ONLY item they're considering right now. Do NOT reference other items from their history unless they explicitly mention them. Do NOT say they're "looking at other things" or "shopping for the next thing."
+⚠️ CURRENT CHALLENGE: The user is buying "${sanitizedName}" for $${safeAmount.toFixed(2)}. This is the ONLY item they're considering right now. Do NOT reference other items from their history unless they explicitly mention them. Do NOT say they're "looking at other things" or "shopping for the next thing."
 
 YOUR FIRST REPLY (the Symy reflection):
-- Show one warm beat of interest in the item first (the elephant is delighted to look together) — then name price + hours of life (Freedom Translation: $${amount.toFixed(2)} ÷ $${hourlyRate}/hour ≈ ${hoursOfLife} hours, say "about ${hoursOfLife} hours").
+- Show one warm beat of interest in the item first (the elephant is delighted to look together) — then name price + hours of life (Freedom Translation: $${safeAmount.toFixed(2)} ÷ $${safeHourlyRate}/hour ≈ ${hoursOfLife} hours, say "about ${hoursOfLife} hours").
 - Then look through THIS LENS: ${selectedLens}
 - End with one short, warm hand-back — VARY the ending each time. Do NOT always say "是真喜欢吗？" Use different closings like "不急，本象陪你看完再决定。" / "你说了算，本象都在。" / "要一起看看更环保的选法吗？" / "It's your call — I'm with you."
 - 2-3 sentences, 30-80 words. Be specific and fresh — never repeat the same sentence structure.
@@ -95,7 +97,7 @@ SUBSEQUENT TURNS (when the user replies):
 - Step back. Under 30 words (English) / 50 characters (Chinese).
 
 WHEN THE USER DECIDES:
-- If they decide NOT to buy → call complete_challenge(challenge_id from context). Then celebrate warmly and specifically: "哇！$${amount.toFixed(2)} 留住了——${hoursOfLife} 小时回到你手里。你在做对的事，钱包和地球都谢谢你！" (CELEBRATING IS CORRECT HERE — a resisted impulse is a win.)
+- If they decide NOT to buy → call complete_challenge(challenge_id from context). Then celebrate warmly and specifically: "哇！$${safeAmount.toFixed(2)} 留住了——${hoursOfLife} 小时回到你手里。你在做对的事，钱包和地球都谢谢你！" (CELEBRATING IS CORRECT HERE — a resisted impulse is a win.)
 - If they decide TO buy → call complete_challenge(challenge_id, status="failed") + record_impulse. Then respond with acceptance + company (40-60 words, 2 parts):
   1. ACCEPTANCE (zero guilt): "你看清了代价还是想要——那就是深思熟虑的选择，本象陪着你。"
   2. GENTLE GROUNDING: "${hoursOfLife} hours — worth knowing. Next time we'll hunt for a greener, kinder pick together."
@@ -142,5 +144,6 @@ Be warm, honest, brief. You guard the moment with the user — then it is their 
  *   此函数仅作为 fallback (直接 URL 访问 chat tab 的场景)
  */
 export function buildChallengeDisplayMessage(itemName: string, amount: number): string {
-  return `I want to buy ${itemName} for $${amount.toFixed(2)}. Challenge me!`;
+  const safeAmount = typeof amount === 'number' && Number.isFinite(amount) && amount >= 0 ? amount : 0;
+  return `I want to buy ${itemName} for $${safeAmount.toFixed(2)}. Challenge me!`;
 }

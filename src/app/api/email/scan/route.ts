@@ -101,8 +101,8 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     }
 
     let accessToken = decryptedAccessToken;
-    const tokenExpiry = new Date(connection.token_expiry || '');
-    const isTokenExpired = tokenExpiry < new Date();
+    const tokenExpiry = connection.token_expiry ? new Date(connection.token_expiry) : null;
+    const isTokenExpired = !tokenExpiry || Number.isNaN(tokenExpiry.getTime()) || tokenExpiry < new Date();
 
     if (isTokenExpired && decryptedRefreshToken) {
       try {

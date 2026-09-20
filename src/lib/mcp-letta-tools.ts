@@ -17,7 +17,6 @@ if (!_MCP_API_URL) {
   throw new Error('NEXT_PUBLIC_APP_URL or VERCEL_URL is required. Set one in .env or Vercel environment variables.');
 }
 const MCP_API_URL = _MCP_API_URL;
-const MCP_API_SECRET = process.env.MCP_API_SECRET || '';
 
 // ============================================================
 // Python 工具源码
@@ -38,6 +37,7 @@ function callMCPHeaderCode(): string {
 def _call_mcp(tool_name: str, arguments: dict, user_id: str) -> str:
     """Internal: call we=me MCP API endpoint."""
     import json
+    import os
     import urllib.request
     import urllib.error
 
@@ -55,7 +55,7 @@ def _call_mcp(tool_name: str, arguments: dict, user_id: str) -> str:
         data=data,
         headers={
             "Content-Type": "application/json",
-            "X-MCP-Secret": "${MCP_API_SECRET}"
+            "X-MCP-Secret": os.environ.get("MCP_API_SECRET", "")
         },
         method="POST"
     )

@@ -375,13 +375,13 @@ export function calcChallengeProgress(
     case 'week_money_left':
       return inputs.week ? inputs.week.totalSaved : null;
     case 'total_see_it':
-      return inputs.buddyState ? inputs.buddyState.challengesCompleted || 0 : null;
+      return typeof inputs.buddyState?.challengesCompleted === 'number' ? inputs.buddyState.challengesCompleted : null;
     case 'total_money_left':
-      return inputs.buddyState ? inputs.buddyState.totalSaved || 0 : null;
+      return typeof inputs.buddyState?.totalSaved === 'number' ? inputs.buddyState.totalSaved : null;
     case 'dream_funds_funded':
       // 与 calcBadgeProgress 口径一致: 有真实存入 (current > 0) 的基金才计数
-      return inputs.buddyState
-        ? inputs.buddyState.dreamFunds?.filter((f) => (f.current || 0) > 0).length || 0
+      return Array.isArray(inputs.buddyState?.dreamFunds)
+        ? inputs.buddyState.dreamFunds.filter((f) => (f.current || 0) > 0).length
         : null;
   }
 }

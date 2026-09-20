@@ -143,8 +143,8 @@ export function calculateHealthDelta(
   switch (input.eventType) {
     case 'impulse_damage': {
       const metadata = input.metadata || {};
-      const impScore = Number(metadata.impulseScore || 60);
-      const impAmount = Number(metadata.amount || 0);
+      const impScore = Number(metadata.impulseScore ?? 60);
+      const impAmount = Number(metadata.amount ?? 0);
       vitalityChange = calculateImpulseDamage(
         Number.isFinite(impScore) ? impScore : 60,
         Number.isFinite(impAmount) ? impAmount : 0,
@@ -154,8 +154,8 @@ export function calculateHealthDelta(
     }
     case 'impulse_confessed': {
       const metadata = input.metadata || {};
-      const confScore = Number(metadata.impulseScore || 60);
-      const confAmount = Number(metadata.amount || 0);
+      const confScore = Number(metadata.impulseScore ?? 60);
+      const confAmount = Number(metadata.amount ?? 0);
       vitalityChange = Math.round(calculateImpulseDamage(
         Number.isFinite(confScore) ? confScore : 60,
         Number.isFinite(confAmount) ? confAmount : 0,
@@ -165,14 +165,14 @@ export function calculateHealthDelta(
     }
     case 'mindful_recovery': {
       const metadata = input.metadata || {};
-      const mindfulScore = Number(metadata.impulseScore || 60);
+      const mindfulScore = Number(metadata.impulseScore ?? 60);
       vitalityChange = calculateMindfulRecovery(Number.isFinite(mindfulScore) ? mindfulScore : 60);
       tokenChange = 2;
       break;
     }
     case 'refund_boost': {
       const metadata = input.metadata || {};
-      const refundAmount = Number(metadata.amount || 0);
+      const refundAmount = Number(metadata.amount ?? 0);
       vitalityChange = calculateRefundBoost(Number.isFinite(refundAmount) ? refundAmount : 0);
       tokenChange = 3;
       break;

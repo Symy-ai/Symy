@@ -9,8 +9,7 @@
  *   - 6 个工具, name / def <name>( / _call_mcp 回调齐全, schema required 含 user_id
  *   - NEXT_PUBLIC_APP_URL 与 VERCEL_URL 双缺 → 模块加载即 throw (fail-closed)
  *   - VERCEL_URL 单独存在 → https:// 前缀兜底
- *   - ⚠️ N4 (报告 §十.2): MCP_API_SECRET 原样插值进生成源码文本 — 现状锁定,
- *     owner 确认改 env 注入后应翻转此断言, 详见 /tmp/b71b-defects.md
+ *   - N4 (报告 §十.2): MCP_API_SECRET 不插值进生成源码文本
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
@@ -102,11 +101,13 @@ describe('模块加载期 env fail-closed', () => {
   });
 });
 
-describe('MCP_API_SECRET 插值现状 (⚠️ N4 现状锁定)', () => {
-  it('secret 值原样进入生成源码的 X-MCP-Secret header', async () => {
-    process.env.MCP_API_SECRET = 'sentinel-secret-71b';
+describe('MCP_API_SECRET source generation (N4)', () => {
+  it('reads the secret from the runtime environment without leaking or breaking Python syntax', async () => {
+    process.env.MCP_API_SECRET = 'secret-with-"quotes"-and-\\backslashes\nand-newline';
     const mod = await freshImport();
     const source = mod.getAllMCPToolDefinitions()[0].sourceCode;
-    expect(source).toContain('"X-MCP-Secret": "sentinel-secret-71b"');
+    expect(source).toContain('"X-MCP-Secret": os.environ.get("MCP_API_SECRET", "")');
+    expect(source).not.toContain('secret-with-"quotes"-and-\\backslashes\nand-newline');
+    expect(source).toContain('import os');
   });
 });

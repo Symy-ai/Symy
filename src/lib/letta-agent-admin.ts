@@ -173,6 +173,11 @@ export async function syncHourlyRateToAgent(
   userId: string,
   hourlyRate: number,
 ): Promise<boolean> {
+  if (typeof hourlyRate !== 'number' || !Number.isFinite(hourlyRate) || hourlyRate < 0) {
+    logger.warn(`[Letta Agent Admin] Invalid hourly rate, skipping sync: ${String(hourlyRate)}`);
+    return false;
+  }
+
   if (!LETTA_API_KEY) {
     logger.warn('[Letta Agent Admin] LETTA_API_KEY not configured, skipping hourly rate sync');
     return false;
@@ -198,7 +203,7 @@ export async function syncHourlyRateToAgent(
 
     const rateLine = `Hourly rate: $${hourlyRate}/hr`;
     let newHumanBlock: string;
-    const hourlyRatePattern = /Hourly rate: \$[^\/\n]+\/hr/g;
+    const hourlyRatePattern = /Hourly rate: \$[^\n]*\/hr/g;
     const replacedBlock = currentHumanBlock.replace(hourlyRatePattern, rateLine);
     if (replacedBlock !== currentHumanBlock) {
       newHumanBlock = replacedBlock;
