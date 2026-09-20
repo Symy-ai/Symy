@@ -1,14 +1,15 @@
 /**
  * @vitest-environment happy-dom
  *
- * Settings refactor safety net for the planned five default rows plus an
- * advanced disclosure. The final "advanced content currently renders" test is
- * intentionally expected to fail after the disclosure lands; invert it then.
+ * Settings refactor safety net for the five default rows plus an advanced
+ * disclosure. batch95-a landed the disclosure: the former "advanced content
+ * currently renders" pin is inverted to "collapsed by default, rendered on
+ * expand", and the green intensity selector stays deduplicated away (99-d).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useState, type ReactNode } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SettingsOverlay } from '../settings-overlay';
 import {
@@ -37,6 +38,9 @@ vi.mock('@/hooks/use-green-prefs', () => ({
     setGreenPrefField: vi.fn(),
     resetGreenPrefs: vi.fn(() => Promise.resolve()),
   }),
+  // batch95-a: overlay 挂载时跑强度收敛迁移, 迁移模块消费这两个导出
+  getGreenPrefs: () => ({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' }),
+  setGreenPrefField: vi.fn(),
 }));
 vi.mock('@/hooks/use-hourly-rate', () => ({
   useHourlyRate: () => ({ hourlyRate: 25, rateIsDefault: false, setHourlyRate: vi.fn(() => Promise.resolve()), isLoading: false }),
@@ -134,11 +138,19 @@ describe('SettingsOverlay refactor readiness', () => {
     expect(overlay.getByText('Send Feedback')).toBeDefined();
   });
 
-  it('currently renders advanced guard settings without expanding (invert after refactor)', () => {
+  it('keeps advanced guard settings collapsed until disclosed (inverted after refactor)', () => {
     renderOverlay();
+    // 折叠态: 高级守护设置不挂载
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+    expect(screen.queryByTestId('night-window-options')).toBeNull();
+    expect(screen.queryByTestId('guard-scope-categories')).toBeNull();
+    expect(screen.queryByText('Green intensity')).toBeNull();
+
+    // 展开后照常渲染; 绿色强度选择器已被去重删除 (99-d), 不随展开回来
+    fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
     expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
     expect(screen.getByTestId('night-window-options')).toBeDefined();
     expect(screen.getByTestId('guard-scope-categories')).toBeDefined();
-    expect(screen.getByText('Green intensity')).toBeDefined();
+    expect(screen.queryByText('Green intensity')).toBeNull();
   });
 });

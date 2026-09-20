@@ -17,8 +17,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { DEFAULT_GUARD_INTENSITY, normalizeGuardIntensity, type GuardIntensity } from '@/lib/guard-intensity';
+import { getGreenPrefs, setGreenPrefField } from '@/hooks/use-green-prefs';
 
 const STORAGE_KEY = 'symy-guard-intensity';
+
+/** 绿色偏好四档中被收敛掉的两个加严档 → 三档系统的 strict (batch95-a, 99-d 定案) */
+const LEGACY_ELEVATED_GREEN_INTENSITIES: ReadonlySet<string> = new Set(['firm', 'lockdown']);
 
 function readStoredIntensity(): GuardIntensity {
   if (typeof window === 'undefined') return DEFAULT_GUARD_INTENSITY;
@@ -93,6 +97,34 @@ export function useGuardIntensity(): UseGuardIntensityResult {
   const setter = useCallback((next: GuardIntensity) => setGuardIntensity(next), []);
 
   return { guardIntensity, setGuardIntensity: setter };
+}
+
+/**
+ * batch95-a 强度双系统收敛的一次性迁移: 历史在绿色偏好里选过 firm/lockdown 的
+ * 用户映射到三档系统最高档 strict, 防止 UI 收敛后被感知为「变弱」; 同时把
+ * green-prefs.intensity 归位默认档, 保证迁移一次性 — 用户之后显式改档不被
+ * 反复覆盖。只在守护强度 key 尚无显式选择时迁移 (该 key 只由 GuardIntensitySetting
+ * 写入, 存在即代表用户已显式选档, 尊重之)。
+ *
+ * 返回是否发生了迁移 (测试断言用)。放在 hooks 层: 需要经 use-green-prefs 单例
+ * 改写偏好并通知订阅者, lib 层不得反向导入 hooks (架构守卫红线)。
+ */
+export function migrateLegacyGreenIntensity(): boolean {
+  if (typeof window === 'undefined') return false;
+  let hasExplicitGuardChoice = false;
+  try {
+    hasExplicitGuardChoice = window.localStorage.getItem(STORAGE_KEY) !== null;
+  } catch {
+    // safe to ignore: 隐私模式读不到 localStorage, 迁移无从谈起
+    return false;
+  }
+  if (hasExplicitGuardChoice) return false;
+
+  if (!LEGACY_ELEVATED_GREEN_INTENSITIES.has(getGreenPrefs().intensity)) return false;
+
+  setGuardIntensity('strict');
+  setGreenPrefField('intensity', 'balanced');
+  return true;
 }
 
 export function _resetGuardIntensityStateForTest() {

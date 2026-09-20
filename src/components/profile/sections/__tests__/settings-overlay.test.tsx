@@ -1,5 +1,9 @@
 /**
  * @vitest-environment happy-dom
+ *
+ * batch95-a 迁移: 设置页两层结构 (小白默认区 + 高级折叠区)。
+ * 按 /tmp/b99e-map.md 分类 — A 类断言仍成立; B 类改「折叠不渲染 + 展开渲染」;
+ * C 类 (强度双份) 按去重定案改为唯一 guard-intensity-options 断言。
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -40,6 +44,10 @@ vi.mock('@/hooks/use-green-prefs', () => ({
     setGreenPrefField,
     resetGreenPrefs,
   }),
+  // batch95-a: overlay 挂载时跑强度收敛迁移, 迁移模块消费这两个导出
+  // (工厂被 hoist, 顶层 const 须惰性转发, 不可直接引用)
+  getGreenPrefs: () => ({ ...prefsState }),
+  setGreenPrefField: (...args: Parameters<typeof setGreenPrefField>) => setGreenPrefField(...args),
 }));
 
 // batch51-b: 时薪区块换 TimeValueSetting — mock 共享 hook
@@ -68,7 +76,8 @@ vi.mock('@/lib/guard-settings-probes', () => ({
 }));
 
 // Child components — lightweight stubs
-vi.mock('../push-notification-settings', () => ({
+// (路径须从 __tests__ 上跳两级到 profile/ — 旧文件的 '../x' 从未命中真实模块, batch95-a 修正)
+vi.mock('../../push-notification-settings', () => ({
   PushNotificationSettings: () => <div data-testid="push-notifications" />,
 }));
 
@@ -78,12 +87,20 @@ vi.mock('../push-notification-settings', () => ({
 const fetchMock = vi.fn();
 vi.stubGlobal('fetch', fetchMock);
 
-vi.mock('../profile-parts', () => ({
+vi.mock('../../profile-parts', () => ({
   EmailConnectionSetting: () => <div data-testid="email-connection" />,
 }));
 
-vi.mock('../delete-account-button', () => ({
+vi.mock('../../delete-account-button', () => ({
   DeleteAccountButton: () => <div data-testid="delete-account" />,
+}));
+
+// batch84-a: 物品清单卡挂默认区 — mock 数据通路, disabled 态 testid 稳定可断言
+vi.mock('@/lib/inventory-client', () => ({
+  INVENTORY_QUERY_KEY: ['inventory'],
+  fetchInventory: () => Promise.resolve({ inventoryEnabled: false, items: [] }),
+  deleteInventoryItem: vi.fn(() => Promise.resolve()),
+  groupInventoryItems: () => [],
 }));
 
 const baseProps = {
@@ -116,6 +133,11 @@ function renderOverlay(props: Partial<Omit<typeof baseProps, 'locale'>> & { loca
   return render(<SettingsOverlay {...baseProps} {...props} />, { wrapper: Wrapper });
 }
 
+/** batch95-a: 高级区默认收起 — 需要触达高级内容的用例先展开 */
+function expandAdvanced() {
+  fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
+}
+
 describe('SettingsOverlay green preferences section', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,16 +154,21 @@ describe('SettingsOverlay green preferences section', () => {
     fetchMock.mockReset();
   });
 
-  it('renders green preferences block', () => {
+  it('renders green preferences block after expanding advanced', () => {
     renderOverlay();
+    expect(screen.queryByText('Green Preferences')).toBeNull();
+    expandAdvanced();
     expect(screen.getByText('Green Preferences')).toBeDefined();
-    expect(screen.getByText('Green intensity')).toBeDefined();
     expect(screen.getByText('Alternative wording')).toBeDefined();
     expect(screen.getByText('Push green theme')).toBeDefined();
+    // batch95-a 去重: 绿色偏好区不再有独立强度选择 (强度唯一入口 = guard-intensity-options)
+    expect(screen.queryByText('Green intensity')).toBeNull();
+    expect(screen.getAllByTestId('guard-intensity-options')).toHaveLength(1);
   });
 
-  it('shows reset confirmation dialog and resets on confirm', () => {
+  it('shows reset confirmation dialog and resets on confirm after expanding advanced', () => {
     renderOverlay();
+    expandAdvanced();
     fireEvent.click(screen.getByText('Reset green preferences'));
     expect(screen.getByText('Reset all green preferences?')).toBeDefined();
     fireEvent.click(screen.getByText('Yes, reset'));
@@ -150,6 +177,7 @@ describe('SettingsOverlay green preferences section', () => {
 
   it('cancels reset confirmation', () => {
     renderOverlay();
+    expandAdvanced();
     fireEvent.click(screen.getByText('Reset green preferences'));
     fireEvent.click(screen.getByText('Cancel'));
     expect(screen.queryByText('Reset all green preferences?')).toBeNull();
@@ -158,6 +186,7 @@ describe('SettingsOverlay green preferences section', () => {
 
   it('toggles lock state via lock/unlock button', () => {
     renderOverlay();
+    expandAdvanced();
     const lockButton = screen.getByText('Unlock');
     fireEvent.click(lockButton);
     expect(screen.getByText('Locked')).toBeDefined();
@@ -166,11 +195,12 @@ describe('SettingsOverlay green preferences section', () => {
 
   it('renders localized labels for zh locale', () => {
     renderOverlay({ locale: "zh" });
+    expandAdvanced();
     // t mock returns defaultValue; structure coverage is what matters here.
     expect(screen.getByText('Green Preferences')).toBeDefined();
-    expect(screen.getByText('Green intensity')).toBeDefined();
     expect(screen.getByText('Alternative wording')).toBeDefined();
     expect(screen.getByText('Push green theme')).toBeDefined();
+    expect(screen.queryByText('Green intensity')).toBeNull();
   });
 });
 
@@ -187,8 +217,11 @@ describe('SettingsOverlay guardian style wizard entry (batch61-a)', () => {
     fetchMock.mockReset();
   });
 
-  it('renders the entry row and opens the wizard on click', () => {
+  it('renders the entry row inside advanced and opens the wizard on click', () => {
     renderOverlay();
+    // batch95-a: 向导入口收纳进高级折叠区, 默认不可见
+    expect(screen.queryByTestId('guardian-style-entry')).toBeNull();
+    expandAdvanced();
     expect(screen.getByTestId('guardian-style-entry')).toBeDefined();
     expect(screen.queryByTestId('guardian-style-wizard')).toBeNull();
 
@@ -214,8 +247,11 @@ describe('SettingsOverlay guard control index (batch68-b)', () => {
     fetchMock.mockReset();
   });
 
-  it('renders the master index with four group rows and all anchor targets', () => {
+  it('renders the master index with four group rows and all anchor targets after expanding advanced', () => {
     renderOverlay();
+    // batch95-a: 总控索引随守护设置整体收纳进高级折叠区, 默认不挂载
+    expect(screen.queryByTestId('guard-control-index')).toBeNull();
+    expandAdvanced();
     expect(screen.getByTestId('guard-control-index')).toBeDefined();
     for (const id of ['chat', 'cart', 'push', 'evidence']) {
       expect(screen.getByTestId(`guard-control-group-${id}`)).toBeDefined();
@@ -226,5 +262,87 @@ describe('SettingsOverlay guard control index (batch68-b)', () => {
     for (const anchor of ['guard-anchor-style', 'guard-anchor-chat', 'guard-anchor-cart', 'guard-anchor-coverage', 'guard-anchor-evidence', 'guard-anchor-push']) {
       expect(document.getElementById(anchor)).not.toBeNull();
     }
+  });
+});
+
+describe('SettingsOverlay two-layer layout (batch95-a)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    _resetGuardIntensityStateForTest();
+    _resetNightWindowStateForTest();
+    _resetGuardScopeStateForTest();
+    window.localStorage.clear();
+    fetchMock.mockReset();
+  });
+
+  it('shows only the core rows while advanced stays collapsed by default', async () => {
+    renderOverlay();
+    // 默认区: 小白核心行 — 昵称 / 守护开关 / 通知 / 深色 / 帮助反馈 (+清单卡)
+    expect(screen.getByText(/profile\.displayNameDialogTitle/)).toBeDefined();
+    expect(screen.getByText('Green Guardian Mode')).toBeDefined();
+    expect(screen.getByTestId('push-notifications')).toBeDefined();
+    expect(screen.getByText(/profile\.darkMode/)).toBeDefined();
+    expect(screen.getByText('Help & FAQ')).toBeDefined();
+    expect(screen.getByText('Send Feedback')).toBeDefined();
+    expect(await screen.findByTestId('inventory-list-card-disabled')).toBeDefined();
+    // 折叠头默认可见
+    expect(screen.getByTestId('settings-advanced-toggle')).toBeDefined();
+    // 高级内容默认不挂载 (B 类: 折叠不渲染)
+    expect(screen.queryByTestId('guard-control-index')).toBeNull();
+    expect(screen.queryByTestId('guardian-style-entry')).toBeNull();
+    expect(screen.queryByTestId('time-value-options')).toBeNull();
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+    expect(screen.queryByTestId('guard-scope-categories')).toBeNull();
+    expect(screen.queryByTestId('night-window-options')).toBeNull();
+    expect(screen.queryByTestId('spending-cap-setting')).toBeNull();
+    expect(screen.queryByTestId('guard-policy-preview-setting')).toBeNull();
+    expect(screen.queryByTestId('guard-rule-coverage-setting')).toBeNull();
+    expect(screen.queryByTestId('guard-profile-export-block')).toBeNull();
+    expect(screen.queryByTestId('guard-data-management-block')).toBeNull();
+    expect(screen.queryByText('Green Preferences')).toBeNull();
+    expect(screen.queryByTestId('green-impact-dashboard')).toBeNull();
+    expect(screen.queryByTestId('email-connection')).toBeNull();
+    expect(screen.queryByTestId('delete-account')).toBeNull();
+  });
+
+  it('remembers expansion state across overlay remounts', () => {
+    const first = renderOverlay();
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+
+    expandAdvanced();
+    expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
+    expect(window.localStorage.getItem('symy-settings-advanced-open')).toBe('true');
+    first.unmount();
+
+    // 重开设置 — 展开态记忆生效
+    const second = renderOverlay();
+    expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
+
+    // 收起后回到默认收起态并持久化
+    fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
+    expect(window.localStorage.getItem('symy-settings-advanced-open')).toBe('false');
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+    second.unmount();
+
+    renderOverlay();
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+  });
+
+  it('renders a single intensity selector writing only the guard key after dedup', () => {
+    renderOverlay();
+    expandAdvanced();
+    // 去重断言: 强度选择器全 overlay 只出现一次, 且是三档系统入口
+    expect(screen.getAllByTestId('guard-intensity-options')).toHaveLength(1);
+    expect(screen.queryByText('Green intensity')).toBeNull();
+    expect(screen.queryByText('Firm')).toBeNull();
+    expect(screen.queryByText('Lockdown')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('guard-intensity-strict'));
+    expect(window.localStorage.getItem('symy-guard-intensity')).toBe('strict');
+    // 绿色偏好不再被强度控件写入
+    expect(window.localStorage.getItem('symy-green-prefs')).toBeNull();
   });
 });

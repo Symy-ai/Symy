@@ -1,5 +1,9 @@
 /**
  * @vitest-environment happy-dom
+ *
+ * batch95-a 迁移: 原「全渲染」库存断言按两层结构拆分 —
+ * 默认区只挂小白核心行, 高级区折叠不渲染、展开后各 section 恰好挂载一次;
+ * 原「双强度选择器」现状钉按 99-d 去重定案反转为唯一强度选择器断言。
  */
 
 import { describe, expect, it, vi } from 'vitest';
@@ -144,9 +148,26 @@ function renderSettingsOverlay() {
 }
 
 describe('SettingsOverlay section inventory', () => {
-  it('mounts the current settings sections exactly once', async () => {
+  it('mounts only the basic rows while advanced stays collapsed by default', async () => {
     window.localStorage.clear();
     renderSettingsOverlay();
+
+    // 默认区: 通知 + 清单卡 (小白核心行)
+    expect(await screen.findAllByTestId('inventory-list-card-disabled')).toHaveLength(1);
+    expect(screen.getByText('Push Notifications')).toBeDefined();
+    expect(screen.getByTestId('settings-advanced-toggle')).toBeDefined();
+
+    // 高级区折叠不渲染
+    expect(screen.queryByTestId('guard-control-index')).toBeNull();
+    expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
+    expect(screen.queryByTestId('guard-data-management-block')).toBeNull();
+    expect(screen.queryByTestId('delete-account-button')).toBeNull();
+  });
+
+  it('mounts the advanced sections exactly once after expanding', async () => {
+    window.localStorage.clear();
+    renderSettingsOverlay();
+    fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
 
     const testIds = [
       'guard-control-index',
@@ -174,20 +195,19 @@ describe('SettingsOverlay section inventory', () => {
     expect(screen.getByText('Push Notifications')).toBeDefined();
   });
 
-  it('mounts both current intensity selectors with disjoint persisted state', async () => {
+  it('keeps a single intensity selector writing only the guard key after dedup', async () => {
     window.localStorage.clear();
     renderSettingsOverlay();
+    fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
 
+    // batch95-a 去重 (99-d 定案): 强度选择器只出现一次, 绿色偏好区独立强度选择已删
     expect(await screen.findAllByTestId('guard-intensity-options')).toHaveLength(1);
-    expect(screen.getByText('Green intensity')).toBeDefined();
+    expect(screen.queryByText('Green intensity')).toBeNull();
+    expect(screen.queryByText('Firm')).toBeNull();
+    expect(screen.queryByText('Lockdown')).toBeNull();
 
-    fireEvent.click(screen.getByTestId('guard-intensity-strict'));
+    fireEvent.click(await screen.findByTestId('guard-intensity-strict'));
     expect(window.localStorage.getItem('symy-guard-intensity')).toBe('strict');
     expect(window.localStorage.getItem('symy-green-prefs')).toBeNull();
-
-    fireEvent.click(screen.getByText('Firm'));
-    expect(window.localStorage.getItem('symy-green-prefs')).toBe(
-      JSON.stringify({ intensity: 'firm', wording: 'cheerful', pushTheme: 'none' }),
-    );
   });
 });
