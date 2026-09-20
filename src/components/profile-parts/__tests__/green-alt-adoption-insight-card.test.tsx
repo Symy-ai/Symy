@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 /* eslint-disable require-await -- test mocks use async for API consistency */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, within } from '@testing-library/react';
 import { readFileSync } from 'fs';
 
 vi.mock('@/lib/api-client', () => ({ apiFetch: vi.fn() }));
@@ -63,31 +63,41 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// ⏱️ 共享机高负载 + 全量并行时组件图求值/微任务调度可能远超默认 5s（gate 10:23 实录：
+//    三用例在 5s/多元素上全灭）——这里验证的是渲染行为，不是性能，逐用例放宽到 20s。
+//    超时杀测试会让停摆中的 render() 在 afterEach cleanup 之后才完成挂载（僵尸容器），
+//    因此查询一律用 within(container) 限定本用例自己的挂载，对任何残留 DOM 免疫；
+//    金额/碳红线检查仍扫整个 document.body（超集，不弱化）。
+const TEST_TIMEOUT = 20_000;
+const FIND_TIMEOUT = 15_000;
+
 describe('GreenAltAdoptionInsightCard', () => {
-  it('renders insufficient state without fake conclusions', async () => {
+  it('renders insufficient state without fake conclusions', { timeout: TEST_TIMEOUT }, async () => {
     vi.mocked(apiFetch).mockResolvedValue({ events: insufficientEvents });
     const { GreenAltAdoptionInsightCard: Fresh } = await import('../green-alt-adoption-insight-card');
-    render(<Fresh />);
-    await vi.waitFor(() => expect(screen.getByTestId('green-alt-insight-card-empty')).toBeTruthy(), { timeout: 10000 });
+    const { container } = render(<Fresh />);
+    await vi.waitFor(() => expect(within(container).getByTestId('green-alt-insight-card-empty')).toBeTruthy(), { timeout: FIND_TIMEOUT });
   });
 
-  it('renders zh metrics with stable formatting and non-shaming advice', async () => {
+  it('renders zh metrics with stable formatting and non-shaming advice', { timeout: TEST_TIMEOUT }, async () => {
     mockApi();
     const { GreenAltAdoptionInsightCard: Card } = await import('../green-alt-adoption-insight-card');
-    render(<Card />);
-    expect(await screen.findByTestId('green-alt-insight-card')).toBeTruthy();
-    expect(screen.getByTestId('green-alt-insight-headline').textContent).toBe('近 90 天采纳率 40% · 5 次建议 · 5 天有反馈');
-    expect(screen.getByTestId('green-alt-insight-less').textContent).toContain('下次更少打扰');
+    const { container } = render(<Card />);
+    const scope = within(container);
+    expect(await scope.findByTestId('green-alt-insight-card', {}, { timeout: FIND_TIMEOUT })).toBeTruthy();
+    expect(scope.getByTestId('green-alt-insight-headline').textContent).toBe('近 90 天采纳率 40% · 5 次建议 · 5 天有反馈');
+    expect(scope.getByTestId('green-alt-insight-less').textContent).toContain('下次更少打扰');
     expect(document.body.textContent).not.toMatch(/[¥$]\d|kgCO/i);
   });
 
-  it('renders en metrics and provides no share surface', async () => {
+  it('renders en metrics and provides no share surface', { timeout: TEST_TIMEOUT }, async () => {
     locale = 'en';
     mockApi();
     const { GreenAltAdoptionInsightCard: Card } = await import('../green-alt-adoption-insight-card');
-    render(<Card />);
-    expect(await screen.findByTestId('green-alt-insight-card')).toBeTruthy();
-    expect(screen.getByTestId('green-alt-insight-headline').textContent).toBe('90-day adoption 40% · 5 suggestions · 5 days with feedback');
-    expect(screen.queryByTestId('green-alt-insight-share')).toBeNull();
+    const { container } = render(<Card />);
+    const scope = within(container);
+    expect(await scope.findByTestId('green-alt-insight-card', {}, { timeout: FIND_TIMEOUT })).toBeTruthy();
+    expect(scope.getByTestId('green-alt-insight-headline').textContent).toBe('90-day adoption 40% · 5 suggestions · 5 days with feedback');
+    expect(scope.queryByTestId('green-alt-insight-share')).toBeNull();
   });
 });

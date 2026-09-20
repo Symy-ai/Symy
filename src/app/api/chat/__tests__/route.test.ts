@@ -42,6 +42,11 @@ import { buildContextSignalTurn } from '@/app/api/chat/parts/context-signal-turn
 import { isLettaConfigured } from '@/lib/letta';
 import { checkRateLimit } from '@/lib/distributed-lock';
 
+// ⏱️ 全链路纯 mock 本应毫秒级, 但共享机高负载 + 全量并行时模块求值/微任务调度
+//    可能远超默认 5s (gate 10:23 实录: context trust 用例 5s 超时)——文件级放宽到 20s,
+//    断言不变。
+vi.setConfig({ testTimeout: 20_000 });
+
 function makeRequest(body: unknown): NextRequest {
   return new NextRequest('http://localhost/api/chat', {
     method: 'POST',

@@ -6,7 +6,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, within } from '@testing-library/react';
+
+// ⏱️ 本文件每个用例都 resetModules 后重新求值组件图, 共享机高负载 + 全量并行时
+//    可能远超默认 5s (gate 10:23 实录: 单测 15s 仍超时)——这里验证的是渲染行为,
+//    不是性能, 文件级放宽到 30s; 查询一律 within(container) 限定本用例自己的挂载,
+//    对超时杀测试后残留的僵尸容器免疫。
+vi.setConfig({ testTimeout: 30_000 });
+const FIND_TIMEOUT = 15_000;
 
 const tEn = (key: string, params?: Record<string, string | number>) => {
   const translations: Record<string, string> = {
@@ -81,13 +88,14 @@ describe('GreenImpactDashboard (en)', () => {
     mockDeps();
   });
 
-  it('shows skeleton while loading', { timeout: 15000 }, async () => {
+  it('shows skeleton while loading', async () => {
     const { apiFetch: apiFetchMock } = await import('@/lib/api-client');
     vi.mocked(apiFetchMock).mockImplementation(() => new Promise(() => {}));
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
-    expect(screen.getByTestId('green-impact-dashboard')).toBeDefined();
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
+    expect(scope.getByTestId('green-impact-dashboard')).toBeDefined();
   });
 
   it('renders success with 47 items, 23 hours, 5-day streak', async () => {
@@ -99,16 +107,17 @@ describe('GreenImpactDashboard (en)', () => {
     });
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    expect(await screen.findByTestId('green-impact-dashboard')).toBeDefined();
-    const itemsSaved = screen.getByTestId('green-impact-items-saved');
+    expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
+    const itemsSaved = scope.getByTestId('green-impact-items-saved');
     expect(itemsSaved.textContent).toContain('47');
     expect(itemsSaved.textContent).toContain('items kept from landfill');
-    const hoursReclaimed = screen.getByTestId('green-impact-hours-reclaimed');
+    const hoursReclaimed = scope.getByTestId('green-impact-hours-reclaimed');
     expect(hoursReclaimed.textContent).toContain('23');
     expect(hoursReclaimed.textContent).toContain('hours of life reclaimed');
-    const streak = screen.getByTestId('green-impact-current-streak');
+    const streak = scope.getByTestId('green-impact-current-streak');
     expect(streak.textContent).toContain('5');
     expect(streak.textContent).toContain('day guard streak');
   });
@@ -124,9 +133,10 @@ describe('GreenImpactDashboard (en)', () => {
     });
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    const adoptions = await screen.findByTestId('green-impact-green-alt-adoptions');
+    const adoptions = await scope.findByTestId('green-impact-green-alt-adoptions', {}, { timeout: FIND_TIMEOUT });
     expect(adoptions.textContent).toContain('6');
     expect(adoptions.textContent).toContain('greener choices this season');
     // 金额红线: 123 (savedEstimate) 不得出现在任何指标卡
@@ -144,11 +154,12 @@ describe('GreenImpactDashboard (en)', () => {
     });
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    const adoptions = await screen.findByTestId('green-impact-green-alt-adoptions');
+    const adoptions = await scope.findByTestId('green-impact-green-alt-adoptions', {}, { timeout: FIND_TIMEOUT });
     expect(adoptions.textContent).toContain('0');
-    expect(screen.getByTestId('green-impact-items-saved')).toBeDefined();
+    expect(scope.getByTestId('green-impact-items-saved')).toBeDefined();
   });
 
   it('renders fallback — on fetch failure', async () => {
@@ -156,10 +167,11 @@ describe('GreenImpactDashboard (en)', () => {
     vi.mocked(apiFetchMock).mockRejectedValue(new Error('network'));
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    expect(await screen.findByTestId('green-impact-dashboard')).toBeDefined();
-    expect(screen.getByLabelText('Could not load your impact data')).toBeDefined();
+    expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
+    expect(scope.getByLabelText('Could not load your impact data')).toBeDefined();
   });
 });
 
@@ -177,15 +189,16 @@ describe('GreenImpactDashboard (zh)', () => {
     });
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    expect(await screen.findByTestId('green-impact-dashboard')).toBeDefined();
-    expect(screen.getByTestId('green-impact-items-saved').textContent).toContain('47');
-    expect(screen.getByTestId('green-impact-items-saved').textContent).toContain('件物品免于填埋');
-    expect(screen.getByTestId('green-impact-hours-reclaimed').textContent).toContain('23');
-    expect(screen.getByTestId('green-impact-hours-reclaimed').textContent).toContain('赢回了');
-    expect(screen.getByTestId('green-impact-current-streak').textContent).toContain('5');
-    expect(screen.getByTestId('green-impact-current-streak').textContent).toContain('天守护连续');
+    expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
+    expect(scope.getByTestId('green-impact-items-saved').textContent).toContain('47');
+    expect(scope.getByTestId('green-impact-items-saved').textContent).toContain('件物品免于填埋');
+    expect(scope.getByTestId('green-impact-hours-reclaimed').textContent).toContain('23');
+    expect(scope.getByTestId('green-impact-hours-reclaimed').textContent).toContain('赢回了');
+    expect(scope.getByTestId('green-impact-current-streak').textContent).toContain('5');
+    expect(scope.getByTestId('green-impact-current-streak').textContent).toContain('天守护连续');
   });
 
   it('renders 4th card adoption count in zh', async () => {
@@ -199,9 +212,10 @@ describe('GreenImpactDashboard (zh)', () => {
     });
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    const adoptions = await screen.findByTestId('green-impact-green-alt-adoptions');
+    const adoptions = await scope.findByTestId('green-impact-green-alt-adoptions', {}, { timeout: FIND_TIMEOUT });
     expect(adoptions.textContent).toContain('6');
     expect(adoptions.textContent).toContain('本季采纳绿色替代');
     expect(adoptions.textContent).toContain('次');
@@ -212,9 +226,10 @@ describe('GreenImpactDashboard (zh)', () => {
     vi.mocked(apiFetchMock).mockRejectedValue(new Error('network'));
 
     const { GreenImpactDashboard } = await import('@/components/profile-parts/green-impact-dashboard');
-    render(<GreenImpactDashboard />);
+    const { container } = render(<GreenImpactDashboard />);
+    const scope = within(container);
 
-    expect(await screen.findByTestId('green-impact-dashboard')).toBeDefined();
-    expect(screen.getByLabelText('无法加载你的影响数据')).toBeDefined();
+    expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
+    expect(scope.getByLabelText('无法加载你的影响数据')).toBeDefined();
   });
 });

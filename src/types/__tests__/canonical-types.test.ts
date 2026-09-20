@@ -29,9 +29,10 @@ describe('Type safety — single source of truth', () => {
       expect(ctx.challengeId).toBe('ch-abc-123');
     });
 
-    // ⏱️ 动态 import 大组件模块在全量并行跑时可能超过默认 5s (transform 冷缓存 + 高负载),
-    //    这里验证的是模块可加载, 不是性能, 放宽到 30s 消除 flake。
-    it('buddy-tab.tsx re-exports ChallengeContext (compile-time check)', { timeout: 30_000 }, async () => {
+    // ⏱️ 动态 import 大组件模块在全量并行跑时可能远超默认 5s (transform 冷缓存 + 高负载),
+    //    gate 10:23 实录: buddy-tab 整图 30s 仍超时 —— 这里验证的是模块可加载, 不是性能,
+    //    该用例放宽到 60s 消除 flake (其余小图 30s 已足够)。
+    it('buddy-tab.tsx re-exports ChallengeContext (compile-time check)', { timeout: 60_000 }, async () => {
       // Dynamic import to verify the re-export works at runtime
       const mod = await import('@/components/buddy-tab');
       expect(mod).toBeDefined();
