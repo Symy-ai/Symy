@@ -75,7 +75,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Fill the required variables in `.env.local` before using application features. See [CONTRIBUTING.md](CONTRIBUTING.md) for a walkthrough of the environment variables.
+Use Node.js 22 (see [`.nvmrc`](.nvmrc)). Fill the required variables in `.env.local` before using application features; see [CONTRIBUTING.md](CONTRIBUTING.md) for a walkthrough of the environment variables. The first `next build` fetches Google Fonts metadata, so run it on a machine with access to `fonts.googleapis.com`.
 
 ## Tests
 
@@ -83,7 +83,7 @@ Fill the required variables in `.env.local` before using application features. S
 npm run test
 ```
 
-The snapshot baseline is 5,762 Vitest tests across 457 files.
+The snapshot baseline is 6,925 Vitest tests across 581 files.
 
 ## Contributing
 
