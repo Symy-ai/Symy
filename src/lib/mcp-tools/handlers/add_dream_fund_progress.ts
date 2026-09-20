@@ -20,6 +20,17 @@ import {
 import { dreamFundProgressDesc, getHourlyRateFromArgs } from './descriptions';
 import { getUserHourlyRate } from '@/lib/user-hourly-rate';
 
+// 🔧 E5 fix (wool v8 §十四.3): amount 上限对齐产品既有口径 $1M — 同
+//    /api/buddy/dream-fund-progress 与 challenge create/complete 的 zod max。
+//    LLM 幻觉金额 (如 1e308) 无上限直入 totalSaved 会污染核心指标。
+const MAX_DREAM_FUND_AMOUNT = 1_000_000;
+
+// 🔧 E5 fix: 分位精度归一 — String(amount) 浮点串 (0.1+0.2=0.30000000000000004 vs 0.3)
+//    会让同额重复调用 dedup 失配 → 双倍入账; 先收敛到分 (cents) 再拼 key。
+function amountDedupKey(amount: number): string {
+  return String(Math.round(amount * 100) / 100);
+}
+
 export async function handleAddDreamFundProgress(ctx: MCPHandlerContext): Promise<MCPToolResult> {
   const { toolCallId: id, args, userId, supabase } = ctx;
   const argsLocale = args.locale as string | undefined;
@@ -40,6 +51,17 @@ export async function handleAddDreamFundProgress(ctx: MCPHandlerContext): Promis
       success: false,
       result: {},
       message: `Failed: amount must be > 0 (received ${args.amount}). Read the savings amount from the user's context and retry. Example: if user saved $89, call add_dream_fund_progress(fund_id="auto", amount=89).`,
+    };
+  }
+  // 🔧 E5 fix: 幻觉金额上限 — 超限拒绝并日志, 引导 AI 用真实金额重试
+  if (rawAmount > MAX_DREAM_FUND_AMOUNT) {
+    logger.warn(`[MCP] add_dream_fund_progress: amount=${rawAmount} exceeds cap ${MAX_DREAM_FUND_AMOUNT} — hallucination guard, rejecting`);
+    return {
+      toolCallId: id,
+      name: 'add_dream_fund_progress',
+      success: false,
+      result: {},
+      message: `Failed: amount ${rawAmount} exceeds the maximum of $1,000,000. Do not invent amounts — read the actual savings figure from the user's context and retry with the real value.`,
     };
   }
   const amount = rawAmount;
@@ -78,7 +100,8 @@ export async function handleAddDreamFundProgress(ctx: MCPHandlerContext): Promis
   }
 
   // 内存级锁防止并发执行
-  const lockKey = `dfp:${userId}:${fundId}:${amount}`;
+  // 🔧 E5 fix: key 中的 amount 同样走分位归一 (与 dedupKey 同族, 防浮点串分叉)
+  const lockKey = `dfp:${userId}:${fundId}:${amountDedupKey(amount)}`;
   if (isToolCallInProgress(lockKey)) {
     logger.info(`[MCP] add_dream_fund_progress: in-progress lock hit (key=${lockKey}) — skipping duplicate`);
     return {
@@ -122,7 +145,8 @@ export async function handleAddDreamFundProgress(ctx: MCPHandlerContext): Promis
   // dedup key 包含 userId + fundId + amount
   // 🔧 HIGH-1 fix: isDuplicateHealthEvent now uses permanent window (no 60s limit)
   // 注意: 在 fundId 解析后检查，因为 'auto' 需要先解析成真实 fundId
-  const dedupKey = `dfp:${userId}:${fundId}:${amount}`;
+  // 🔧 E5 fix: dedupKey (亦即 health_events.trigger_id 幂等锚点) 的 amount 走分位归一
+  const dedupKey = `dfp:${userId}:${fundId}:${amountDedupKey(amount)}`;
   const descPrefix = `Added $${amount} to`;
   const isDup = await isDuplicateHealthEvent(userId, dedupKey, descPrefix);
   if (isDup) {
@@ -136,9 +160,13 @@ export async function handleAddDreamFundProgress(ctx: MCPHandlerContext): Promis
     };
   }
 
-  const estimatedProgress = targetFundForCalc
+  // 🔧 E5 fix: target<=0 / current<0 是脏数据 — 直接除会得 Infinity/NaN
+  //    误发 dream_builder 徽章并把 progress 展示污染成 Infinity。
+  //    脏行按 0 进度处理; 除法溢出 (非有限) 同样回落 0, 不参与徽章判定。
+  const rawEstimatedProgress = targetFundForCalc && targetFundForCalc.target > 0 && targetFundForCalc.current >= 0
     ? Math.round(((targetFundForCalc.current + amount) / targetFundForCalc.target) * 100)
     : 0;
+  const estimatedProgress = Number.isFinite(rawEstimatedProgress) ? rawEstimatedProgress : 0;
   const fundName = targetFundForCalc?.name || fundId;
 
   // Check if dream_builder badge should be awarded

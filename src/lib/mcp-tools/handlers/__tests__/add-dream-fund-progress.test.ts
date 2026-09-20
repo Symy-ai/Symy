@@ -33,7 +33,8 @@ vi.mock('@/lib/health-impact', async (importOriginal) => {
 vi.mock('@/lib/user-hourly-rate', () => ({ getUserHourlyRate: vi.fn(async () => 20) }));
 
 import { handleAddDreamFundProgress } from '../add_dream_fund_progress';
-import { isToolCallInProgress, applyBuddyStateDelta } from '../_shared';
+import { isToolCallInProgress, applyBuddyStateDelta, isDuplicateHealthEvent, logger } from '../_shared';
+import { createHealthEvent } from '@/lib/health-impact';
 
 // dream_funds rows returned by the handler's lookup query.
 let mockFunds: Array<{ fund_id: string; name: string; target: number; current: number; emoji: string; sort_order: number; created_at: string }> = [];
@@ -121,5 +122,75 @@ describe('handleAddDreamFundProgress', () => {
     await handleAddDreamFundProgress(makeCtx({ amount: 89 }));
     const deltaCallArgs = (applyBuddyStateDelta as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] ?? {};
     expect(deltaCallArgs).toMatchObject({ dreamFundAmount: 89, totalSavedDelta: 89 });
+  });
+});
+
+describe('E5 fixes (wool v8 §十四.3) — 幻觉金额上限 / 脏行徽章 / 分位 dedup key', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (isToolCallInProgress as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    mockFunds = [
+      { fund_id: 'fund-trip', name: 'Trip', target: 1000, current: 100, emoji: '✈️', sort_order: 0, created_at: '2026-01-01' },
+      { fund_id: 'fund-done', name: 'Done', target: 500, current: 500, emoji: '✅', sort_order: 1, created_at: '2026-01-02' },
+    ];
+  });
+
+  it('rejects hallucinated amount 1e308 above the $1M cap (no totalSaved pollution)', async () => {
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 1e308 }));
+    expect(res.success).toBe(false);
+    expect(res.message).toMatch(/exceeds the maximum/i);
+    expect(applyBuddyStateDelta).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('exceeds cap'));
+  });
+
+  it('accepts amount exactly at the $1M cap (aligned with zod .max semantics)', async () => {
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 1_000_000 }));
+    expect(res.success).toBe(true);
+    expect(applyBuddyStateDelta).toHaveBeenCalled();
+  });
+
+  it('does NOT award dream_builder for dirty row {current:-5, target:0} (old code: Infinity ≥ 50)', async () => {
+    mockFunds = [{ fund_id: 'fund-dirty', name: 'Dirty', target: 0, current: -5, emoji: '💥', sort_order: 0, created_at: '2026-01-03' }];
+    const res = await handleAddDreamFundProgress(makeCtx({ fund_id: 'fund-dirty', amount: 89 }));
+    expect(res.success).toBe(true);
+    const deltaCallArgs = (applyBuddyStateDelta as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] ?? {};
+    expect(deltaCallArgs).toMatchObject({ dreamFundId: 'fund-dirty', dreamFundAmount: 89, totalSavedDelta: 89, addBadges: [] });
+  });
+
+  it('does NOT award dream_builder for dirty row {current:-5, target:100} (old code: 84 ≥ 50)', async () => {
+    mockFunds = [{ fund_id: 'fund-neg', name: 'Neg', target: 100, current: -5, emoji: '🕳️', sort_order: 0, created_at: '2026-01-04' }];
+    const res = await handleAddDreamFundProgress(makeCtx({ fund_id: 'fund-neg', amount: 89 }));
+    expect(res.success).toBe(true);
+    const deltaCallArgs = (applyBuddyStateDelta as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] ?? {};
+    expect(deltaCallArgs).toMatchObject({ addBadges: [] });
+  });
+
+  it('still awards dream_builder for a clean fund at ≥50% progress (normal path unchanged)', async () => {
+    mockFunds = [{ fund_id: 'fund-half', name: 'Half', target: 100, current: 60, emoji: '🌱', sort_order: 0, created_at: '2026-01-05' }];
+    const res = await handleAddDreamFundProgress(makeCtx({ fund_id: 'fund-half', amount: 10 }));
+    expect(res.success).toBe(true);
+    // (60+10)/100 = 70% ≥ 50 → badge; 旧路径行为不回退
+    const deltaCallArgs = (applyBuddyStateDelta as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] ?? {};
+    expect(deltaCallArgs).toMatchObject({ addBadges: ['dream_builder'] });
+  });
+
+  it('dedup key canonicalizes amount: 89 and "89.00" share one key (no float string)', async () => {
+    await handleAddDreamFundProgress(makeCtx({ amount: 89 }));
+    await handleAddDreamFundProgress(makeCtx({ amount: '89.00' }));
+    const keys = (isDuplicateHealthEvent as ReturnType<typeof vi.fn>).mock.calls.map((c) => String(c[1]));
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[0]).toBe('dfp:user-1:fund-trip:89');
+  });
+
+  it('dedup key survives float noise: 0.1+0.2 and 0.3 converge (old code diverged → double deposit)', async () => {
+    await handleAddDreamFundProgress(makeCtx({ amount: 0.1 + 0.2 }));
+    await handleAddDreamFundProgress(makeCtx({ amount: 0.3 }));
+    const calls = (isDuplicateHealthEvent as ReturnType<typeof vi.fn>).mock.calls;
+    const keys = calls.map((c) => String(c[1]));
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[0]).toBe('dfp:user-1:fund-trip:0.3');
+    // dedupKey 同时落为 health_events.trigger_id — 幂等锚点串必须 canonical
+    expect(createHealthEvent).toHaveBeenCalledWith(expect.objectContaining({ triggerId: 'dfp:user-1:fund-trip:0.3' }));
   });
 });
