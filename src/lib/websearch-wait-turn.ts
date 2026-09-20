@@ -30,13 +30,21 @@ const THIN_RESULT_CARD_COUNT = 2;
 const MESSAGES: Record<'en' | 'zh', unknown> = { zh: zhMessages, en: enMessages };
 
 /**
- * 构建全网搜索等待话术轮。query 现行文案不含搜索词 (产品给定文案),
- * 但 key 带 {query} 占位符时会插值 — 参数走真实代码路径, 给文案迭代留口。
+ * 构建全网搜索等待话术轮。query 会插入 {query} 占位符; 空搜索词保留无词形态。
  */
 export function buildWebSearchWaitTurn(query: string, locale: 'en' | 'zh'): WebSearchWaitTurn {
   const dict = MESSAGES[locale] as { chat: { websearch: { waiting: string } } };
   const template = dict.chat.websearch.waiting;
-  return { reply: template.replace('{query}', query) };
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) {
+    return {
+      reply:
+        locale === 'zh'
+          ? '货架里没有合适的，小象正在全网搜索、比较中…🐘'
+          : 'Nothing on the shelf fits — your elephant is searching the whole web and comparing for you… 🐘',
+    };
+  }
+  return { reply: template.replace('{query}', trimmedQuery) };
 }
 
 /** websearch fallback 判定入参 — structuredCards 是 SSE 事件里的已校验卡片数组 */

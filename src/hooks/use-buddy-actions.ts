@@ -104,11 +104,11 @@ export function useBuddyActions(pushMutation: PushMutation) {
       dreamFunds: [...reordered, ...missing],
     });
 
-    for (let i = 0; i < newOrder.length; i++) {
+    for (let i = 0; i < reordered.length; i++) {
       try {
         await apiFetchVoid('/api/buddy/dream-funds', {
           method: 'PATCH',
-          body: { fund_id: newOrder[i], sort_order: i },
+          body: { fund_id: reordered[i].id, sort_order: i },
         });
       // safe to ignore: non-critical background operation, error already logged
       } catch (err) {

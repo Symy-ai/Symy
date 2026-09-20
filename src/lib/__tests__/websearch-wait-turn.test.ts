@@ -24,16 +24,27 @@ const fallbackInput = (overrides: Partial<Parameters<typeof isWebSearchFallbackR
   }) as Parameters<typeof isWebSearchFallbackResult>[0];
 
 describe('buildWebSearchWaitTurn', () => {
-  it('zh 返回产品给定文案原话', () => {
+  it('zh 返回带搜索词的等待文案', () => {
     expect(buildWebSearchWaitTurn('不锈钢吸管', 'zh').reply).toBe(
-      '货架里没有合适的，小象正在全网搜索、比较中…🐘',
+      '货架里没有合适的，小象正在全网搜「不锈钢吸管」、比较中…🐘',
     );
   });
 
-  it('en 对应文案非空且带小象 emoji', () => {
-    const reply = buildWebSearchWaitTurn('straw', 'en').reply;
-    expect(reply).toBe((en as { chat: { websearch: { waiting: string } } }).chat.websearch.waiting);
-    expect(reply).toContain('🐘');
+  it('en 返回带搜索词的等待文案', () => {
+    expect(buildWebSearchWaitTurn('straw', 'en').reply).toBe(
+      'Nothing on the shelf fits — searching the web for "straw" for you… 🐘',
+    );
+  });
+
+  it('空搜索词回退到无词形态且不残留占位符', () => {
+    expect(buildWebSearchWaitTurn('', 'zh').reply).toBe(
+      '货架里没有合适的，小象正在全网搜索、比较中…🐘',
+    );
+    expect(buildWebSearchWaitTurn('   ', 'en').reply).toBe(
+      'Nothing on the shelf fits — your elephant is searching the whole web and comparing for you… 🐘',
+    );
+    expect(buildWebSearchWaitTurn('', 'zh').reply).not.toContain('{query}');
+    expect(buildWebSearchWaitTurn('   ', 'en').reply).not.toContain('{query}');
   });
 
   it('zh/en 双侧 key 都存在且非空（无 defaultValue 兜底的对面：字典必须齐）', () => {

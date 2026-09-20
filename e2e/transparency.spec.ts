@@ -22,6 +22,8 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 const MOCK_ENABLED = process.env.E2E_TRANSPARENCY_MOCK === '1';
 const MOCK_BASE = `http://127.0.0.1:${process.env.MOCK_POSTGREST_PORT ?? 54399}`;
@@ -56,6 +58,27 @@ function fmtDecimal(n: number, locale: 'zh' | 'en'): string {
   return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
     maximumFractionDigits: 1,
   }).format(Math.max(0, n));
+}
+
+function fmtUsd(n: number, locale: 'zh' | 'en'): string {
+  return new Intl.NumberFormat(locale === 'zh' ? 'zh-CN' : 'en-US', {
+    maximumFractionDigits: 2,
+  }).format(Math.max(0, n));
+}
+
+interface FinanceFixture {
+  month: string;
+  members: number;
+  revenueUsd: { membership: number; other: number };
+  costsUsd: { infra: number; ai: number; team: number };
+}
+
+async function loadFinanceFixtures(): Promise<FinanceFixture[]> {
+  const dir = path.join(process.cwd(), 'src', 'data', 'finance');
+  const files = (await readdir(dir)).filter((file) => file.endsWith('.json')).sort();
+  return Promise.all(
+    files.map(async (file) => JSON.parse(await readFile(path.join(dir, file), 'utf8')) as FinanceFixture)
+  );
 }
 
 async function expectMetricHeroes(page: Page, locale: 'zh' | 'en'): Promise<void> {
@@ -188,7 +211,7 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     // 订阅是客户端 fetch → page.route 可拦截; SSR 直调链路在 mock-postgrest 上游喂
     await page.route('**/api/transparency/subscribe', (route) =>
       route.fulfill({
-        status: 200,
+        status: 201,
         contentType: 'application/json',
         body: JSON.stringify({ success: true }),
       })
@@ -197,6 +220,22 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     await page.getByTestId('transparency-subscribe-input').fill('e2e-reader@example.com');
     await page.getByTestId('transparency-subscribe-button').click();
     await expect(page.getByTestId('transparency-subscribe-success')).toHaveText('已订阅，下周见');
+  });
+
+  test('zh 订阅暂不可用: 503 显示「订阅即将上线」胶囊', async ({ page }) => {
+    await page.route('**/api/transparency/subscribe', (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'subscription table is not ready' }),
+      })
+    );
+    await page.goto('/zh/transparency');
+    await page.getByTestId('transparency-subscribe-input').fill('e2e-reader@example.com');
+    await page.getByTestId('transparency-subscribe-button').click();
+    await expect(page.getByTestId('transparency-subscribe-unavailable')).toHaveText('订阅即将上线');
+    await expect(page.getByTestId('transparency-subscribe-success')).toHaveCount(0);
+    await expect(page.getByTestId('transparency-subscribe-error')).toHaveCount(0);
   });
 
   test('zh 分享按钮: window.open 指向 x.com/intent/tweet 且无金额红线', async ({ page }) => {
@@ -254,7 +293,21 @@ test.describe('transparency build-in-public 主链路 (mock PostgREST)', () => {
     const visible = (testId: string) => page.locator(`[data-testid="${testId}"]:visible`);
     await expect(visible('finance-title')).toHaveText('财务公开');
     await expect(visible('finance-table')).toBeVisible();
-    await expect(visible('finance-row-2026-09')).toBeVisible();
+    const financeMonths = await loadFinanceFixtures();
+    expect(financeMonths.length).toBeGreaterThan(0);
+    await expect(visible('finance-table')).toContainText('月份');
+    await expect(visible('finance-table')).toContainText('会员数');
+    for (const month of financeMonths) {
+      const revenue = month.revenueUsd.membership + month.revenueUsd.other;
+      const costs = month.costsUsd.infra + month.costsUsd.ai + month.costsUsd.team;
+      const row = visible(`finance-row-${month.month}`);
+      await expect(row).toBeVisible();
+      await expect(row).toContainText(month.month);
+      await expect(row).toContainText(fmtInt(month.members, 'zh'));
+      await expect(row).toContainText(`$${fmtUsd(revenue, 'zh')}`);
+      await expect(row).toContainText(`$${fmtUsd(costs, 'zh')}`);
+      await expect(row).toContainText(`-$${fmtUsd(costs - revenue, 'zh')}`);
+    }
     // 仓库静态数据当前为全零示例月 → 占位说明必须随表出现 (诚实原则)
     await expect(visible('finance-placeholder')).toContainText('零值占位');
     await expect(visible('finance-page')).toContainText('收入只来自会员费');

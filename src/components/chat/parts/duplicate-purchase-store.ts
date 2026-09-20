@@ -91,8 +91,13 @@ export function clearPendingReuseConfirmation(): void {
   try { window.localStorage.removeItem(REUSE_PENDING_KEY); } catch { /* best-effort */ }
 }
 
-export function reportReuseConclusion(decisionId: string, avoidedPurchase: boolean): void {
-  apiFetch('/api/buddy/health-events', {
+
+export function reportReuseConclusion(
+  decisionId: string,
+  avoidedPurchase: boolean,
+  onReportFailure?: () => void,
+): Promise<void> {
+  return apiFetch<void>('/api/buddy/health-events', {
     method: 'POST',
     body: {
       eventType: 'manual_adjustment',
@@ -103,5 +108,6 @@ export function reportReuseConclusion(decisionId: string, avoidedPurchase: boole
     },
   }).catch((err: unknown) => {
     logger.warn('[duplicate-precheck] conclusion report failed:', err instanceof Error ? err.message : String(err));
+    onReportFailure?.();
   });
 }
