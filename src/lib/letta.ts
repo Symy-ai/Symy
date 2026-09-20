@@ -105,6 +105,8 @@ export async function sendToAgent(
   },
   userId?: string,
   agentId?: string,
+  /** 🔧 batch92-c (D5): 可选中止信号 — 调用方超时后取消上游 HTTP 请求 (Letta SDK RequestOptions 支持 signal) */
+  options?: { signal?: AbortSignal },
 ): Promise<LettaChatResponse> {
   const client = getLettaClient();
 
@@ -140,9 +142,11 @@ export async function sendToAgent(
   //    修复: 捕获 404, 清除 profiles.letta_agent_id, 重新抛出 (chat route 会重试)
   let response;
   try {
+    // 仅在有 signal 时透传第三参 — 既有调用方的请求形态保持不变
+    const requestOptions = options?.signal ? { signal: options.signal } : undefined;
     response = await client.agents.messages.create(targetAgentId, {
       messages: [{ role: 'user', content: messageContent }],
-    });
+    }, requestOptions);
   } catch (err: unknown) {
     // 检测 404 (agent not found) — 清除 stale agent_id
     const isNotFound = err instanceof Error && (

@@ -60,10 +60,12 @@ export async function completeStorySession(
 
   // 1. 生成总结 (10s 超时)
   let summary = DEFAULT_SUMMARY;
+  // 🔧 batch92-c (wool v6 D5): 超时获胜时 abort 上游 LLM 请求 — 竞态输家不取消会继续烧 token (成本泄漏)
+  const summaryAbort = new AbortController();
   try {
     let summaryTimer: ReturnType<typeof setTimeout> | null = null;
     summary = await Promise.race([
-      generateButterflySummary(sessionForSummary, user.id, sessionForSummary.context || undefined).then(result => {
+      generateButterflySummary(sessionForSummary, user.id, sessionForSummary.context || undefined, summaryAbort.signal).then(result => {
         if (summaryTimer) clearTimeout(summaryTimer);
         return result;
       }).catch(err => {
@@ -71,7 +73,10 @@ export async function completeStorySession(
         throw err;
       }),
       new Promise<string>((resolve) => {
-        summaryTimer = setTimeout(() => resolve(summary), 10_000);
+        summaryTimer = setTimeout(() => {
+          summaryAbort.abort();
+          resolve(summary);
+        }, 10_000);
       }),
     ]);
       // safe to ignore: non-critical background operation, error already logged
@@ -96,6 +101,7 @@ export async function completeStorySession(
 
   if (!completedRow) {
     logger.info('[Butterfly Story] Optimistic lock failed, retrying without lock');
+    // 🔧 batch92-c (wool v6 D5): 无锁重试显式限定 user_id — 不依赖 RLS 兜底, 防未来 RLS 变动炸穿
     await supabase
       .from('butterfly_sessions')
       .update({
@@ -103,7 +109,8 @@ export async function completeStorySession(
         butterfly_effect: summary,
         final_tone: finalTone,
       })
-      .eq('id', session.id);
+      .eq('id', session.id)
+      .eq('user_id', user.id);
   }
 
   // 3. 异步清理 Agent 记忆 (fire-and-forget + waitUntil)
@@ -133,7 +140,14 @@ export async function completeStorySession(
   //    旧代码: fireReplenishDailyNeed(user.id, 'breath', 25) + fireBumpIntimacy(user.id, 2)
   //    新代码: 只 bump intimacy +2 (深度互动)
   // 🔧 Round 91 fix: await RPC 调用 (fire-and-forget 在 Vercel serverless 会被 kill)
-  await fireBumpIntimacy(user.id, 2);
+  // 🔧 batch92-c (wool v6 D5): 副作用失败只 warn 不传播 — session 已持久化 completed,
+  //    intimacy 是副作用, 失败不能把已成功的主结果翻成 error (与上方 reward 块同一防御模式)
+  try {
+    await fireBumpIntimacy(user.id, 2);
+      // safe to ignore: non-critical background operation, error already logged
+  } catch (intimacyErr) {
+    logger.warn('[Butterfly Story] Failed to bump intimacy (non-blocking):', intimacyErr);
+  }
 
   return {
     summary,

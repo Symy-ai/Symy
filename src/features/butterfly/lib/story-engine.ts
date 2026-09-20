@@ -501,6 +501,8 @@ export async function generateButterflySummary(
   session: ButterflySession,
   userId: string,
   storyContext?: string,
+  /** 🔧 batch92-c (D5): 调用方超时 (10s) 后 abort 上游 LLM 请求, 防竞态输家继续烧 token */
+  signal?: AbortSignal,
 ): Promise<string> {
   const agentId = await resolveAgentId(userId);
 
@@ -536,7 +538,7 @@ IMPORTANT: Also remember this user story choices as their preferences. Their dec
   const message = buildButterflyAgentMessage('summary', systemPrompt, userPrompt);
 
   // C1 fix: 总结生成需要中等超时
-  const result = await sendToAgent(message, undefined, userId, agentId);
+  const result = await sendToAgent(message, undefined, userId, agentId, signal ? { signal } : undefined);
 
   // H1 fix: 检查工具调用
   if (result.toolCalls && result.toolCalls.length > 0) {
