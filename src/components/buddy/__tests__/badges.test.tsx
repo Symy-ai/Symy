@@ -53,6 +53,7 @@ function makeBuddyState(overrides: Partial<BuddyState> = {}): BuddyState {
     streak: 0,
     dreamFunds: [],
     badges: [],
+    invitedCount: 0,
     totalSaved: 0,
     challengesCompleted: 0,
     lastHealingKitAt: null,
@@ -300,6 +301,16 @@ describe('batch106-b — BP p19 honor badge criteria', () => {
     expect(screen.queryByTestId('badge-share-dream_gardener_3')).toBeNull();
     expect(screen.getAllByText('0/100').length).toBeGreaterThanOrEqual(1); // meadow 与 forest 同目标值
     expect(screen.getByText('0/3')).toBeTruthy();
+  });
+});
+
+describe('guardian covenant badge wiring', () => {
+  it('maps completed invitations to the existing referral_master badge', () => {
+    const badge = ALL_BADGES.find((item) => item.id === 'referral_master');
+
+    expect(badge).toMatchObject({ progressType: 'invited_count', progressTarget: 10, group: 'guardian' });
+    expect(calcBadgeProgress(badge!, makeBuddyState({ invitedCount: 9 }))).toBe(9);
+    expect(BADGE_INFO.referral_master.labelKey).toBe('buddy.badgeNames.referral_master');
   });
 });
 

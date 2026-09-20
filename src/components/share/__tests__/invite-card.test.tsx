@@ -11,12 +11,12 @@ vi.mock('@/i18n/provider', () => ({
     locale: 'en',
     t: (key: string, params?: Record<string, string | number> & { defaultValue?: string }) => {
       const values: Record<string, string> = {
-        'share.inviteCard.pill': 'Guardian Invite',
-        'share.inviteCard.title': 'My guardian title',
-        'share.inviteCard.companion': 'I invited {count} friends to guard the planet’s wallet together.',
-        'share.inviteCard.recruitFirst': 'Help me recruit the first companion for a gentler planet.',
-        'share.inviteCard.joinLabel': 'Join me',
-        'profile.inviteTier5': 'Guardian Partner',
+        'invite.covenantPill': 'Guardian Covenant',
+        'invite.covenantTitle': "I'm guarding your future time",
+        'invite.covenantHeading': "I'm guarding your future time",
+        'invite.covenantSubtitle': 'Join guardian No. {guardianRank}',
+        'invite.covenantJoinLabel': 'Become the person who is guarded',
+        'invite.covenantFooter': 'Symy Guardian Forest',
         'share.interceptMedal.brandTagline': 'Buy less. Live more.',
       };
       let result = values[key] ?? params?.defaultValue ?? key;
@@ -59,21 +59,31 @@ describe('invite share template', () => {
     }
   });
 
-  it('renders tier, companion count and real ref code without reward numbers', () => {
+  it('renders the guardian covenant narrative and real ref code without reward numbers', () => {
     const { container } = render(
       <>{getShareTemplate('invite').render({ ...props, inviteCard: { refCode: 'guard7', completedCount: 5 } })}</>,
     );
-    expect(container.textContent).toContain('Guardian Partner');
-    expect(container.textContent).toContain('I invited 5 friends');
+    expect(container.textContent).toContain('Guardian Covenant');
+    expect(container.textContent).toContain("I'm guarding your future time");
+    expect(container.textContent).toContain('Join guardian No. 6');
+    expect(container.textContent).toContain('Become the person who is guarded');
     expect(container.textContent).toContain('symy.ai/?ref=guard7');
-    expect(container.textContent).not.toMatch(/Premium|\+\d+|\b30\b|\b60\b|[$¥€£]/i);
+    expect(container.textContent).not.toMatch(/reward|rebate|cashback|make money|Premium|\+\d+|\b30\b|\b60\b|[$¥€£]/i);
   });
 
-  it('renders an encouraging zero-invite card', () => {
+  it('positions a first invitee as the person being guarded', () => {
     const { container } = render(
       <>{getShareTemplate('invite').render({ ...props, inviteCard: { refCode: 'first1', completedCount: 0 } })}</>,
     );
-    expect(container.textContent).toContain('recruit the first companion');
+    expect(container.textContent).toContain('Join guardian No. 1');
     expect(container.textContent).toContain('symy.ai/?ref=first1');
+  });
+
+  it('keeps covenant copy bilingual and rebate-free', () => {
+    for (const locale of [en, zh]) {
+      expect(locale.invite.covenantHeading).toBeTruthy();
+      expect(locale.invite.covenantSubtitle).toBeTruthy();
+      expect(JSON.stringify(locale.invite)).not.toMatch(/reward|rebate|cashback|make money|奖励|返现|赚钱/i);
+    }
   });
 });

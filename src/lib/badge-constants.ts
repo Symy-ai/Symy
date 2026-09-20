@@ -17,7 +17,7 @@ export interface BadgeDef {
   /** Target value for progress bars */
   progressTarget: number;
   /** How progress is calculated from buddyState */
-  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded' | 'won_back_hours' | 'dream_fund_completed';
+  progressType: 'challenge_wins' | 'total_saves' | 'streak_days' | 'big_truth' | 'clear_mind_streak' | 'dream_fund_count' | 'dream_fund_funded' | 'won_back_hours' | 'dream_fund_completed' | 'invited_count';
   /** Collection panel group */
   group: BadgeGroup;
 }
@@ -36,6 +36,15 @@ export const DREAM_GARDENER_COMPLETED_FUNDS = 3;
 export const BADGE_GROUP_ORDER: BadgeGroup[] = ['guardian', 'growth', 'milestone'];
 
 export const ALL_BADGES: BadgeDef[] = [
+  {
+    id: 'referral_master',
+    emoji: '🌳',
+    color: 'bg-emerald-500/10 border-emerald-500/20',
+    unlockConditionKey: 'buddy.badgeUnlock.referral_master',
+    progressTarget: 10,
+    progressType: 'invited_count',
+    group: 'guardian',
+  },
   // ===== 守护勋章 — 看见并守住选择 =====
   {
     id: 'impulse_shield',

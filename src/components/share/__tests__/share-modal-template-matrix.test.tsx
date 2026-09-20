@@ -192,7 +192,15 @@ const MATRIX: Array<{ id: string; testid: string; title: string; anchors: string
     id: 'invite',
     testid: 'invite-share-card',
     title: 'Your intercept medal',
-    anchors: ['Fellow Guardian', 'Your companion', 'symy.ai/?ref=GREEN2026', 'Join me'],
+    // batch107-a 契约叙事合流: 锚点对齐 invite.* 新词典值 (pill/title/heading/subtitle+rank 插值/joinLabel/link/footer)
+    anchors: [
+      'Guardian Covenant',
+      "I'm guarding your future time",
+      'Join guardian No. 5',
+      'Become the person who is guarded',
+      'symy.ai/?ref=GREEN2026',
+      'Symy Guardian Forest',
+    ],
   },
 ];
 

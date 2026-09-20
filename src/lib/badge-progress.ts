@@ -23,6 +23,8 @@ export function calcBadgeProgress(
       return buddyState.totalSaved || 0;
     case 'streak_days':
       return buddyState.streak || 0;
+    case 'invited_count':
+      return buddyState.invitedCount || 0;
     case 'big_truth':
     case 'clear_mind_streak':
       return 0;

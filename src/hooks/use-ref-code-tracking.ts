@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { apiFetchVoid } from '@/lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 
 const REF_CODE_STORAGE_KEY = 'symy_ref_code';
@@ -75,13 +75,16 @@ export function useRefCodeTracking(userId: string | null | undefined) {
 
     if (!refCode) return;
 
-    // 标记已记录 (防止重复 POST)
+  // 标记已记录 (防止重复 POST)
     recordedRef.current = userId;
 
     (async () => {
       try {
   // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
-        await apiFetchVoid('/api/invite/record-ref', {
+        const result = await apiFetch<{
+          recorded?: boolean;
+          guardian?: { completedCount?: number; badgeProgress?: number; badgeLinked?: boolean };
+        }>('/api/invite/record-ref', {
           method: 'POST',
           body: { refCode },
         });
@@ -93,6 +96,9 @@ export function useRefCodeTracking(userId: string | null | undefined) {
           logger.warn('[RefCodeTracking] Failed to clear localStorage:', lsErr);
         }
         logger.info(`[RefCodeTracking] Recorded ref "${refCode}" for user ${userId}`);
+        if (result?.recorded && result.guardian?.badgeLinked) {
+          window.dispatchEvent(new CustomEvent('symy:invite-covenant-recorded', { detail: result.guardian }));
+        }
       } catch (err) {
         logger.warn('[RefCodeTracking] Failed to record ref:', err);
         // 失败 → 重置 recordedRef, 让下次重试

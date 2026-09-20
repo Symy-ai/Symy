@@ -41,6 +41,7 @@ interface RlsOpts {
   referrerErr?: unknown;
   existingData?: { id: string; status: string } | null;
   existingErr?: unknown;
+  guardianCount?: number;
 }
 
 /** RLS client（withAuth 注入）— 查 profiles.ref_code 与 invitations.existing */
@@ -61,6 +62,7 @@ function mockAuthed(opts: RlsOpts = {}, user: { id: string; email?: string | nul
         select: () => ({
           eq: () => ({
             maybeSingle: async () => ({ data: opts.existingData ?? null, error: opts.existingErr ?? null }),
+            eq: async () => ({ count: opts.guardianCount ?? 0, error: null }),
           }),
         }),
         // 仅 admin client 不可用时兜底走 RLS insert（migration 111 前的旧路径）
@@ -240,7 +242,11 @@ describe('POST /api/invite/record-ref — happy path (migration 111 server-side 
     }));
     expect(res.status).toBe(200);
     const json = await res.json();
-    expect(json).toEqual({ success: true, recorded: true });
+    expect(json).toEqual({
+      success: true,
+      recorded: true,
+      guardian: { completedCount: 0, badgeProgress: 0, badgeLinked: true },
+    });
     expect(adminInsert).toHaveBeenCalledWith({
       referrer_user_id: REFERRER.id, // 来自 profiles 查询，非 body
       referee_user_id: REFEREE.id,   // 来自 auth，非 body
@@ -258,6 +264,16 @@ describe('POST /api/invite/record-ref — happy path (migration 111 server-side 
     const json = await res.json();
     expect(json.recorded).toBe(true);
     expect(rls.rlsInsert).toHaveBeenCalledTimes(1);
+  });
+
+  it('returns guardian forest badge progress after recording the covenant', async () => {
+    mockAuthed({ referrerData: REFERRER, guardianCount: 3 });
+    mockAdminInsert();
+
+    const res = await POST(makeRequest({ refCode: 'SOMECODE' }));
+    const json = await res.json();
+
+    expect(json.guardian).toEqual({ completedCount: 3, badgeProgress: 0.3, badgeLinked: true });
   });
 
   it('inserts referee_email:null when user has no email', async () => {

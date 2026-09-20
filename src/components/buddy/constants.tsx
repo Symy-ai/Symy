@@ -127,6 +127,7 @@ export const BatteryIcon = memo(function BatteryIcon({ health }: { health: Buddy
 // ====== Badge Chip ======
 // batch3-c: 绿色荣誉库 — 旧章 emoji 从旧省钱口径 (💰🔥⚔️🏗️) 换成绿色意象, id 不变保持已解锁用户兼容
 export const BADGE_INFO: Record<string, { labelKey: string; emoji: string; color: string }> = {
+  referral_master: { labelKey: 'buddy.badgeNames.referral_master', emoji: '🌳', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },
   impulse_shield: { labelKey: 'buddy.badgeNames.impulse_shield', emoji: '🛡️', color: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-400' },
   first_save: { labelKey: 'buddy.badgeNames.first_save', emoji: '🌾', color: 'bg-green-500/10 border-green-500/20 text-green-400' },
   streak_7: { labelKey: 'buddy.badgeNames.streak_7', emoji: '🍃', color: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' },

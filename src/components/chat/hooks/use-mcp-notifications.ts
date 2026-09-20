@@ -123,7 +123,7 @@ export function useMcpNotifications({
           if (inviteRewardToast) {
             notifications.push({
               id: nextId('mcp-invite'),
-              message: t(inviteRewardToast, { defaultValue: 'Your seeing lit up another person. +1 month Premium' }),
+              message: t(inviteRewardToast),
               type: 'badge',
             });
           }

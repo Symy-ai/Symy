@@ -31,6 +31,16 @@
     "demoBannerEnhanced": "👁️ 这是别人的守护。注册后，Symy 帮你完成你自己的守护。",
     "signUpFree": "开始守护 →"
   },
+  "invite": {
+    "covenantPill": "守护者之约",
+    "covenantTitle": "我在守护你未来的时间",
+    "covenantHeading": "我在守护你未来的时间",
+    "covenantSubtitle": "加入第 {guardianRank} 位守护者的行列",
+    "covenantJoinLabel": "成为被守护的人",
+    "covenantFooter": "Symy 守护林",
+    "covenantToast": "你又守护了一位朋友。",
+    "covenantBadgeProgress": "守护林徽章：已守护 {completed}/10 位朋友"
+  },
   "tabs": {
     "buddy": "🐘 伙伴",
     "chat": "💬 聊一聊",
@@ -626,7 +636,8 @@
       "money_meadow_100": "小草甸",
       "money_forest_500": "小树林",
       "first_dream_funded": "第一颗种子",
-      "dream_gardener_3": "造梦园丁"
+      "dream_gardener_3": "造梦园丁",
+      "referral_master": "守护之林"
     },
     "badgeDescriptions": {
       "impulse_shield": "你守住了第一次选择。少买一件 —— 就少造一件。",
@@ -642,7 +653,8 @@
       "money_meadow_100": "省下的第一个 100。一片可能性的草甸开始生长。",
       "money_forest_500": "累计赢回 100 小时。从草甸长成的小树林，开始为你遮荫。",
       "first_dream_funded": "第一笔省下的钱，去了你选的地方。种子已经落进土里。",
-      "dream_gardener_3": "三个梦想基金先后开花结果。你打理的是一整座花园。"
+      "dream_gardener_3": "三个梦想基金先后开花结果。你打理的是一整座花园。",
+      "referral_master": "十位朋友接过了你的约定，你的守护林正在生长。"
     },
     "badgeUnlock": {
       "impulse_shield": "守住你的第一次选择——停在物品前，选择不买",
@@ -658,7 +670,8 @@
       "money_meadow_100": "累计省下 ¥100",
       "money_forest_500": "累计赢回 100 小时",
       "first_dream_funded": "把第一笔省下的钱存进梦想基金",
-      "dream_gardener_3": "陪伴 3 个梦想基金走到完成"
+      "dream_gardener_3": "陪伴 3 个梦想基金走到完成",
+      "referral_master": "邀请 10 位朋友完成首个挑战"
     },
     "unlockCondition": "解锁条件：",
     "progress": "进度",
