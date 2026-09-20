@@ -31,11 +31,13 @@ const SHARE_SURFACE_FILES = [
   'src/components/share/badge-card.tsx',
   'src/components/share/card-templates.tsx',
   'src/components/share/challenge-card.tsx',
+  'src/components/share/direct-share-row.tsx',
   'src/components/share/intercept-card.tsx',
   'src/components/share/milestone-card.tsx',
   'src/components/share/share-modal.tsx',
   'src/components/share/streak-card.tsx',
   'src/components/buddy/share-card-modal.tsx',
+  'src/lib/share-links.ts',
 ];
 
 function leaves(node: unknown, prefix = ''): Array<{ key: string; value: string }> {

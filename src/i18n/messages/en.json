@@ -3465,6 +3465,15 @@
   },
   "share": {
     "defaultQuote": "Buy less, live more. Every guarded choice is a medal.",
+    "toProtectQuote": "Every share helps protect someone else from being nudged into buying.",
+    "directShare": {
+      "x": "Share on X",
+      "reddit": "Share on Reddit",
+      "instagram": "Save image and open Instagram",
+      "tiktok": "Save image and open TikTok",
+      "appGuideCopied": "Image saved, caption copied — open the app and paste it to post",
+      "appGuideNoCopy": "Image saved — open the app and post it with your own words"
+    },
     "yourCompanion": "Your companion",
     "daysGuarded": "days guarded",
     "vitalityLabel": "vitality",

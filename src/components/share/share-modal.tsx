@@ -39,6 +39,7 @@ import {
 } from './card-templates';
 import { getBadgeDisplayName } from './badge-card';
 import { getChallengeDisplayName } from './challenge-card';
+import { DirectShareRow } from './direct-share-row';
 
 export interface ShareModalProps {
   open: boolean;
@@ -227,69 +228,73 @@ export function ShareModal({
     }
   }, [dataUrl, fileBase]);
 
+  // 面子文案 (owner 09-06 rule: share text = face only, never money): 按模板配句 —
+  // 分享出去的句子和图是同一枚勋章。Web Share 与直链行 (direct-share-row) 共用同一句。
+  const shareText = useMemo(() => {
+    const hoursNum = Math.round((medal.savedCents / 100 / effectiveRate) * 10) / 10;
+    // 亚小时出分钟, 与卡面取整同向 (同一笔拦截两面数字一致); <0.1h 回落数字兜底
+    const hoursLabel = formatShareHoursLabel(medal.savedCents / 100 / effectiveRate, locale) || hoursNum;
+    return (
+      selectedId === 'streak'
+        ? streakDays && streakDays > 0
+          ? t('share.streakCard.shareText', {
+              hours: hoursLabel,
+              defaultValue: `My green streak is alive — won back ${hoursLabel}. With Symy: buy less, live more.`,
+            })
+          : t('share.streakCard.shareTextStarting', {
+              hours: hoursLabel,
+              defaultValue: `My green streak starts today — won back ${hoursLabel} already. With Symy: buy less, live more.`,
+            })
+        : selectedId === 'milestone'
+          ? t('share.milestoneCard.shareText', {
+              count: Math.max(interceptCount ?? 1, 1),
+              hours: hoursLabel,
+              defaultValue: `Guard #${Math.max(interceptCount ?? 1, 1)} — won back ${hoursLabel} in total. With Symy: buy less, live more.`,
+            })
+          : selectedId === 'badge' && badgeCard
+            ? t('share.badgeCard.shareText', {
+                name: getBadgeDisplayName(badgeCard.badge.id, t),
+                hours: hoursLabel,
+                defaultValue: `The ${getBadgeDisplayName(badgeCard.badge.id, t)} honor is unlocked — won back ${hoursLabel}. Buy less. Live more.`,
+              })
+            : selectedId === 'challenge' && challengeCard
+              ? t('share.challengeCard.shareText', {
+                  title: getChallengeDisplayName(challengeCard.challenge, t),
+                  hours: hoursLabel,
+                  defaultValue: `Challenge complete: ${getChallengeDisplayName(challengeCard.challenge, t)} — won back ${hoursLabel}. Buy less. Live more.`,
+                })
+              : selectedId === 'weekly' && weeklyCard
+                ? t('share.weeklyCard.shareText', {
+                    days: weeklyCard.guardDays,
+                    hours: formatShareHoursLabel(weeklyCard.savedHours, locale) || hoursLabel,
+                    defaultValue: `${weeklyCard.guardDays} days guarded this week — won back ${formatShareHoursLabel(weeklyCard.savedHours, locale) || hoursLabel}. Buy less. Live more.`,
+                  })
+                : selectedId === 'guardian-stats' && guardRank
+                  ? t('share.guardianStats.shareText', {
+                      count: Math.max(interceptCount ?? 0, 0),
+                      days: Math.max(streakDays ?? 0, 0),
+                      hours: hoursLabel,
+                      defaultValue: `My guardian record: ${Math.max(interceptCount ?? 0, 0)} intercepts, ${Math.max(streakDays ?? 0, 0)} days guarded, ${hoursLabel} won back. Buy less. Live more.`,
+                    })
+                  : selectedId === 'invite' && inviteCard
+                    ? t('share.inviteCard.shareText', {
+                        count: inviteCard.completedCount,
+                        defaultValue: 'Join me as a green guardian. Buy less. Live more.',
+                      })
+                  : t('share.interceptMedal.shareText', {
+                    item: medal.itemTitle,
+                    hours: hoursLabel,
+                    defaultValue: `I skipped an impulse buy and won back ${hoursLabel}. With Symy — for me and the planet. Buy less. Live more.`,
+                  })
+    );
+  }, [medal.savedCents, medal.itemTitle, effectiveRate, locale, selectedId, streakDays, interceptCount, badgeCard, challengeCard, weeklyCard, guardRank, inviteCard, t]);
+
   const handleShare = useCallback(async () => {
     if (!dataUrl || sharing) return;
     setSharing(true);
     try {
       const blob = await dataUrlToBlob(dataUrl);
       const file = new File([blob], `${fileBase}.png`, { type: 'image/png' });
-      // owner 09-06 rule: share text = face only (green honor + won-back time). Never money.
-      const hoursNum = Math.round((medal.savedCents / 100 / effectiveRate) * 10) / 10;
-      // 亚小时出分钟, 与卡面取整同向 (同一笔拦截两面数字一致); <0.1h 回落数字兜底
-      const hoursLabel = formatShareHoursLabel(medal.savedCents / 100 / effectiveRate, locale) || hoursNum;
-      // 按模板配文案 — 分享出去的句子和图是同一枚勋章
-      const shareText =
-        selectedId === 'streak'
-          ? streakDays && streakDays > 0
-            ? t('share.streakCard.shareText', {
-                hours: hoursLabel,
-                defaultValue: `My green streak is alive — won back ${hoursLabel}. With Symy: buy less, live more.`,
-              })
-            : t('share.streakCard.shareTextStarting', {
-                hours: hoursLabel,
-                defaultValue: `My green streak starts today — won back ${hoursLabel} already. With Symy: buy less, live more.`,
-              })
-          : selectedId === 'milestone'
-            ? t('share.milestoneCard.shareText', {
-                count: Math.max(interceptCount ?? 1, 1),
-                hours: hoursLabel,
-                defaultValue: `Guard #${Math.max(interceptCount ?? 1, 1)} — won back ${hoursLabel} in total. With Symy: buy less, live more.`,
-              })
-            : selectedId === 'badge' && badgeCard
-              ? t('share.badgeCard.shareText', {
-                  name: getBadgeDisplayName(badgeCard.badge.id, t),
-                  hours: hoursLabel,
-                  defaultValue: `The ${getBadgeDisplayName(badgeCard.badge.id, t)} honor is unlocked — won back ${hoursLabel}. Buy less. Live more.`,
-                })
-              : selectedId === 'challenge' && challengeCard
-                ? t('share.challengeCard.shareText', {
-                    title: getChallengeDisplayName(challengeCard.challenge, t),
-                    hours: hoursLabel,
-                    defaultValue: `Challenge complete: ${getChallengeDisplayName(challengeCard.challenge, t)} — won back ${hoursLabel}. Buy less. Live more.`,
-                  })
-                : selectedId === 'weekly' && weeklyCard
-                  ? t('share.weeklyCard.shareText', {
-                      days: weeklyCard.guardDays,
-                      hours: formatShareHoursLabel(weeklyCard.savedHours, locale) || hoursLabel,
-                      defaultValue: `${weeklyCard.guardDays} days guarded this week — won back ${formatShareHoursLabel(weeklyCard.savedHours, locale) || hoursLabel}. Buy less. Live more.`,
-                    })
-                  : selectedId === 'guardian-stats' && guardRank
-                    ? t('share.guardianStats.shareText', {
-                        count: Math.max(interceptCount ?? 0, 0),
-                        days: Math.max(streakDays ?? 0, 0),
-                        hours: hoursLabel,
-                        defaultValue: `My guardian record: ${Math.max(interceptCount ?? 0, 0)} intercepts, ${Math.max(streakDays ?? 0, 0)} days guarded, ${hoursLabel} won back. Buy less. Live more.`,
-                      })
-                    : selectedId === 'invite' && inviteCard
-                      ? t('share.inviteCard.shareText', {
-                          count: inviteCard.completedCount,
-                          defaultValue: 'Join me as a green guardian. Buy less. Live more.',
-                        })
-                    : t('share.interceptMedal.shareText', {
-                  item: medal.itemTitle,
-                  hours: hoursLabel,
-                  defaultValue: `I skipped an impulse buy and won back ${hoursLabel}. With Symy — for me and the planet. Buy less. Live more.`,
-                });
       const shareUrl = refCode ? `${window.location.origin}/?ref=${encodeURIComponent(refCode)}` : null;
       if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
@@ -310,7 +315,7 @@ export function ShareModal({
     } finally {
       setSharing(false);
     }
-  }, [dataUrl, sharing, handleDownload, t, locale, selectedId, fileBase, medal.itemTitle, medal.savedCents, effectiveRate, streakDays, interceptCount, badgeCard, challengeCard, weeklyCard, guardRank, inviteCard, refCode]);
+  }, [dataUrl, sharing, handleDownload, fileBase, shareText, refCode]);
 
   if (!open) return null;
 
@@ -470,6 +475,16 @@ export function ShareModal({
             {t('share.interceptMedal.save', { defaultValue: 'Save image' })}
           </button>
         </div>
+
+        {/* 四平台直链行 (batch106-a) — X/Reddit intent 直链; IG/TikTok 无 web intent,
+            降级为保存图片+复制文案+打开 app 主页 (direct-share-row 内部处理) */}
+        <DirectShareRow
+          caption={shareText}
+          quote={t('share.toProtectQuote')}
+          url={refCode ? `${window.location.origin}/?ref=${encodeURIComponent(refCode)}` : window.location.origin}
+          onDownload={handleDownload}
+          imageReady={genState === 'ready'}
+        />
       </div>
     </div>,
     document.body

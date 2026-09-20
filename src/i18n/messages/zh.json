@@ -3465,6 +3465,15 @@
   },
   "share": {
     "defaultQuote": "少买一点，多活一点。每一次守护都是勋章。",
+    "toProtectQuote": "每一次分享，都是在保护别人不被诱导。",
+    "directShare": {
+      "x": "分享到 X",
+      "reddit": "分享到 Reddit",
+      "instagram": "保存图片并打开 Instagram",
+      "tiktok": "保存图片并打开 TikTok",
+      "appGuideCopied": "图片已保存，文案已复制 — 打开 app 粘贴发布",
+      "appGuideNoCopy": "图片已保存 — 打开 app，配上你想说的话发布"
+    },
     "yourCompanion": "你的伙伴",
     "daysGuarded": "天守护",
     "vitalityLabel": "活力",
