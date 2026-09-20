@@ -73,3 +73,91 @@ describe('settings plain copy', () => {
     }
   });
 });
+
+/**
+ * batch95-b tone guard — 设置区（默认 5+1 行 + 高级折叠区）文案小白化后锁面:
+ * 前缀 + 单键圈定设置区消费的全部 profile.* 键, zh 值零工程黑话;
+ * 每行 description ≤ 20 字说清「开了会怎样」。白名单豁免专有名词
+ * （RPA 插件名本身）。
+ */
+const SETTINGS_PREFIXES = [
+  'guardControl', 'guardIntensity', 'guardScope', 'nightWindow', 'spendingCap',
+  'guardPolicy', 'guardRuleCoverage', 'guardProfile', 'guardData', 'greenPrefs',
+  'greenImpact', 'timeValue', 'guardianStyle', 'greenPref', 'push', 'email',
+  'inventory', 'displayName',
+];
+
+const SETTINGS_SINGLES = [
+  'settingsAdvanced', 'settingsAdvancedDesc', 'darkMode', 'darkModeOn', 'lightModeOn',
+  'helpFaq', 'helpFaqDesc', 'sendFeedback', 'sendFeedbackDesc', 'setDisplayNameBtn',
+  'rpaPlugin', 'rpaPluginDesc', 'languageSetting', 'paymentMethods', 'paymentMethodsDesc',
+  'deleteAccount', 'deleteAccountConfirm',
+];
+
+const toneBannedTerms = [
+  '策略', '规则覆盖', '管道', '粒度', '窗口期', '词库', '样本', '档位', '算法', '诊断',
+];
+
+const toneWhitelist: Record<string, string[]> = {
+  // RPA 插件是 Android 侧专有名词, 文案若需点名可豁免
+  rpaPlugin: ['RPA'],
+};
+
+function isSettingsKey(key: string): boolean {
+  return (
+    SETTINGS_PREFIXES.some((prefix) => key.startsWith(prefix)) ||
+    SETTINGS_SINGLES.includes(key)
+  );
+}
+
+/** 设置区每行 description (label 下方一句话说明) — zh ≤ 20 字 */
+const SETTINGS_ROW_DESC_KEYS = [
+  'greenPrefDesc', 'helpFaqDesc', 'sendFeedbackDesc', 'settingsAdvancedDesc',
+  'guardianStyleEntryDesc', 'timeValueDesc', 'guardIntensityDesc', 'guardScopeDesc',
+  'nightWindowDesc', 'spendingCapDesc', 'guardPolicyDesc', 'guardRuleCoverageDesc',
+  'guardProfileDesc', 'guardDataDesc', 'greenPrefsDesc', 'greenImpactDesc',
+  'rpaPluginDesc', 'paymentMethodsDesc',
+];
+
+describe('settings area tone guard (batch95-b)', () => {
+  const settingsKeys = Object.keys(zhProfile).filter(isSettingsKey);
+
+  it('圈定的设置区键成规模 (防前缀拼错导致守卫空转)', () => {
+    expect(settingsKeys.length).toBeGreaterThanOrEqual(200);
+  });
+
+  it('设置区 zh 文案零工程黑话 (白名单豁免专有名词)', () => {
+    for (const key of settingsKeys) {
+      const exempted = toneWhitelist[key] ?? [];
+      const collect = (value: unknown, path: string): void => {
+        if (typeof value === 'string') {
+          for (const term of toneBannedTerms) {
+            if (exempted.includes(term)) continue;
+            expect(value.includes(term), `profile.${path} contains jargon "${term}": ${value}`).toBe(false);
+          }
+        } else if (value && typeof value === 'object') {
+          for (const [child, grand] of Object.entries(value as CopyRecord)) {
+            collect(grand, `${path}.${child}`);
+          }
+        }
+      };
+      collect(zhProfile[key], key);
+    }
+  });
+
+  it('设置区每行 description zh ≤ 20 字 (一句话说清开了会怎样)', () => {
+    expect(SETTINGS_ROW_DESC_KEYS.length).toBeGreaterThanOrEqual(18);
+    for (const key of SETTINGS_ROW_DESC_KEYS) {
+      const value = getValue(zhProfile, key);
+      expect(typeof value, `profile.${key} should be a string`).toBe('string');
+      expect(value as string, `profile.${key}`).toBeTruthy();
+      expect((value as string).length, `profile.${key} is too long`).toBeLessThanOrEqual(20);
+    }
+  });
+
+  it('设置区行 description 在 en 侧同步存在且非空', () => {
+    for (const key of SETTINGS_ROW_DESC_KEYS) {
+      expect(getValue(enProfile, key), `en missing profile.${key}`).toBeTruthy();
+    }
+  });
+});

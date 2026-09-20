@@ -15,7 +15,7 @@ import { useGreenPrefs, type Wording, type PushTheme } from '@/hooks/use-green-p
 
 const WORDING_OPTIONS: { value: Wording; labelEn: string; labelZh: string }[] = [
   { value: 'cheerful', labelEn: 'Cheerful', labelZh: '轻松鼓励' },
-  { value: 'neutral', labelEn: 'Neutral', labelZh: '中性说明' },
+  { value: 'neutral', labelEn: 'Neutral', labelZh: '就事论事' },
   { value: 'direct', labelEn: 'Direct', labelZh: '直接提醒' },
 ];
 

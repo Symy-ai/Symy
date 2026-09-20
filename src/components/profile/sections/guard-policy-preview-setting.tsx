@@ -109,13 +109,13 @@ export function GuardPolicyPreviewSetting({ isDemo = false }: { isDemo?: boolean
   );
 
   const shareText = [
-    locale === 'zh' ? '🐘 我的守护策略预演' : '🐘 My Guard Policy Preview',
+    locale === 'zh' ? '🐘 改了会怎样——守护预演' : '🐘 What would change — guard preview',
     locale === 'zh'
-      ? `最近 90 天：可能覆盖 ${result.coveredEventCount} 次 · ${result.coveredCategoryCount} 个品类`
-      : `Last 90 days: about ${result.coveredEventCount} covered events · ${result.coveredCategoryCount} categories`,
+      ? `最近 90 天：会拦到 ${result.coveredEventCount} 次 · ${result.coveredCategoryCount} 个品类`
+      : `Last 90 days: would catch ${result.coveredEventCount} moments · ${result.coveredCategoryCount} categories`,
     locale === 'zh'
-      ? `守护自由约 ${formatHours(result.freedomHours)} 小时 · 潜在打扰 ${result.potentialDisturbanceDays} 天`
-      : `About ${formatHours(result.freedomHours)} guarded hours · ${result.potentialDisturbanceDays} potentially interrupted days`,
+      ? `帮你守住约 ${formatHours(result.freedomHours)} 小时 · 约 ${result.potentialDisturbanceDays} 天会被多问几句`
+      : `About ${formatHours(result.freedomHours)} hours kept for you · ${result.potentialDisturbanceDays} days with an extra question`,
   ].join('\n');
 
   const save = () => {
