@@ -254,24 +254,43 @@ describe('useBuddyActions', () => {
       });
     });
 
-    it('newOrder 含未知 id → 缓存侧过滤, 但 PATCH 仍按 newOrder 全量发送 (现状钉子)', async () => {
+    it('newOrder 含已删 id → PATCH 只发送已知 id 且序号连续', async () => {
       mockedApiFetchVoid.mockResolvedValue(undefined);
       const { queryClient, result } = setup(baseState());
       await act(async () => {
         await result.current.reorderDreamFunds(['df-x', 'df-2']);
       });
-      // 缓存: df-x 被过滤, missing (df-1/df-3) 补尾
       expect(getState(queryClient)?.dreamFunds.map(f => f.id)).toEqual(['df-2', 'df-1', 'df-3']);
-      // 现状: PATCH 循环遍历 newOrder 本身, 未知 id df-x 也会发一次请求 (P4 观察, 见 b84b-defects)
-      expect(mockedApiFetchVoid).toHaveBeenCalledTimes(2);
+      expect(mockedApiFetchVoid).toHaveBeenCalledTimes(1);
       expect(mockedApiFetchVoid).toHaveBeenNthCalledWith(1, '/api/buddy/dream-funds', {
         method: 'PATCH',
-        body: { fund_id: 'df-x', sort_order: 0 },
+        body: { fund_id: 'df-2', sort_order: 0 },
       });
-      expect(mockedApiFetchVoid).toHaveBeenNthCalledWith(2, '/api/buddy/dream-funds', {
-        method: 'PATCH',
-        body: { fund_id: 'df-2', sort_order: 1 },
+    });
+
+    it('newOrder 全未知 → 不发 PATCH', async () => {
+      mockedApiFetchVoid.mockResolvedValue(undefined);
+      const { queryClient, result } = setup(baseState());
+      await act(async () => {
+        await result.current.reorderDreamFunds(['df-x', 'df-y']);
       });
+      expect(getState(queryClient)?.dreamFunds.map(f => f.id)).toEqual(['df-1', 'df-2', 'df-3']);
+      expect(mockedApiFetchVoid).not.toHaveBeenCalled();
+    });
+
+    it('正常重排保持逐项 PATCH 不变', async () => {
+      mockedApiFetchVoid.mockResolvedValue(undefined);
+      const { queryClient, result } = setup(baseState());
+      await act(async () => {
+        await result.current.reorderDreamFunds(['df-3', 'df-1', 'df-2']);
+      });
+      expect(getState(queryClient)?.dreamFunds.map(f => f.id)).toEqual(['df-3', 'df-1', 'df-2']);
+      for (const [index, fundId] of ['df-3', 'df-1', 'df-2'].entries()) {
+        expect(mockedApiFetchVoid).toHaveBeenNthCalledWith(index + 1, '/api/buddy/dream-funds', {
+          method: 'PATCH',
+          body: { fund_id: fundId, sort_order: index },
+        });
+      }
     });
 
     it('PATCH 失败 → warn 不抛, 本地顺序已生效', async () => {
