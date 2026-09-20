@@ -14,10 +14,12 @@
 
 import { generateDemoOutline, generateDemoChapterContent, generateDemoChoice, generateDemoSummary, getDemoChapterIllustrationUrl } from '@/features/butterfly/lib/demo-content';
 import { getDemoSession } from '@/features/butterfly/lib/demo-session-store';
+import { sanitizeDemoChoices, sanitizeDemoDescription } from '@/features/butterfly/lib/demo-story-guard';
 import { logger } from '@/lib/logger';
 import { sendSSEData, closeSSE, SSE_HEADERS } from '@/lib/sse';
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/distributed-lock';
+import { createHash } from 'crypto';
 import { z } from 'zod';
 import type {
   StoryEvent,
@@ -39,11 +41,22 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   // 🔧 架构优化 Round 69 (Finding 9): Demo route rate limiting — 防止 DoS
+  // 🔒 wool v6 §十二.4 D7-①: 限流键禁止 'unknown' 共享桶（一个用户生成 → 全员 429）。
+  //    分桶: 有 IP 按 IP; 无 IP 按 UA 哈希（不同浏览器天然分桶）; 两者皆无（零身份信号）
+  //    放行 — demo 为纯静态预置内容零成本, 与 checkRateLimit env 缺失时 fail-open 同语义。
   const clientIp = req.headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim() ||
-    req.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || 'unknown';
-  const rateLimit = await checkRateLimit(`demo-story:${clientIp}`, 20, 60 * 60 * 1000); // 20/hour
-  if (!rateLimit.allowed) {
-    return NextResponse.json({ error: 'Rate limit exceeded. Try again later.' }, { status: 429 });
+    req.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || '';
+  const userAgent = req.headers.get('user-agent')?.trim() || '';
+  const rateLimitKey = clientIp
+    ? `demo-story:ip:${clientIp}`
+    : userAgent
+      ? `demo-story:ua:${createHash('sha256').update(userAgent).digest('hex').slice(0, 32)}`
+      : null;
+  if (rateLimitKey) {
+    const rateLimit = await checkRateLimit(rateLimitKey, 20, 60 * 60 * 1000); // 20/hour
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded. Try again later.' }, { status: 429 });
+    }
   }
 
   // 🔧 ARCH fix (Round 6 AUDIT-3 P0 #1): 用 zod 替代手写 validation
@@ -53,7 +66,7 @@ export async function POST(req: NextRequest) {
     sessionId: z.string().max(100).optional(),
     decisionType: z.enum(['bought', 'resisted', 'considering']).optional(),
     decisionDescription: z.string().max(1000).optional(),
-    currentChapter: z.number().int().min(0).max(100).optional(),
+    currentChapter: z.number().int().min(0).max(99).optional(),
     choices: z.record(z.string(), z.string().max(50)).optional(),
     locale: z.enum(['en', 'zh']).optional(),
   }).passthrough();
@@ -82,21 +95,27 @@ export async function POST(req: NextRequest) {
   const memSession = sessionId ? getDemoSession(sessionId) : null;
 
   const decisionType: DecisionType = memSession?.decisionType || body.decisionType || 'bought';
-  const decisionDescription: string = memSession?.decisionDescription || body.decisionDescription || '';
-  const startChapter: number = memSession?.currentChapter ?? body.currentChapter ?? 0;
+  // 🔒 wool v6 §十二.4 D7-③: decisionDescription 是唯一直接插值进大纲/章节文本的客户端字段,
+  //    进模板前过既有 fencing sanitize
+  const decisionDescription: string = sanitizeDemoDescription(
+    memSession?.decisionDescription || body.decisionDescription || '',
+  );
+  const rawStartChapter: number = memSession?.currentChapter ?? body.currentChapter ?? 0;
 
   // 合并选择记录
-  const choices: Record<number, string> = {};
+  const rawChoices: Record<string, string> = {};
   if (memSession) {
     for (const choice of memSession.choices) {
       if (choice.selectedOption) {
-        choices[choice.chapterIndex] = choice.selectedOption;
+        rawChoices[String(choice.chapterIndex)] = choice.selectedOption;
       }
     }
   }
   if (body.choices) {
-    Object.assign(choices, body.choices);
+    Object.assign(rawChoices, body.choices);
   }
+  // 🔒 D7-③: session 与 body 两来源统一收口, 进章节内容模板前过既有 fencing sanitize
+  const choices: Record<number, string> = sanitizeDemoChoices(rawChoices);
 
   if (!decisionDescription) {
     return new Response(
@@ -108,6 +127,13 @@ export async function POST(req: NextRequest) {
   // 生成大纲 — locale 由请求体传入（缺省 en，保持旧调用兼容）
   const locale = body.locale || 'en';
   const outline = generateDemoOutline(decisionType, decisionDescription, locale);
+
+  // 🔒 wool v6 §十二.4 D7-②: 不信任客户端跳章 — startChapter 钳进章节范围。
+  //    旧代码 ≥ 最大章 index 的请求 find 不到下一章 → 跳过全部内容一键直达结局。
+  //    demo-choice 的 chapterIndex 0..10 还可投毒 session 进度, 故对 session/body
+  //    两来源统一钳到 [0, 最大章 index-1]: 越界请求落在最后一章实体内容。
+  const maxChapterIndex = outline.chapters[outline.chapters.length - 1]?.index ?? 0;
+  const startChapter: number = Math.max(0, Math.min(rawStartChapter, maxChapterIndex - 1));
 
   const STREAM_TIMEOUT_MS = 55_000; // 🔧 ARCH fix (Round 12 API-9): 120s → 55s, 与 Vercel maxDuration 60s 配合
 
