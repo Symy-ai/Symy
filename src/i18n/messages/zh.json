@@ -3696,7 +3696,8 @@
         "stat": "赢回 20 小时"
       }
     ],
-    "footerTrust": "信任"
+    "footerTrust": "信任",
+    "footerCovenant": "新契约"
   },
   "meta": {
     "title": "Symy — 少买一点，多活一点。",
@@ -3918,6 +3919,28 @@
     "neutralityTitle": "结构性中立",
     "neutralityAds": "零广告。",
     "neutralityBidding": "零竞价。",
-    "neutralityPlacement": "零推荐位。"
+    "neutralityPlacement": "零推荐位。",
+    "covenantLink": "我们的契约"
+  },
+  "covenant": {
+    "title": "新契约",
+    "subtitle": "守护林社区共同确认的三条边界，也是一个可以晒出去的身份。",
+    "articlesTitle": "契约条款",
+    "articleNumber": "第 {number} 条",
+    "articles": {
+      "explore": "探索更大的宇宙。",
+      "conserve": "尽量少占家乡资源。",
+      "selfRestraint": "强者的自我约束。"
+    },
+    "reasonsTitle": "为什么守得住",
+    "reasons": {
+      "incentives": "我们不靠广告、竞价和推荐位赚钱，约束不与收入冲突。",
+      "visibility": "消费记录由用户自己持有，平台只发布聚合数字，边界清楚。",
+      "practice": "每一次购买前的暂停都是练习，契约不要求一次做到完美。"
+    },
+    "collectiveTitle": "Won back together",
+    "wonBackTogether": "Won back together：{hours} · {guards} 位守护者",
+    "collectiveUnavailable": "集体数字暂时不可用。契约仍在，稍后可以再看累计结果。",
+    "trustLink": "我们的公开边界"
   }
 }

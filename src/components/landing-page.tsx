@@ -291,6 +291,12 @@ export function LandingPage({ forceShow = false }: { forceShow?: boolean }) {
               {t('landing.footerTrust')}
             </Link>
             <Link
+              href={`/${locale}/covenant`}
+              className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
+            >
+              {t('landing.footerCovenant')}
+            </Link>
+            <Link
               href={`/${locale}/legal/privacy`}
               className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
             >

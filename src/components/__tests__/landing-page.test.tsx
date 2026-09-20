@@ -56,4 +56,10 @@ describe('LandingPage', () => {
 
     expect(screen.getByText('landing.footerTrust').getAttribute('href')).toBe('/zh/trust');
   });
+
+  it('shows the covenant entry in the footer', () => {
+    render(<LandingPage />);
+
+    expect(screen.getByText('landing.footerCovenant').getAttribute('href')).toBe('/zh/covenant');
+  });
 });

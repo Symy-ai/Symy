@@ -171,6 +171,14 @@ export default async function TrustPage({
             </li>
           </ul>
         </section>
+
+        <Link
+          href={`/${locale}/covenant`}
+          className="block text-center text-xs font-medium text-text-primary underline"
+          data-testid="trust-covenant-link"
+        >
+          {t('trust.covenantLink')}
+        </Link>
       </div>
     </div>
   );

@@ -119,4 +119,14 @@ describe('/trust page', () => {
       enMessages.trust.neutralityPlacement,
     ]);
   });
+
+  it('links to the covenant page', async () => {
+    (getTranslations as ReturnType<typeof vi.fn>).mockResolvedValue(makeT(flat(enMessages)));
+    await renderPage('en');
+
+    expect(screen.getByTestId('trust-covenant-link').getAttribute('href')).toBe('/en/covenant');
+    expect(screen.getByTestId('trust-covenant-link').textContent).toBe(
+      enMessages.trust.covenantLink,
+    );
+  });
 });

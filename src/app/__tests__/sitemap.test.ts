@@ -29,6 +29,17 @@ describe('sitemap', () => {
     expect(all).toContain(`${BASE}/zh/trust`);
   });
 
+  it('covenant 双 locale 均收录并互链', () => {
+    const entry = sitemap().find((e) => e.url === `${BASE}/en/covenant`);
+
+    expect(sitemap().some((e) => e.url === `${BASE}/zh/covenant`)).toBe(true);
+    expect(entry!.changeFrequency).toBe('monthly');
+    expect(entry!.alternates?.languages).toEqual({
+      en: `${BASE}/en/covenant`,
+      zh: `${BASE}/zh/covenant`,
+    });
+  });
+
   it('finance 页双 locale 均收录', () => {
     const all = urls();
     expect(all).toContain(`${BASE}/en/transparency/finance`);

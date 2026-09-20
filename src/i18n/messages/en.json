@@ -3696,7 +3696,8 @@
         "stat": "20 hours won back"
       }
     ],
-    "footerTrust": "Trust"
+    "footerTrust": "Trust",
+    "footerCovenant": "The Covenant"
   },
   "meta": {
     "title": "Symy — Buy less. Live more.",
@@ -3918,6 +3919,28 @@
     "neutralityTitle": "Structural neutrality",
     "neutralityAds": "Zero ads.",
     "neutralityBidding": "Zero bidding.",
-    "neutralityPlacement": "Zero placement."
+    "neutralityPlacement": "Zero placement.",
+    "covenantLink": "Our covenant"
+  },
+  "covenant": {
+    "title": "The Covenant",
+    "subtitle": "Three boundaries confirmed by the Guard Grove community — and an identity worth sharing.",
+    "articlesTitle": "Covenant articles",
+    "articleNumber": "Article {number}",
+    "articles": {
+      "explore": "Explore a larger universe.",
+      "conserve": "Take fewer resources from home.",
+      "selfRestraint": "The self-restraint of the strong."
+    },
+    "reasonsTitle": "Why this holds",
+    "reasons": {
+      "incentives": "We earn nothing from ads, bidding, or placement, so restraint does not conflict with revenue.",
+      "visibility": "Consumption records stay user-held; the platform publishes aggregates only, keeping boundaries clear.",
+      "practice": "Every pause before purchase is practice; the covenant does not require perfection all at once."
+    },
+    "collectiveTitle": "Won back together",
+    "wonBackTogether": "Won back together: {hours} · {guards} guards",
+    "collectiveUnavailable": "Collective figures are temporarily unavailable. The covenant remains, and the running total can return later.",
+    "trustLink": "Our public boundaries"
   }
 }

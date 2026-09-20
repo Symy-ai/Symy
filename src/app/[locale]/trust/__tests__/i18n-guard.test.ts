@@ -21,6 +21,7 @@ const requiredKeys = [
   'neutralityAds',
   'neutralityBidding',
   'neutralityPlacement',
+  'covenantLink',
 ] as const;
 
 describe('/trust i18n guard', () => {
