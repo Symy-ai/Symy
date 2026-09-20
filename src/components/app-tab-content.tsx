@@ -174,7 +174,16 @@ export function AppTabContent({
         {...(activeTab !== 'defense' ? { 'aria-hidden': true, inert: true } : {})}
       >
         <ErrorBoundary>
-          <DefenseTab isDemo={isDemo} onAuthPrompt={showAuthPrompt} userTotalSaved={stats?.moneySaved} />
+          <DefenseTab
+            isDemo={isDemo}
+            onAuthPrompt={showAuthPrompt}
+            userTotalSaved={stats?.moneySaved}
+            guardRankStats={{
+              totalIntercepts: buddyState?.challengesCompleted ?? 0,
+              streakDays: stats?.daysStreak ?? 0,
+              badgesUnlocked: Array.isArray(buddyState?.badges) ? buddyState.badges.length : 0,
+            }}
+          />
         </ErrorBoundary>
       </div>
       <div

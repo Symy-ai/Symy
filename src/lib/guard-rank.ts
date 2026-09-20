@@ -40,20 +40,23 @@ export function getGuardRank(stats: GuardRankStats): GuardRank {
   );
 }
 
+export type GuardRankChannel = 'intercepts' | 'streakDays' | 'badges';
+
 export function getNextGuardRankProgress(
   current: GuardRank,
   stats: GuardRankStats,
-): { next: GuardRank; remainingLabelKey: string; remainingCount: number } | null {
+): { next: GuardRank; channel: GuardRankChannel; remainingLabelKey: string; remainingCount: number } | null {
   const next = GUARD_RANKS[current.level + 1];
   if (!next) return null;
 
-  const options = [
-    { count: next.minIntercepts - stats.totalIntercepts, key: 'profile.guardRank.nextHintIntercepts' },
-    { count: next.altStreakDays - stats.streakDays, key: 'profile.guardRank.nextHintDays' },
-    { count: next.altBadges - stats.badgesUnlocked, key: 'profile.guardRank.nextHintBadges' },
-  ].filter((option) => option.count > 0);
+  const candidates: { channel: GuardRankChannel; count: number; key: string }[] = [
+    { channel: 'intercepts', count: next.minIntercepts - stats.totalIntercepts, key: 'profile.guardRank.nextHintIntercepts' },
+    { channel: 'streakDays', count: next.altStreakDays - stats.streakDays, key: 'profile.guardRank.nextHintDays' },
+    { channel: 'badges', count: next.altBadges - stats.badgesUnlocked, key: 'profile.guardRank.nextHintBadges' },
+  ];
+  const options = candidates.filter((option) => option.count > 0);
   if (options.length === 0) return null;
 
   const closest = options.reduce((best, option) => (option.count < best.count ? option : best));
-  return { next, remainingLabelKey: closest.key, remainingCount: closest.count };
+  return { next, channel: closest.channel, remainingLabelKey: closest.key, remainingCount: closest.count };
 }

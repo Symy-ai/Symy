@@ -1991,9 +1991,9 @@
       "partner": "守护搭档",
       "ambassador": "守护大使",
       "honoree": "荣誉守护官",
-      "nextHintIntercepts": "还差 {count} 次拦截成为「{title}」",
-      "nextHintDays": "还差 {count} 天守护成为「{title}」",
-      "nextHintBadges": "还差 {count} 枚勋章成为「{title}」",
+      "nextHintIntercepts": "再拦下 {count} 次，成为「{title}」",
+      "nextHintDays": "再守护 {count} 天，成为「{title}」",
+      "nextHintBadges": "再集齐 {count} 枚勋章，成为「{title}」",
       "levelPrefix": "段位",
       "rankLine": "已拦下 {count}+ 次"
     },
@@ -2723,7 +2723,13 @@
     "heroStats": "守护者统计",
     "hoursTogether": "共同赢回 {hours}",
     "collectiveWonBack": "Won back together：{hours} · {guards} 位守护者",
-    "founderLine": "你是第 {number} 位守护者"
+    "founderLine": "你是第 {number} 位守护者",
+    "rank": {
+      "gapIntercepts": "再拦下 {count} 次成为「{title}」",
+      "gapDays": "再守护 {count} 天成为「{title}」",
+      "gapBadges": "再集齐 {count} 枚勋章成为「{title}」",
+      "topLine": "已达最高段位 —— 这是荣誉。"
+    }
   },
   "family": {
     "dashboard": "家庭 Symy",

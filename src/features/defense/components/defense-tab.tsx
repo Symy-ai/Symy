@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { ChevronLeft, Info } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
+import type { GuardRankStats } from '@/lib/guard-rank';
 import { useCommunityStats } from '../hooks/use-community-stats';
 import { useCommunityChallenges } from '../hooks/use-community-challenges';
 import { CommunityChallengeList } from './community-challenge-list';
@@ -28,9 +29,10 @@ export interface DefenseTabProps {
   onAuthPrompt: (feature: string) => void;
   userTotalSaved?: number;
   userDefenderNumber?: number | null;
+  guardRankStats?: GuardRankStats | null;
 }
 
-export function DefenseTab({ isDemo, onAuthPrompt, userTotalSaved, userDefenderNumber }: DefenseTabProps) {
+export function DefenseTab({ isDemo, onAuthPrompt, userTotalSaved, userDefenderNumber, guardRankStats }: DefenseTabProps) {
   const { t, locale } = useI18n();
   // 🔧 batch81-b: strategies 走真数据 API, strategiesSource/strategiesLoading 单独透传
   //   (不并入 isLoading — 其它板块的骨架时序保持不变)
@@ -66,6 +68,7 @@ export function DefenseTab({ isDemo, onAuthPrompt, userTotalSaved, userDefenderN
         isLoading={isLoading}
         userTotalSaved={userTotalSaved}
         userDefenderNumber={userDefenderNumber}
+        guardRankStats={guardRankStats}
         t={t}
         locale={locale}
       />

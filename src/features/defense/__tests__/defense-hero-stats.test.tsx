@@ -31,6 +31,16 @@ vi.mock('@/i18n/provider', () => ({
         'defense.notEnoughData': 'Be one of the first guards!',
         'defense.notEnoughDataDesc': 'Complete a guard challenge.',
         'defense.details': 'Details',
+        'defense.rank.gapIntercepts': '{count} more guards to become {title}',
+        'defense.rank.gapDays': 'Guard {count} more days to become {title}',
+        'defense.rank.gapBadges': 'Collect {count} more badges to become {title}',
+        'defense.rank.topLine': 'Highest rank reached — this is honor.',
+        'profile.guardRank.sprout': 'Sprout',
+        'profile.guardRank.trainee': 'Trainee Guardian',
+        'profile.guardRank.companion': 'Companion Guardian',
+        'profile.guardRank.partner': 'Guardian Partner',
+        'profile.guardRank.ambassador': 'Guardian Ambassador',
+        'profile.guardRank.honoree': 'Honored Guardian Officer',
         'ahaMoment.demoBadge': 'Sample data',
       };
       let text = map[key] ?? key;
@@ -127,6 +137,97 @@ describe('Defense hero stats', () => {
     expect(screen.getByText('Be one of the first guards!')).toBeTruthy();
     expect(screen.getByText('Complete a guard challenge.')).toBeTruthy();
     expect(screen.queryByText(/Your contribution/i)).toBeNull();
+  });
+
+  it('renders the rank badge with a calm next-rank line under Guard #N', async () => {
+    locale = 'en';
+    mockDefenseApi();
+
+    render(
+      <Wrapper>
+        <DefenseTab
+          isDemo={false}
+          onAuthPrompt={() => {}}
+          userDefenderNumber={12}
+          guardRankStats={{ totalIntercepts: 5, streakDays: 2, badgesUnlocked: 0 }}
+        />
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText('You are Guard #12')).toBeTruthy();
+    const rankLine = screen.getByTestId('defense-rank-line');
+    // trainee (拦截通道); 下一级 companion 三通道余量 5/28/6 → 拦截通道最近
+    expect(rankLine.textContent).toBe('🛡️ Trainee Guardian · 5 more guards to become Companion Guardian');
+  });
+
+  it('renders the sprout rank with a calm gap for an all-zero fresh guardian', async () => {
+    locale = 'en';
+    mockDefenseApi();
+
+    render(
+      <Wrapper>
+        <DefenseTab
+          isDemo={false}
+          onAuthPrompt={() => {}}
+          guardRankStats={{ totalIntercepts: 0, streakDays: 0, badgesUnlocked: 0 }}
+        />
+      </Wrapper>,
+    );
+
+    const rankLine = await screen.findByTestId('defense-rank-line');
+    expect(rankLine.textContent).toBe('🌱 Sprout · 3 more guards to become Trainee Guardian');
+  });
+
+  it('shows the tribute line instead of a gap at the top rank', async () => {
+    locale = 'en';
+    mockDefenseApi();
+
+    render(
+      <Wrapper>
+        <DefenseTab
+          isDemo={false}
+          onAuthPrompt={() => {}}
+          guardRankStats={{ totalIntercepts: 100, streakDays: 365, badgesUnlocked: 14 }}
+        />
+      </Wrapper>,
+    );
+
+    const rankLine = await screen.findByTestId('defense-rank-line');
+    expect(rankLine.textContent).toBe('👑 Honored Guardian Officer · Highest rank reached — this is honor.');
+  });
+
+  it('hides the rank line entirely when no rank stats are provided', async () => {
+    locale = 'en';
+    mockDefenseApi();
+
+    render(
+      <Wrapper>
+        <DefenseTab isDemo={false} onAuthPrompt={() => {}} userDefenderNumber={12} />
+      </Wrapper>,
+    );
+
+    expect(await screen.findByText('You are Guard #12')).toBeTruthy();
+    expect(screen.queryByTestId('defense-rank-line')).toBeNull();
+  });
+
+  it('keeps the rank line free of money and FOMO phrasing', async () => {
+    locale = 'en';
+    mockDefenseApi();
+
+    render(
+      <Wrapper>
+        <DefenseTab
+          isDemo={false}
+          onAuthPrompt={() => {}}
+          guardRankStats={{ totalIntercepts: 3, streakDays: 2, badgesUnlocked: 0 }}
+        />
+      </Wrapper>,
+    );
+
+    const rankLine = await screen.findByTestId('defense-rank-line');
+    expect(rankLine.textContent).not.toMatch(/[$¥€]|\bUSD\b|\bCNY\b/);
+    // 禁 FOMO: 金额焦虑 + 稀缺/损失句式都不出现在段位差距行
+    expect(rankLine.textContent).not.toMatch(/\bonly\b|about to (lose|be overtaken)|last chance|don'?t miss|hurry|running out|还差|即将|只剩|错过/i);
   });
 
   it('renders the same hero stats structure in demo mode', () => {

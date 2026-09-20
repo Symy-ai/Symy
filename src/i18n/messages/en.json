@@ -1991,9 +1991,9 @@
       "partner": "Guardian Partner",
       "ambassador": "Guardian Ambassador",
       "honoree": "Honored Guardian Officer",
-      "nextHintIntercepts": "Only {count} more intercepts to become {title}",
-      "nextHintDays": "Only {count} more guard days to become {title}",
-      "nextHintBadges": "Only {count} more badges to become {title}",
+      "nextHintIntercepts": "{count} more intercepts to become {title}",
+      "nextHintDays": "{count} more guard days to become {title}",
+      "nextHintBadges": "{count} more badges to become {title}",
       "levelPrefix": "Rank",
       "rankLine": "{count}+ intercepts stopped"
     },
@@ -2723,7 +2723,13 @@
     "heroStats": "Guardian stats",
     "hoursTogether": "Won back together: {hours}",
     "collectiveWonBack": "Won back together: {hours} · {guards} guards",
-    "founderLine": "You are Guard #{number}"
+    "founderLine": "You are Guard #{number}",
+    "rank": {
+      "gapIntercepts": "{count} more guards to become {title}",
+      "gapDays": "Guard {count} more days to become {title}",
+      "gapBadges": "Collect {count} more badges to become {title}",
+      "topLine": "Highest rank reached — this is honor."
+    }
   },
   "family": {
     "dashboard": "Family Symy",
