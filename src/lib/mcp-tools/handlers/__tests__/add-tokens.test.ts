@@ -133,6 +133,54 @@ describe('handleAddTokens', () => {
     expect(result.success).toBe(true);
   });
 
+  // 🔧 E4 fix (wool v8 §十四.3): 小数 amount 必须取整 — 虚拟 token 是整数资产, 2.5 落库非法
+  it.each([
+    [2.5, 3],   // ceil 慷慨方向 (激励语义)
+    [0.5, 1],   // 低于下界 → 钳到 1, ceil 不变 (下界边界回归)
+    [49.9, 50], // ceil 收进上界 (上界边界回归)
+  ])('fractional amount %j → integer tokenDelta %j (E4)', async (input, expected) => {
+    const ctx = makeCtx({
+      args: { amount: input, reason: 'pleasure' },
+    });
+
+    const result = await handleAddTokens(ctx);
+
+    expect(result.success).toBe(true);
+    const delta = vi.mocked(applyBuddyStateDelta).mock.calls[0]?.[1];
+    expect(delta?.tokenDelta).toBe(expected);
+    // 工具回执同步整数化 (消息/审计 metadata 同源 amount)
+    expect(result.result.tokensAdded).toBe(expected);
+  });
+
+  it('dedups 2.5 vs 2.50 — triggerId collapses to canonical integer key (E4)', async () => {
+    // 钉死同一小时桶: 两次调用跨小时边界会让 triggerId 天然不同 (flaky)
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-20T10:00:00Z'));
+    try {
+      vi.mocked(isDuplicateHealthEvent)
+        .mockResolvedValueOnce(false) // 首次提交 — 新 key
+        .mockResolvedValueOnce(true); // 二次提交 — 同 key 命中去重
+
+      const first = await handleAddTokens(makeCtx({ toolCallId: 'frac-1', userId: 'dedup-user', args: { amount: 2.5, reason: 'pleasure' } }));
+      const second = await handleAddTokens(makeCtx({ toolCallId: 'frac-2', userId: 'dedup-user', args: { amount: '2.50', reason: 'pleasure' } }));
+
+      expect(first.success).toBe(true);
+      expect(second.success).toBe(true);
+      expect(second.message).toContain('already awarded');
+      expect(applyBuddyStateDelta).toHaveBeenCalledOnce();
+
+      const calls = vi.mocked(isDuplicateHealthEvent).mock.calls;
+      expect(calls).toHaveLength(2);
+      const firstKey = calls[0]?.[1];
+      expect(firstKey).toBeDefined();
+      expect(calls[1]?.[1]).toBe(firstKey);
+      // 钉缺陷: triggerId 不得携带浮点串 (旧代码 "at:...:2.5:..." 含 ".")
+      expect(firstKey).not.toContain('.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('skips duplicate (same triggerId) — returns success with empty result', async () => {
     vi.mocked(isDuplicateHealthEvent).mockResolvedValueOnce(true);
 

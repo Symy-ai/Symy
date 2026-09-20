@@ -33,7 +33,9 @@ export async function handleAddTokens(ctx: MCPHandlerContext): Promise<MCPToolRe
   if (!Number.isFinite(rawAmount) || rawAmount < 1) {
     logger.warn(`[MCP] add_tokens: invalid amount=${args.amount}, using default 3`);
   }
-  const amount = Math.max(1, Math.min(50, Number.isFinite(rawAmount) ? rawAmount : 3)); // 🔧 默认 3, 限制 1-50
+  // 🔧 E4 fix (wool v8 §十四.3): 钳制后 ceil 取整 — 虚拟 token 是整数资产 (2.5 落库非法), 激励语义取慷慨方向;
+  //    ceil 后仍在 [1,50] 内不动钳制边界, 整数化同时让 triggerId 对 2.5/2.50/2.51 等浮点表示收敛为同一 canonical key
+  const amount = Math.ceil(Math.max(1, Math.min(50, Number.isFinite(rawAmount) ? rawAmount : 3))); // 默认 3, 限制 1-50
   const reason = String(args.reason || 'pleasure');
   const vitalityBoost = reason === 'survival' ? 2 : reason === 'growth' ? 5 : 3;
   const xpGain = reason === 'growth' ? 20 : reason === 'pleasure' ? 15 : 10;
