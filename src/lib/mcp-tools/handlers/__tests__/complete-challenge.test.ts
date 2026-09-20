@@ -1324,4 +1324,60 @@ describe('Legacy mode — no challenge_id', () => {
       expect.objectContaining({ eventType: 'challenge_completed' }),
     );
   });
+
+  // 🔧 wool v10 ① fix: legacy + failed 旧缺陷 — 直落 applyBuddyStateDelta 全额发奖
+  //    + challenge_completed 事件。现与 Mode A 同语义: 零奖励 + challenge_failed 审计。
+  it('status="failed" applies ZERO rewards — audit-only challenge_failed event, failed return shape', async () => {
+    const ctx = makeCtx({
+      args: { challenge_type: 'standard', saved_amount: 50, status: 'failed', locale: 'en' },
+    });
+
+    const result = await handleCompleteChallenge(ctx);
+
+    // buildFailedReturn normalized shape (same as Mode A fallback failed path)
+    expect(result.success).toBe(true);
+    expect(result.result.status).toBe('failed');
+    expect(result.result.rewardApplied).toBe(false);
+    expect(result.result.challengeId).toBeUndefined();
+    expect(result.result.atomic).toBe(false);
+    expect(result.message).toContain('Challenge failed');
+    expect(result.message).toContain('No rewards applied');
+    expect(result.message).toContain('record_impulse');
+
+    // 零奖励: 奖励入账与邀请奖励都不得触发
+    expect(applyBuddyStateDelta).not.toHaveBeenCalled();
+    expect(processInvitationReward).not.toHaveBeenCalled();
+
+    // 审计: challenge_failed 事件, 奖励 override 归零, triggerId 用 type+amount (无 challengeId)
+    expect(createHealthEvent).toHaveBeenCalledTimes(1);
+    expect(createHealthEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'challenge_failed',
+        triggerId: `cf:${USER_ID}:standard:50`,
+        vitalityOverride: 0,
+        tokenOverride: 0,
+      }),
+    );
+
+    // 陪伴效应走 failed 语义 (intimacy +1 / 'challenge_failed' trigger, 非 passed 的 +3)
+    expect(fireBumpIntimacy).toHaveBeenCalledWith(USER_ID, 1);
+    expect(fireAddProactiveMessageWithVariety).toHaveBeenCalledWith(USER_ID, 'challenge_failed');
+  });
+
+  it('status="failed": createHealthEvent throwing is non-blocking — still failed shape with healthEventCreated=false', async () => {
+    vi.mocked(createHealthEvent).mockRejectedValueOnce(new Error('health_events table missing'));
+
+    const ctx = makeCtx({
+      args: { challenge_type: 'standard', saved_amount: 50, status: 'failed', locale: 'en' },
+    });
+
+    const result = await handleCompleteChallenge(ctx);
+
+    expect(result.success).toBe(true);
+    expect(result.result.status).toBe('failed');
+    expect(result.result.rewardApplied).toBe(false);
+    expect(result.result.healthEventCreated).toBe(false);
+    // 审计失败也不得回退到发奖励
+    expect(applyBuddyStateDelta).not.toHaveBeenCalled();
+  });
 });

@@ -581,6 +581,51 @@ export async function handleCompleteChallenge(ctx: MCPHandlerContext): Promise<M
       }
     }
 
+    // 🔧 failed 模式 (Mode B legacy): 不发奖励, 只记 challenge_failed 审计 —
+    //    与 Mode A 同语义 (工具描述承诺 "status=failed: no rewards";
+    //    validation.ts P1-7 把 failed 发奖励定性为 reward-farming vector)。
+    //    旧缺陷: legacy 直落 applyBuddyStateDelta 全额发奖 + challenge_completed 事件。
+    if (challengeStatus === 'failed') {
+      let failedHealthEventOk = true;
+      try {
+        const { createHealthEvent } = await import('@/lib/health-impact');
+        await createHealthEvent({
+          userId,
+          eventType: 'challenge_failed',
+          triggerSource: 'chat_mcp',
+          triggerId: `cf:${userId}:${challengeType}:${savedAmount}`,
+          description: challengeFailedDesc(locale, challengeType, itemName, savedAmount, hourlyRate),
+          metadata: {
+            challengeType,
+            savedAmount,
+            itemName,
+            status: 'failed',
+            ...buildLifeHoursSnapshotMeta(savedAmount, hourlyRate),
+          },
+          vitalityOverride: 0,
+          tokenOverride: 0,
+        });
+      } catch (e) {
+        failedHealthEventOk = false;
+        logger.warn('[MCP] complete_challenge (legacy, failed): createHealthEvent threw:', e);
+      }
+
+      // 🔧 P0-5 fix: fireCompletionCompanionEffects NEVER throws
+      await fireCompletionCompanionEffects(userId, 'failed');
+
+      // 🔧 P0-3 fix: buildFailedReturn normalizes shape across paths
+      //    (challengeId 为 undefined — legacy 模式无 DB 行)
+      return buildFailedReturn({
+        toolCallId: id,
+        challengeId: undefined,
+        challengeType,
+        savedAmount,
+        itemName,
+        healthEventCreated: failedHealthEventOk,
+        atomic: false,
+      });
+    }
+
     // ============================================================
     // 原子更新 buddy_state (Mode B 走到这里 — 无 challengeId 的分支)
     // ============================================================
