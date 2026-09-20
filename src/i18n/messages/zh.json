@@ -1858,6 +1858,20 @@
     }
   },
   "profile": {
+    "settingsAdvanced": "高级设置",
+    "settingsAdvancedDesc": "不常用选项都在这里",
+    "plainIntensity": {
+      "gentle": "轻轻提醒你",
+      "balanced": "刚好像你的节奏",
+      "firm": "坚定帮你踩刹车",
+      "locked": "锁住这份决心"
+    },
+    "plainNightQuiet": "夜里别来打扰我",
+    "plainMonthlyCap": "每月最多花这些",
+    "plainPolicyPreview": "改完后会怎样",
+    "plainRuleOverride": "这次先听我的",
+    "plainDataExport": "把我的数据带走",
+    "plainDataManagement": "管理我的数据",
     "user": "你的 Symy",
     "spendingCapTitle": "月度守护目标",
     "spendingCapDesc": "设置你的月度购物守护目标。",

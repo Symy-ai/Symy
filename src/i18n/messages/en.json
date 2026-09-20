@@ -1858,6 +1858,20 @@
     }
   },
   "profile": {
+    "settingsAdvanced": "Advanced settings",
+    "settingsAdvancedDesc": "Everything else lives here",
+    "plainIntensity": {
+      "gentle": "A gentle nudge",
+      "balanced": "Just the right balance",
+      "firm": "A firm brake",
+      "locked": "Keeps your commitment locked"
+    },
+    "plainNightQuiet": "Keep nights quiet",
+    "plainMonthlyCap": "Set my monthly cap",
+    "plainPolicyPreview": "See what changes",
+    "plainRuleOverride": "Let me decide this time",
+    "plainDataExport": "Take my data with me",
+    "plainDataManagement": "Manage my data",
     "user": "Your Symy",
     "spendingCapTitle": "Monthly Guard Goal",
     "spendingCapDesc": "Set your monthly shopping guard goal.",
