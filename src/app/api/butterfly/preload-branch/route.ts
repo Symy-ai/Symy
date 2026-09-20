@@ -33,6 +33,10 @@ import { generateIllustration } from '@/features/butterfly/lib/illustration-engi
 import { dbToSession } from '@/features/butterfly/lib/db-mappers';
 import type { ButterflyChoice } from '@/features/butterfly/types';
 import { logger } from '@/lib/logger';
+// 🔧 D8 fix (batch92-b): distributed-lock 由 handler 内动态 import 改为静态 import —
+//    与 story 路由 handler 内动态 import 不同, 本路由在锁之外还依赖它做限流,
+//    静态导入消除每次请求的两段 await import, 语义不变。
+import { checkRateLimit, acquireLock, releaseLock } from '@/lib/distributed-lock';
 import { sendSSEData, closeSSE, SSE_HEADERS } from '@/lib/sse';
 import { NextResponse } from 'next/server';
 import { validateBody, isValidationError } from '@/lib/api-validation';
@@ -47,6 +51,11 @@ import type {
 // 🔧 BUG-245 fix: 添加 SSE 流超时保护，与 story 路由一致
 const STREAM_TIMEOUT_MS = 55_000; // 55s，留 5s buffer
 
+// 🔧 D8 fix (batch92-b): 幂等锁 TTL — 同 session 并发 preload 每次都跑 2-3 条 LLM 流
+//    （比 story 更贵的端点），双击即双倍成本。TTL 90s：覆盖 outline (30-60s) +
+//    流 (≤ STREAM_TIMEOUT_MS 55s) 的典型时长，短于 story 的 120s，不超 maxDuration=120。
+const PRELOAD_LOCK_TTL_MS = 90_000;
+
 // 🔧 PM-NEW-44 fix: maxDuration=120 — regenerateOutline + streamChapterStory 调 LLM,
 //    需要 30-60s, 但 Vercel 默认 10s 超时 → preload 永远失败。
 export const maxDuration = 120;
@@ -55,7 +64,6 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
   // 🔧 2026-07-15 (ARCH-2 #7 修复): Rate limiting on butterfly/preload-branch (LLM cost)
   //    preload-branch 运行 2-3 个 LLM 流 (regenerateOutline + streamChapterStory + generateChoiceOptions)
   //    比 story 更贵, 限制更严: 10/hour
-  const { checkRateLimit } = await import('@/lib/distributed-lock');
   const { allowed: rateLimitAllowed } = await checkRateLimit(`butterfly-preload:user:${user.id}`, 10, 60 * 60 * 1000);
   if (!rateLimitAllowed) {
     return NextResponse.json(
@@ -101,7 +109,27 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
 
   const session: ButterflySession = dbToSession(sessionRow);
 
+  // 🔧 D8 fix (batch92-b): 幂等锁 — 与 story 路由对称（batch91-a 同款契约：所有
+  //    early-return 路径 + 流生命周期结束都必须释放）。
+  const preloadLockKey = `preload:${body.sessionId}`;
+  const lockAcquired = await acquireLock(preloadLockKey, PRELOAD_LOCK_TTL_MS, true);
+  if (!lockAcquired) {
+    return NextResponse.json(
+      { error: 'Branch preview already in progress for this session. Please wait.' },
+      { status: 409 },
+    );
+  }
+
   try {
+    // 🔧 D8 fix (batch92-b): 请求在上游 LLM 调用前已断开 → 无人消费结果，直接释放锁返回
+    if (request.signal.aborted) {
+      await releaseLock(preloadLockKey).catch(() => {});
+      return NextResponse.json(
+        { error: 'Client closed request before branch preview started' },
+        { status: 499 },
+      );
+    }
+
     // Step 1: Create a virtual session with the selected choice applied
     const virtualSession: ButterflySession = {
       ...session,
@@ -124,6 +152,7 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     const nextChapter = newOutline.chapters.find(ch => ch.index === nextChapterIndex);
 
     if (!nextChapter) {
+      await releaseLock(preloadLockKey).catch(() => {});
       return NextResponse.json({ error: 'No next chapter' }, { status: 404 });
     }
 
@@ -154,6 +183,16 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
         }, STREAM_TIMEOUT_MS);
 
         // 🔧 2026-07-15 (ARCH-4 #13 修复): 客户端断开时取消上游 LLM 流
+        // 🔧 D8 fix (batch92-b): 注册监听前先查 signal.aborted — outline await 期间
+        //    断开的请求不会再触发 abort 事件，须在此显式拦截，否则上游流无人取消。
+        //    此 return 在下方 try/finally 之前，锁必须在此显式释放（91-a D1 教训）。
+        if (request.signal.aborted) {
+          logger.info('[Butterfly Preload] Client already disconnected before stream start, skipping upstream');
+          clearTimeout(timeoutId);
+          closeSSE(controller);
+          await releaseLock(preloadLockKey).catch(() => {});
+          return;
+        }
         const onClientAbort = () => {
           logger.info('[Butterfly Preload] Client disconnected, cancelling upstream LLM stream');
           clearTimeout(timeoutId);
@@ -162,7 +201,7 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
           }
           closeSSE(controller);
         };
-        request.signal.addEventListener('abort', onClientAbort);
+        request.signal.addEventListener('abort', onClientAbort, { once: true });
 
         try {
           // Send updated outline
@@ -320,6 +359,9 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
         } finally {
           // 🔧 2026-07-15 (ARCH-4 #13): 清理 abort 事件监听器防止泄漏
           request.signal.removeEventListener('abort', onClientAbort);
+          // 🔧 D8 fix (batch92-b): 流生命周期结束（正常完成/超时/客户端断开/出错）
+          //    统一在此释放幂等锁 — 与 story 路由 finally 释放同模式。
+          await releaseLock(preloadLockKey).catch(() => {});
         }
       },
     });
@@ -331,6 +373,8 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
   } catch (err) {
     // safe to ignore: returns 500 to client; error is logged for debugging
     logger.warn('[Butterfly Preload] Branch preview failed:', err);
+    // 🔧 D8 fix (batch92-b): outline 阶段抛错走此路径（流未建立），锁由这里释放
+    await releaseLock(preloadLockKey).catch(() => {});
     return NextResponse.json({ error: 'Preview generation failed' }, { status: 500 });
   }
 });
