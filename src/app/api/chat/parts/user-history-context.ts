@@ -96,7 +96,8 @@ export async function getUserHistoryContext(userId: string): Promise<string | nu
       .map(c => {
         const status = c.status === 'passed' ? 'resisted' : 'bought';
         const date = new Date(c.completed_at as string).toISOString().slice(0, 10);
-        return `${date}: ${c.item_name} $${c.amount} (${status})`;
+        const amount = typeof c.amount === 'number' && Number.isFinite(c.amount) ? `$${c.amount} ` : '';
+        return `${date}: ${c.item_name} ${amount}(${status})`.replace('  ', ' ');
       });
 
     // 格式化失败模式 (排除 dismissed)
@@ -138,7 +139,8 @@ export async function getUserHistoryContext(userId: string): Promise<string | nu
       const gachaLines = gachaPurchases.map((g: { decision_description: string; amount: number | null; platform: string | null; created_at: string; is_example: boolean }) => {
         const date = new Date(g.created_at).toISOString().slice(0, 10);
         const platformStr = g.platform ? ` on ${g.platform}` : '';
-        return `${date}: ${g.decision_description} $${g.amount}${platformStr} (bought — explored in butterfly)`;
+        const amount = typeof g.amount === 'number' && Number.isFinite(g.amount) ? `$${g.amount} ` : '';
+        return `${date}: ${g.decision_description} ${amount}${platformStr} (bought — explored in butterfly)`.replace('  ', ' ');
       });
       parts.push(`\nPurchases the user explored in butterfly gacha (these are likely REAL purchases they made and wanted to see the "reclaimed life" for):`);
       parts.push(gachaLines.join('\n'));

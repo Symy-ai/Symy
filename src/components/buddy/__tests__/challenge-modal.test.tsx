@@ -220,6 +220,11 @@ describe('calcChallengeProgress — real pipelines and the null contract', () =>
     // 口径同勋章: 钱真进基金才算, 空基金不算
     expect(calcChallengeProgress(defFor('milestone_first_seed'), inputs)).toBe(1);
   });
+
+  it('returns null when buddyState exists but an all-time field is missing (N7)', () => {
+    const inputs = { buddyState: makeBuddyState({ challengesCompleted: undefined }) };
+    expect(calcChallengeProgress(defFor('milestone_green_guardian'), inputs)).toBeNull();
+  });
 });
 
 describe('challengeMoneyLeft — in-app truth line per period', () => {

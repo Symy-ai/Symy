@@ -5,6 +5,7 @@ import {
 } from '@/lib/green-alternatives';
 import {
   buildChallengePrompt,
+  buildChallengeDisplayMessage,
   CHALLENGE_LENSES,
   selectLens,
 } from '../challenge-prompt';
@@ -89,5 +90,23 @@ describe('challenge-prompt green alternatives', () => {
 
     expect(prompt).not.toContain('greener path exists');
     expect(prompt).toContain(CHALLENGE_LENSES[1]);
+  });
+
+  it('cleans non-finite and negative money inputs out of the prompt (N9)', () => {
+    const prompt = buildChallengePrompt('Dirty amount', Number.NaN, 0);
+
+    expect(prompt).toContain('Dirty amount ($0.00)');
+    expect(prompt).toContain('$25/hour ≈ 0.0 hours');
+    expect(prompt).not.toContain('NaN');
+    expect(prompt).not.toContain('Infinity');
+
+    const negativePrompt = buildChallengePrompt('Negative amount', -12, Number.POSITIVE_INFINITY);
+    expect(negativePrompt).toContain('Negative amount ($0.00)');
+    expect(negativePrompt).not.toMatch(/-\d+\.\d{2}/);
+    expect(negativePrompt).not.toContain('Infinity');
+
+    expect(buildChallengeDisplayMessage('Dirty amount', Number.NaN)).toBe(
+      'I want to buy Dirty amount for $0.00. Challenge me!',
+    );
   });
 });
