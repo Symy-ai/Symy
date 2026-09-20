@@ -996,7 +996,7 @@
       "priceSeeLink": "价格见链接"
     },
     "websearch": {
-      "waiting": "货架里没有合适的，小象正在全网搜索、比较中…🐘"
+      "waiting": "货架里没有合适的，小象正在全网搜「{query}」、比较中…🐘"
     },
     "greenAlt": {
       "title": "更绿色的选择",

@@ -987,7 +987,7 @@
       "priceSeeLink": "See link for price"
     },
     "websearch": {
-      "waiting": "Nothing on the shelf fits — your elephant is searching the whole web and comparing for you… 🐘"
+      "waiting": "Nothing on the shelf fits — searching the web for \"{query}\" for you… 🐘"
     },
     "greenAlt": {
       "title": "Greener choices",
