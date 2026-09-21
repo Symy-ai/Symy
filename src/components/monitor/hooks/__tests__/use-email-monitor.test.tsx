@@ -375,6 +375,23 @@ describe('useEmailMonitor — scan', () => {
 });
 
 describe('useEmailMonitor — localStorage 初始化', () => {
+  it('旧全局 auto-sync 键迁移到用户级键并清理', async () => {
+    const legacySyncTime = String(Date.now() - 60 * 1000);
+    window.localStorage.removeItem(USER_SYNC_KEY);
+    window.localStorage.removeItem(USER_ENABLED_KEY);
+    window.localStorage.setItem(AUTO_SYNC_KEY, legacySyncTime);
+    window.localStorage.setItem(AUTO_SYNC_ENABLED_KEY, 'true');
+    stubDefaultLoad({ status: { connections: [conn('c1')] } });
+
+    const { result } = setupHook();
+
+    await waitFor(() => expect(result.current.autoSyncEnabled).toBe(true));
+    expect(window.localStorage.getItem(USER_SYNC_KEY)).toBe(legacySyncTime);
+    expect(window.localStorage.getItem(USER_ENABLED_KEY)).toBe('true');
+    expect(window.localStorage.getItem(AUTO_SYNC_KEY)).toBeNull();
+    expect(window.localStorage.getItem(AUTO_SYNC_ENABLED_KEY)).toBeNull();
+  });
+
   it('有效 lastSync → 恢复 lastSyncTimeRef, nextSyncIn 按剩余时间计算', async () => {
     window.localStorage.setItem(USER_SYNC_KEY, String(Date.now() - 60 * 1000)); // 1 分钟前同步过
     window.localStorage.setItem(USER_ENABLED_KEY, 'true');

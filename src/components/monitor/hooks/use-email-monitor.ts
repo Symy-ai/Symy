@@ -93,6 +93,23 @@ export function useEmailMonitor(
   //    根因修复: pendingDisconnectsRef 跟踪正在 disconnect 的 connectionId, loadEmailData 过滤掉它们。
   const pendingDisconnectsRef = useRef<Set<string>>(new Set());
 
+  function migrateLegacyAutoSyncKeys(userId?: string): void {
+    if (!userId) return;
+    const userSyncKey = `${AUTO_SYNC_KEY}_${userId}`;
+    const userEnabledKey = `${AUTO_SYNC_ENABLED_KEY}_${userId}`;
+    const legacySync = localStorage.getItem(AUTO_SYNC_KEY);
+    const legacyEnabled = localStorage.getItem(AUTO_SYNC_ENABLED_KEY);
+
+    if (localStorage.getItem(userSyncKey) === null && legacySync !== null) {
+      localStorage.setItem(userSyncKey, legacySync);
+    }
+    if (localStorage.getItem(userEnabledKey) === null && legacyEnabled !== null) {
+      localStorage.setItem(userEnabledKey, legacyEnabled);
+    }
+    localStorage.removeItem(AUTO_SYNC_KEY);
+    localStorage.removeItem(AUTO_SYNC_ENABLED_KEY);
+  }
+
   // Derived
   const hasActiveEmail = emailConnections.some((c) => c.status === 'active');
 
@@ -340,6 +357,7 @@ export function useEmailMonitor(
   //    根因修复: key 加 userId 后缀, 每个用户独立。
   useEffect(() => {
     try {
+      migrateLegacyAutoSyncKeys(user?.id);
       const userSyncKey = user?.id ? `${AUTO_SYNC_KEY}_${user.id}` : AUTO_SYNC_KEY;
       // 🔧 ARCH fix (Round 22 Frontend H5 — AUTO_SYNC_ENABLED_KEY 不分用户):
       //    旧代码用全局 key → User A 的 auto-sync 偏好被 User B 继承。

@@ -2159,7 +2159,63 @@ describe('Architecture Guards: Multi-step mutation must not rollback CAS guard (
 });
 
 // ============================================================
-// 23. Deleted files must not be restored — Round 3 dead code cleanup (2026-08-04)
+// 24. New localStorage keys must use the symy- prefix (batch112-d)
+// ============================================================
+
+describe('Architecture Guards: localStorage key namespace (batch112-d)', () => {
+  const LEGACY_KEY_ALLOWLIST = new Set([
+    'symy_admin_letta_favorites',
+    'symy_admin_sidebar_collapsed',
+    'symy_last_auto_sync',
+    'symy_auto_sync_enabled',
+    'symy_ref_code',
+    'symy_ref_code_recorded',
+    'symy_orientation_denied',
+  ]);
+  const LEGACY_CONSTANT_PREFIXES = ['symy_', 'symy:'];
+
+  it('new localStorage literal keys use the symy- prefix', () => {
+    const allFiles = [...findTsFiles(SRC_DIR), ...findTsxFiles(SRC_DIR)];
+    const violations: string[] = [];
+    const literalCallPattern = /localStorage\.(?:getItem|setItem|removeItem)\(\s*(['"])([^'"]+)\1/g;
+
+    for (const relPath of allFiles) {
+      const content = readSrcFile(relPath);
+      let match: RegExpExecArray | null;
+      while ((match = literalCallPattern.exec(content)) !== null) {
+        const key = match[2];
+        if (!key.startsWith('symy-') && !LEGACY_KEY_ALLOWLIST.has(key)) {
+          violations.push(`${relPath}: ${key}`);
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it('new localStorage key constants use the symy- prefix', () => {
+    const allFiles = [...findTsFiles(SRC_DIR), ...findTsxFiles(SRC_DIR)];
+    const violations: string[] = [];
+    const keyConstantPattern = /const\s+[A-Z0-9_]*(?:STORAGE_KEY|STORAGE_KEYS|KEY|KEYS|PREF|PREFIX)[A-Z0-9_]*\s*=\s*(['"`])(symy[^'"`]*)\1/g;
+
+    for (const relPath of allFiles) {
+      const content = readSrcFile(relPath);
+      if (!/(?:window\.)?localStorage\.(?:getItem|setItem|removeItem)/.test(content)) continue;
+      let match: RegExpExecArray | null;
+      while ((match = keyConstantPattern.exec(content)) !== null) {
+        const key = match[2];
+        if (!key.startsWith('symy-') && !LEGACY_CONSTANT_PREFIXES.some((prefix) => key.startsWith(prefix))) {
+          violations.push(`${relPath}: ${key}`);
+        }
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+});
+
+// ============================================================
+// 25. Deleted files must not be restored — Round 3 dead code cleanup (2026-08-04)
 // ============================================================
 
 describe('Architecture Guards: Deleted files must not be restored (Round 3)', () => {
@@ -2213,4 +2269,3 @@ describe('Architecture Guards: Deleted files must not be restored (Round 3)', ()
     });
   }
 });
-
