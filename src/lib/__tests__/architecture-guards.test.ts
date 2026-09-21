@@ -632,9 +632,11 @@ describe('Architecture Guards: server-only directive on admin service modules', 
           walk(full);
         } else if (entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
           const content = readFileSync(full, 'utf-8');
+          // batch114 修正：纯配置表(env-consumers)只是字符串声明 env 键名, 不实际读取；
+          // 真正的 admin 引用=调用 createAdminClient 或 process.env 读取 SERVICE_ROLE
           const referencesServiceRole =
-            content.includes('SUPABASE_SERVICE_ROLE_KEY') ||
             content.includes('createAdminClient') ||
+            content.includes('process.env.SUPABASE_SERVICE_ROLE_KEY') ||
             content.includes('admin service');
           const hasDirective = /^import 'server-only'/m.test(content);
           if (referencesServiceRole && !hasDirective) {
