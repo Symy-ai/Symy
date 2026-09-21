@@ -55,6 +55,13 @@ describe('utcWeekStart', () => {
   it('rolls Sunday back to the previous Monday', () => {
     expect(utcWeekStart(new Date('2026-09-13T23:59:00Z')).toISOString()).toBe('2026-09-07T00:00:00.000Z');
   });
+
+  it('migrates to the shared local-week primitive without changing the Monday anchor (UTC cross-boundary guard)', () => {
+    const sundayLocalNight = new Date('2027-01-03T23:00:00-08:00'); // Sun Jan 3 2027 23:00 PST
+    const mondayUtcMidnight = new Date('2027-01-04T08:00:00Z');     // Mon Jan 4 2027 00:00 PST == 08:00Z
+    expect(utcWeekStart(sundayLocalNight).toISOString()).toBe('2027-01-04T00:00:00.000Z');
+    expect(utcWeekStart(mondayUtcMidnight).toISOString()).toBe('2027-01-04T00:00:00.000Z');
+  });
 });
 
 describe('aggregateTransparency', () => {

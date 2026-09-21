@@ -11,6 +11,7 @@
  */
 
 import { logger } from '@/lib/logger';
+import { localWeekStart } from '@/lib/weekly-guard-compare';
 import type { PrepurchaseDecision, PrepurchaseDecisionRecord, PendingPrepurchaseFollowup } from '@/types/prepurchase';
 
 const DECISIONS_STORAGE_KEY = 'symy-prepurchase-decisions';
@@ -62,10 +63,9 @@ function writeDecisions(records: PrepurchaseDecisionRecord[]): void {
 
 /** 本周一 00:00 (本地时区) 的 ms epoch — 周累计的分桶边界 */
 export function weekStartOf(now: number = Date.now()): number {
-  const d = new Date(now);
+  const d = localWeekStart(new Date(now));
   d.setHours(0, 0, 0, 0);
-  const day = (d.getDay() + 6) % 7; // 周一=0
-  return d.getTime() - day * 24 * 60 * 60 * 1000;
+  return d.getTime();
 }
 
 /** 决策卡三选一确认时追加一条决策记录 (buy 只留痕不计金额; have_alt 计入周累计) */

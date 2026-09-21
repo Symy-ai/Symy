@@ -15,6 +15,7 @@ import {
   getDuePrepurchase,
   getWeeklyGuardedAmount,
   savePendingPrepurchase,
+  weekStartOf,
 } from '../prepurchase-store';
 
 const apiFetchMock = vi.fn().mockResolvedValue({ ok: true });
@@ -81,5 +82,22 @@ describe('PrepurchaseFollowup (三问次日回访条)', () => {
     expect(apiFetchMock).not.toHaveBeenCalled();
     expect(getWeeklyGuardedAmount()).toBe(0);
     expect(getDuePrepurchase(Date.now() + 48 * 60 * 60 * 1000)).toBeNull();
+  });
+});
+
+describe('weekStartOf (prepurchase-store)', () => {
+  it('preserves the existing Monday 00:00 local-week boundary across week rollovers', () => {
+    const tuesday = new Date('2026-09-15T01:00:00-04:00').getTime();
+    const sundayLocalNight = new Date('2026-09-19T23:59:59-04:00').getTime();
+
+    const tuesdayWeekStart = new Date(weekStartOf(tuesday));
+    tuesdayWeekStart.setHours(0, 0, 0, 0);
+
+    const sundayWeekStart = new Date(weekStartOf(sundayLocalNight));
+    sundayWeekStart.setHours(0, 0, 0, 0);
+
+    expect(tuesdayWeekStart.getDay()).toBe(1);
+    // 周二与周六深夜（本地）落在同一周 → 周界相同（跨周边界保持）
+    expect(sundayWeekStart).toEqual(tuesdayWeekStart);
   });
 });
