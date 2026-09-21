@@ -43,7 +43,7 @@ export function PushNotificationSettings({ t, isDemo }: PushNotificationSettings
   if (!isSupported) {
     return (
       <div className="px-4 py-2 rounded-xl bg-glass-fill border border-glass-border text-xs text-text-tertiary">
-        {t('profile.pushNotSupported', { defaultValue: 'Push notifications are not supported by your browser.' })}
+        {t('profile.pushNotSupported')}
       </div>
     );
   }
@@ -76,11 +76,11 @@ export function PushNotificationSettings({ t, isDemo }: PushNotificationSettings
     <div className="space-y-2">
       <SettingToggle
         icon={<Bell className="w-4 h-4" />}
-        label={t('profile.pushNotifications', { defaultValue: 'Push Notifications' })}
+        label={t('profile.pushNotifications')}
         description={
           isSubscribed
-            ? t('profile.pushSubscribed', { defaultValue: 'Symy will remind you to think before you spend.' })
-            : t('profile.pushNotSubscribed', { defaultValue: 'Get reminders to think before you spend.' })
+            ? t('profile.pushSubscribed')
+            : t('profile.pushNotSubscribed')
         }
         enabled={isSubscribed}
         onToggle={handleMasterToggle}

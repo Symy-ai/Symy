@@ -54,14 +54,14 @@ export function SettingsBasicSection({ isDemo, hasCustomName, displayName, onClo
       <div id="guard-anchor-chat" tabIndex={-1} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400/40">
         <SettingToggle
           icon={<Leaf className="w-4 h-4" />}
-          label={t('profile.greenPrefTitle', { defaultValue: 'Green Guardian Mode' })}
-          description={t('profile.greenPrefDesc', { defaultValue: 'Symy helps you pause impulse buys — every save is real money kept' })}
+          label={t('profile.greenPrefTitle')}
+          description={t('profile.greenPrefDesc')}
           enabled={greenPrefEnabled}
           onToggle={onToggleGreenPref}
         />
         {!greenPrefEnabled && (
           <p className="pl-[60px] pr-3 -mt-1 pb-1 text-xs text-text-tertiary italic">
-            {t('profile.greenPrefOffNote', { defaultValue: 'While off, Symy stops intercepting impulse buys and guardian medals pause. Switch it back on anytime.' })}
+            {t('profile.greenPrefOffNote')}
           </p>
         )}
       </div>
@@ -76,7 +76,7 @@ export function SettingsBasicSection({ isDemo, hasCustomName, displayName, onClo
       <SettingToggle
         icon={<Moon className="w-4 h-4" />}
         label={t('profile.darkMode')}
-        description={darkMode ? t('profile.darkModeOn', { defaultValue: 'Night mode on' }) : t('profile.lightModeOn', { defaultValue: 'Light mode on' })}
+        description={darkMode ? t('profile.darkModeOn') : t('profile.lightModeOn')}
         enabled={darkMode}
         onToggle={onToggleDarkMode}
         disabled={!resolvedTheme}
@@ -86,14 +86,14 @@ export function SettingsBasicSection({ isDemo, hasCustomName, displayName, onClo
       <div className="rounded-xl border border-glass-border divide-y divide-glass-border overflow-hidden">
         <SettingLink
           icon={<HelpCircle className="w-4 h-4" />}
-          label={t('profile.helpFaq', { defaultValue: 'Help & FAQ' })}
-          description={t('profile.helpFaqDesc', { defaultValue: 'Learn how to use Symy' })}
+          label={t('profile.helpFaq')}
+          description={t('profile.helpFaqDesc')}
           onClick={() => { onClose(); onOpenFaqDialog(); }}
         />
         <SettingLink
           icon={<MessageSquare className="w-4 h-4" />}
-          label={t('profile.sendFeedback', { defaultValue: 'Send Feedback' })}
-          description={t('profile.sendFeedbackDesc', { defaultValue: 'Share your thoughts' })}
+          label={t('profile.sendFeedback')}
+          description={t('profile.sendFeedbackDesc')}
           onClick={() => { window.open('mailto:hcl.mygtt@gmail.com?subject=Symy%20Feedback', '_blank', 'noopener,noreferrer'); }}
         />
       </div>

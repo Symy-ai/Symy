@@ -98,8 +98,8 @@ export function SettingsAdvancedSection({ isDemo, greenPrefEnabled, emailConnect
           <Shield className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-text-primary">{t('profile.settingsAdvanced', { defaultValue: 'Advanced settings' })}</p>
-          <p className="text-xs text-text-tertiary">{t('profile.settingsAdvancedDesc', { defaultValue: 'Everything else lives here' })}</p>
+          <p className="text-sm font-medium text-text-primary">{t('profile.settingsAdvanced')}</p>
+          <p className="text-xs text-text-tertiary">{t('profile.settingsAdvancedDesc')}</p>
         </div>
         <ChevronDown className={`w-4 h-4 text-text-tertiary flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>

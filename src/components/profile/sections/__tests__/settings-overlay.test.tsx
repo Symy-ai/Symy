@@ -17,8 +17,8 @@ import {
 import { _resetNightWindowStateForTest } from '@/hooks/use-night-window';
 import { _resetGuardScopeStateForTest } from '@/hooks/use-guard-scope';
 
-// i18n mock — t returns key or default value
-const t = vi.fn((key: string, opts?: { defaultValue?: string }) => opts?.defaultValue || key);
+// i18n mock — t returns the key, mirroring calls that rely on real dictionaries
+const t = vi.fn((key: string) => key);
 
 vi.mock('@/hooks/use-buddy-state-rq', () => ({
   useBuddyStateRQ: () => ({
@@ -162,11 +162,11 @@ describe('SettingsOverlay green preferences section', () => {
 
   it('renders green preferences block after expanding advanced', async () => {
     renderOverlay();
-    expect(screen.queryByText('Green Preferences')).toBeNull();
+    expect(screen.queryByText(/profile\.greenPrefsTitle/)).toBeNull();
     expandAdvanced();
-    expect(await screen.findByText('Green Preferences')).toBeDefined();
-    expect(screen.getByText('Alternative wording')).toBeDefined();
-    expect(screen.getByText('Push green theme')).toBeDefined();
+    expect(await screen.findByText(/profile\.greenPrefsTitle/)).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefsWordingLabel/)).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefsPushLabel/)).toBeDefined();
     // batch95-a 去重: 绿色偏好区不再有独立强度选择 (强度唯一入口 = guard-intensity-options)
     expect(screen.queryByText('Green intensity')).toBeNull();
     expect(await screen.findAllByTestId('guard-intensity-options')).toHaveLength(1);
@@ -175,37 +175,37 @@ describe('SettingsOverlay green preferences section', () => {
   it('shows reset confirmation dialog and resets on confirm after expanding advanced', async () => {
     renderOverlay();
     expandAdvanced();
-    fireEvent.click(await screen.findByText('Reset green preferences'));
-    expect(screen.getByText('Reset all green preferences?')).toBeDefined();
-    fireEvent.click(screen.getByText('Yes, reset'));
+    fireEvent.click(await screen.findByText(/profile\.greenPrefsResetLabel/));
+    expect(screen.getByText(/profile\.greenPrefsResetConfirm$/)).toBeDefined();
+    fireEvent.click(screen.getByText(/profile\.greenPrefsResetConfirmButton$/));
     expect(resetGreenPrefs).toHaveBeenCalled();
   });
 
   it('cancels reset confirmation', () => {
     renderOverlay();
     expandAdvanced();
-    fireEvent.click(screen.getByText('Reset green preferences'));
-    fireEvent.click(screen.getByText('Cancel'));
-    expect(screen.queryByText('Reset all green preferences?')).toBeNull();
+    fireEvent.click(screen.getByText(/profile\.greenPrefsResetLabel/));
+    fireEvent.click(screen.getByText(/common\.cancel/));
+    expect(screen.queryByText(/profile\.greenPrefsResetConfirm$/)).toBeNull();
     expect(resetGreenPrefs).not.toHaveBeenCalled();
   });
 
   it('toggles lock state via lock/unlock button', async () => {
     renderOverlay();
     expandAdvanced();
-    const lockButton = await screen.findByText('Unlock');
+    const lockButton = await screen.findByText(/profile\.greenPrefsUnlock/);
     fireEvent.click(lockButton);
-    expect(screen.getByText('Locked')).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefsLocked/)).toBeDefined();
     expect(setGreenPrefField).not.toHaveBeenCalled();
   });
 
   it('renders localized labels for zh locale', async () => {
     renderOverlay({ locale: "zh" });
     expandAdvanced();
-    // t mock returns defaultValue; structure coverage is what matters here.
-    expect(await screen.findByText('Green Preferences')).toBeDefined();
-    expect(screen.getByText('Alternative wording')).toBeDefined();
-    expect(screen.getByText('Push green theme')).toBeDefined();
+    // t mock returns keys; structure coverage is what matters here.
+    expect(await screen.findByText(/profile\.greenPrefsTitle/)).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefsWordingLabel/)).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefsPushLabel/)).toBeDefined();
     expect(screen.queryByText('Green intensity')).toBeNull();
   });
 });
@@ -288,11 +288,11 @@ describe('SettingsOverlay two-layer layout (batch95-a)', () => {
     renderOverlay();
     // 默认区: 小白核心行 — 昵称 / 守护开关 / 通知 / 深色 / 帮助反馈 (+清单卡)
     expect(screen.getByText(/profile\.displayNameDialogTitle/)).toBeDefined();
-    expect(screen.getByText('Green Guardian Mode')).toBeDefined();
+    expect(screen.getByText(/profile\.greenPrefTitle/)).toBeDefined();
     expect(screen.getByTestId('push-notifications')).toBeDefined();
-    expect(screen.getByText(/profile\.darkMode/)).toBeDefined();
-    expect(screen.getByText('Help & FAQ')).toBeDefined();
-    expect(screen.getByText('Send Feedback')).toBeDefined();
+    expect(screen.getByText(/^profile\.darkMode$/)).toBeDefined();
+    expect(screen.getByText(/^profile\.helpFaq$/)).toBeDefined();
+    expect(screen.getByText(/^profile\.sendFeedback$/)).toBeDefined();
     expect(await screen.findByTestId('inventory-list-card-disabled')).toBeDefined();
     // 折叠头默认可见
     expect(screen.getByTestId('settings-advanced-toggle')).toBeDefined();

@@ -78,9 +78,9 @@ export function GreenImpactDashboard() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-text-primary">
-            {t('profile.greenImpactTitle', { defaultValue: 'Green Impact' })}
+            {t('profile.greenImpactTitle')}
           </p>
-          <div className="mt-2 text-2xl font-black text-text-tertiary" aria-label={t('profile.greenImpactLoadError', { defaultValue: 'Could not load your impact data' })}>—</div>
+          <div className="mt-2 text-2xl font-black text-text-tertiary" aria-label={t('profile.greenImpactLoadError')}>—</div>
         </div>
       </div>
     );
@@ -97,36 +97,36 @@ export function GreenImpactDashboard() {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-text-primary">
-          {t('profile.greenImpactTitle', { defaultValue: 'Green Impact' })}
+          {t('profile.greenImpactTitle')}
         </p>
         <p className="text-xs text-text-tertiary mb-2">
-          {t('profile.greenImpactDesc', { defaultValue: 'Your cumulative guardian footprint, in human terms.' })}
+          {t('profile.greenImpactDesc')}
         </p>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <ImpactCard
             dataTestId="green-impact-items-saved"
             icon={<Leaf className="h-3.5 w-3.5" />}
             value={data.itemsSaved}
-            label={t('profile.greenImpactItemsSaved', { count: data.itemsSaved, defaultValue: '{count} items kept from landfill' })}
+            label={t('profile.greenImpactItemsSaved', { count: data.itemsSaved })}
           />
           <ImpactCard
             dataTestId="green-impact-hours-reclaimed"
             icon={<Leaf className="h-3.5 w-3.5" />}
             value={hoursLabel}
-            label={t('profile.greenImpactHoursReclaimed', { hours: hoursLabel, defaultValue: '{hours} hours of time saved' })}
+            label={t('profile.greenImpactHoursReclaimed', { hours: hoursLabel })}
           />
           <ImpactCard
             dataTestId="green-impact-current-streak"
             icon={<Leaf className="h-3.5 w-3.5" />}
             value={data.currentStreak}
-            suffix={t('common.days', { defaultValue: 'days' })}
-            label={t('profile.greenImpactCurrentStreak', { count: data.currentStreak, defaultValue: '{count}-day guard streak' })}
+            suffix={t('common.days')}
+            label={t('profile.greenImpactCurrentStreak', { count: data.currentStreak })}
           />
           <ImpactCard
             dataTestId="green-impact-green-alt-adoptions"
             icon={<Recycle className="h-3.5 w-3.5" />}
             value={adoptionTotal}
-            label={t('profile.greenImpactGreenAltAdoptions', { count: adoptionTotal, defaultValue: '{count} greener choices this season' })}
+            label={t('profile.greenImpactGreenAltAdoptions', { count: adoptionTotal })}
           />
         </div>
       </div>

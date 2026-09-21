@@ -17,12 +17,12 @@ const FIND_TIMEOUT = 15_000;
 
 const tEn = (key: string, params?: Record<string, string | number>) => {
   const translations: Record<string, string> = {
-    'profile.greenImpactTitle': 'Green Impact',
-    'profile.greenImpactDesc': 'Your cumulative guardian footprint, in human terms.',
-    'profile.greenImpactItemsSaved': '{count} items kept from landfill',
-    'profile.greenImpactHoursReclaimed': '{hours} hours of life reclaimed',
-    'profile.greenImpactCurrentStreak': '{count}-day guard streak',
-    'profile.greenImpactGreenAltAdoptions': '{count} greener choices this season',
+    'profile.greenImpactTitle': 'My better-choice record',
+    'profile.greenImpactDesc': 'See what these choices brought you',
+    'profile.greenImpactItemsSaved': '{count} fewer items bought',
+    'profile.greenImpactHoursReclaimed': '{hours} of free time gained',
+    'profile.greenImpactCurrentStreak': '{count} days in a row',
+    'profile.greenImpactGreenAltAdoptions': '{count} better swaps made',
     'profile.greenImpactLoadError': 'Could not load your impact data',
     'common.days': 'days',
   };
@@ -37,11 +37,11 @@ const tEn = (key: string, params?: Record<string, string | number>) => {
 
 const tZh = (key: string, params?: Record<string, string | number>) => {
   const translations: Record<string, string> = {
-    'profile.greenImpactTitle': '绿色影响',
-    'profile.greenImpactDesc': '你的累计守护足迹，用人的方式呈现。',
-    'profile.greenImpactItemsSaved': '{count} 件物品免于填埋',
-    'profile.greenImpactHoursReclaimed': '赢回了 {hours} 小时生命',
-    'profile.greenImpactCurrentStreak': '{count} 天守护连续',
+    'profile.greenImpactTitle': '我变好的记录',
+    'profile.greenImpactDesc': '看看这些选择给你带来了什么',
+    'profile.greenImpactItemsSaved': '少买 {count} 件物品',
+    'profile.greenImpactHoursReclaimed': '多出 {hours} 自由时间',
+    'profile.greenImpactCurrentStreak': '连续 {count} 天做到',
     'profile.greenImpactGreenAltAdoptions': '本季采纳绿色替代 {count} 次',
     'profile.greenImpactLoadError': '无法加载你的影响数据',
     'common.days': '天',
@@ -113,13 +113,13 @@ describe('GreenImpactDashboard (en)', () => {
     expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
     const itemsSaved = scope.getByTestId('green-impact-items-saved');
     expect(itemsSaved.textContent).toContain('47');
-    expect(itemsSaved.textContent).toContain('items kept from landfill');
+    expect(itemsSaved.textContent).toContain('fewer items bought');
     const hoursReclaimed = scope.getByTestId('green-impact-hours-reclaimed');
     expect(hoursReclaimed.textContent).toContain('23');
-    expect(hoursReclaimed.textContent).toContain('hours of life reclaimed');
+    expect(hoursReclaimed.textContent).toContain('of free time gained');
     const streak = scope.getByTestId('green-impact-current-streak');
     expect(streak.textContent).toContain('5');
-    expect(streak.textContent).toContain('day guard streak');
+    expect(streak.textContent).toContain('days in a row');
   });
 
   it('renders 4th card: adoption count from /api/green-alt/adoption (count only, zero amounts)', async () => {
@@ -138,7 +138,7 @@ describe('GreenImpactDashboard (en)', () => {
 
     const adoptions = await scope.findByTestId('green-impact-green-alt-adoptions', {}, { timeout: FIND_TIMEOUT });
     expect(adoptions.textContent).toContain('6');
-    expect(adoptions.textContent).toContain('greener choices this season');
+    expect(adoptions.textContent).toContain('better swaps made');
     // 金额红线: 123 (savedEstimate) 不得出现在任何指标卡
     expect(adoptions.textContent).not.toContain('123');
   });
@@ -194,11 +194,11 @@ describe('GreenImpactDashboard (zh)', () => {
 
     expect(await scope.findByTestId('green-impact-dashboard', {}, { timeout: FIND_TIMEOUT })).toBeDefined();
     expect(scope.getByTestId('green-impact-items-saved').textContent).toContain('47');
-    expect(scope.getByTestId('green-impact-items-saved').textContent).toContain('件物品免于填埋');
+    expect(scope.getByTestId('green-impact-items-saved').textContent).toContain('少买 47 件物品');
     expect(scope.getByTestId('green-impact-hours-reclaimed').textContent).toContain('23');
-    expect(scope.getByTestId('green-impact-hours-reclaimed').textContent).toContain('赢回了');
+    expect(scope.getByTestId('green-impact-hours-reclaimed').textContent).toContain('自由时间');
     expect(scope.getByTestId('green-impact-current-streak').textContent).toContain('5');
-    expect(scope.getByTestId('green-impact-current-streak').textContent).toContain('天守护连续');
+    expect(scope.getByTestId('green-impact-current-streak').textContent).toContain('天做到');
   });
 
   it('renders 4th card adoption count in zh', async () => {

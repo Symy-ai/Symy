@@ -45,12 +45,12 @@ export function GreenPreferencesSection({ t, locale }: { t: (key: string, opts?:
         <Wind className="w-4 h-4" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-text-primary">{t('profile.greenPrefsTitle', { defaultValue: 'Green Preferences' })}</p>
-        <p className="text-xs text-text-tertiary mb-2">{t('profile.greenPrefsDesc', { defaultValue: 'Lock your preferred green level, wording, and push theme — Symy and your buddy will use the same setup everywhere.' })}</p>
+        <p className="text-sm font-medium text-text-primary">{t('profile.greenPrefsTitle')}</p>
+        <p className="text-xs text-text-tertiary mb-2">{t('profile.greenPrefsDesc')}</p>
 
         <div className="space-y-2">
           <div>
-            <label className="text-[11px] font-medium text-text-secondary">{t('profile.greenPrefsWordingLabel', { defaultValue: 'Alternative wording' })}</label>
+            <label className="text-[11px] font-medium text-text-secondary">{t('profile.greenPrefsWordingLabel')}</label>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {WORDING_OPTIONS.map((opt) => (
                 <button
@@ -65,7 +65,7 @@ export function GreenPreferencesSection({ t, locale }: { t: (key: string, opts?:
           </div>
 
           <div>
-            <label className="text-[11px] font-medium text-text-secondary">{t('profile.greenPrefsPushLabel', { defaultValue: 'Push green theme' })}</label>
+            <label className="text-[11px] font-medium text-text-secondary">{t('profile.greenPrefsPushLabel')}</label>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {PUSH_OPTIONS.map((opt) => (
                 <button
@@ -86,26 +86,26 @@ export function GreenPreferencesSection({ t, locale }: { t: (key: string, opts?:
             disabled={saving}
             className="px-3 py-1.5 text-xs rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 text-white font-medium hover:from-cyan-400 hover:to-purple-400 transition-all disabled:opacity-50 cursor-pointer"
           >
-            {saving ? '...' : t('profile.greenPrefsSave', { defaultValue: 'Save' })}
+            {saving ? '...' : t('profile.greenPrefsSave')}
           </button>
           <button
             onClick={() => setLocked(!locked)}
             className={`px-3 py-1.5 text-xs rounded-lg border transition-colors cursor-pointer ${locked ? 'border-cyan-500/60 bg-cyan-500/10 text-text-primary' : 'border-glass-border bg-glass-fill text-text-secondary hover:bg-glass-hover'}`}
           >
-            {locked ? t('profile.greenPrefsLocked', { defaultValue: 'Locked' }) : t('profile.greenPrefsUnlock', { defaultValue: 'Unlock' })}
+            {locked ? t('profile.greenPrefsLocked') : t('profile.greenPrefsUnlock')}
           </button>
           <button
             onClick={() => setResetConfirmOpen(true)}
             className="px-3 py-1.5 text-xs rounded-lg border border-red-500/20 bg-red-500/5 text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
           >
-            {t('profile.greenPrefsResetLabel', { defaultValue: 'Reset green preferences' })}
+            {t('profile.greenPrefsResetLabel')}
           </button>
         </div>
 
         {resetConfirmOpen && (
           <div className="mt-3 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
-            <p className="text-xs font-medium text-text-primary">{t('profile.greenPrefsResetConfirm', { defaultValue: 'Reset all green preferences?' })}</p>
-            <p className="text-[11px] text-text-tertiary mt-1">{t('profile.greenPrefsResetConfirmDesc', { defaultValue: 'We will clear your saved green preferences, cache, and demo data. Your account, orders, and honors are not affected.' })}</p>
+            <p className="text-xs font-medium text-text-primary">{t('profile.greenPrefsResetConfirm')}</p>
+            <p className="text-[11px] text-text-tertiary mt-1">{t('profile.greenPrefsResetConfirmDesc')}</p>
             <div className="mt-2 flex gap-2">
               <button
                 onClick={() => {
@@ -114,13 +114,13 @@ export function GreenPreferencesSection({ t, locale }: { t: (key: string, opts?:
                 }}
                 className="px-3 py-1.5 text-xs rounded-lg bg-red-500/20 text-red-200 font-medium hover:bg-red-500/30 transition-colors cursor-pointer"
               >
-                {t('profile.greenPrefsResetConfirmButton', { defaultValue: 'Yes, reset' })}
+                {t('profile.greenPrefsResetConfirmButton')}
               </button>
               <button
                 onClick={() => setResetConfirmOpen(false)}
                 className="px-3 py-1.5 text-xs rounded-lg border border-glass-border bg-glass-fill text-text-secondary hover:bg-glass-hover transition-colors cursor-pointer"
               >
-                {t('common.cancel', { defaultValue: 'Cancel' })}
+                {t('common.cancel')}
               </button>
             </div>
           </div>

@@ -97,10 +97,10 @@ export function EmailConnectionSetting({
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-text-primary">
-              {t('profile.emailMonitorVIP', { defaultValue: '📧 Email Monitor (VIP Beta)' })}
+              {t('profile.emailMonitorVIP')}
             </p>
             <p className="text-xs text-amber-500/80">
-              {t('profile.emailMonitorVIPDesc', { defaultValue: 'Join the waitlist — Symy will guard your inbox soon' })}
+              {t('profile.emailMonitorVIPDesc')}
             </p>
           </div>
           <span className="text-[9px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full flex-shrink-0">

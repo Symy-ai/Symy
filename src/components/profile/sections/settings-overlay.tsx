@@ -65,9 +65,9 @@ export function SettingsOverlay({ isDemo, hasCustomName, displayName, onClose, o
           className="flex items-center gap-2 text-text-secondary hover:text-text-primary transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
-          <span className="text-sm font-medium">{t('common.back', { defaultValue: '← Back' })}</span>
+          <span className="text-sm font-medium">{t('common.back')}</span>
         </button>
-        <h2 className="text-base font-bold text-text-primary ml-4">{t('profile.settings', { defaultValue: 'Settings' })}</h2>
+        <h2 className="text-base font-bold text-text-primary ml-4">{t('profile.settings')}</h2>
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 custom-scrollbar">
         <SettingsBasicSection

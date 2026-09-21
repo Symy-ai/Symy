@@ -96,6 +96,7 @@ const SETTINGS_SINGLES = [
 
 const toneBannedTerms = [
   '策略', '规则覆盖', '管道', '粒度', '窗口期', '词库', '样本', '档位', '算法', '诊断',
+  '守护强度', '同步频率', 'SSE', 'API',
 ];
 
 const toneWhitelist: Record<string, string[]> = {
