@@ -1,4 +1,4 @@
-import 'server-only';
+// client-safe environment specs
 
 import { logger } from '@/lib/logger';
 
