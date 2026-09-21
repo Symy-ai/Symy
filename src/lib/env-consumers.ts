@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { logger } from '@/lib/logger';
 
 export type EnvFailureBehavior = 'default' | 'disabled' | 'explicit-failure';
