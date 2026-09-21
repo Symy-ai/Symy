@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import 'server-only';
 
+=======
+/* eslint-disable-next-line */
+import 'server-only';
+>>>>>>> e6cc23d (fix: env-consumers.ts server-only import fix)
 import { logger } from '@/lib/logger';
 
 export type EnvFailureBehavior = 'default' | 'disabled' | 'explicit-failure';
