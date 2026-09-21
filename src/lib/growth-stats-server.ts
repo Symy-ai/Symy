@@ -5,8 +5,8 @@
  * HTTP 壳在 api/community/growth-stats。页面与 API 共用本 loader,
  * 公开页服务端直调, 不自我 fetch。
  *
- * PostgREST 1000 行上限: .range() 翻页耗尽 (transparency-weekly-server
- * 修好的分页模式) — 每页不足 PAGE_SIZE 才停。
+ * PostgREST 1000 行上限: .range() 翻页耗尽 (readAllPages 单源, batch109-a
+ * 收敛自 transparency-weekly-server 的分页模式) — 每页不足一页才停。
  *
  * 降级红线: 聚合失败不抛 500 — loader 返回最后成功快照 (degraded:true),
  * 无缓存时返回零值骨架; API 恒 200, 公开页展示降级提示。零 DDL: 只读
@@ -17,14 +17,13 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
+import { AGGREGATE_PAGE_SIZE, readAllPages } from '@/lib/platform-aggregate';
 import {
   aggregateGrowthStats,
   emptyGrowthStats,
   type GrowthInvitationRow,
   type GrowthStats,
 } from '@/lib/growth-stats';
-
-const PAGE_SIZE = 1000;
 
 /** 进程内最后一份成功快照 (serverless 实例级; generatedAt 保留数据年龄) */
 let memorySnapshot: GrowthStats | null = null;
@@ -42,19 +41,17 @@ export async function loadGrowthStats(now: Date = new Date()): Promise<GrowthSta
   }
 
   try {
-    const rows: GrowthInvitationRow[] = [];
-    for (let offset = 0; ; offset += PAGE_SIZE) {
-      const { data, error } = await supabase
+    // PostgREST 1000 行上限: readAllPages 翻页耗尽 (b90a 钉的停页规则, 单源; batch109-a)
+    const { rows, error } = await readAllPages<GrowthInvitationRow>((offset) =>
+      supabase
         .from('invitations')
         .select('referrer_user_id,status')
         .order('created_at', { ascending: true })
-        .range(offset, offset + PAGE_SIZE - 1);
-      if (error) {
-        logger.warn('[growth-stats] invitations query failed:', error.message);
-        return memorySnapshot ? { ...memorySnapshot, degraded: true } : emptyGrowthStats(now, true);
-      }
-      rows.push(...(data ?? []));
-      if ((data ?? []).length < PAGE_SIZE) break;
+        .range(offset, offset + AGGREGATE_PAGE_SIZE - 1),
+    );
+    if (error) {
+      logger.warn('[growth-stats] invitations query failed:', error.message);
+      return memorySnapshot ? { ...memorySnapshot, degraded: true } : emptyGrowthStats(now, true);
     }
     const snapshot = aggregateGrowthStats(rows, now);
     memorySnapshot = snapshot;

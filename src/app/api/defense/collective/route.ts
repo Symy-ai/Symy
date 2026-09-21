@@ -6,12 +6,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
+import { collectiveStatsFromSnapshot } from '@/lib/platform-aggregate';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 
 export async function GET() {
   const snapshot = await loadTransparencyWeekly();
   return NextResponse.json(
-    { hours: snapshot.hoursWon.total, guards: snapshot.guards },
+    collectiveStatsFromSnapshot(snapshot),
     { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600' } },
   );
 }

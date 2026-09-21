@@ -12,6 +12,7 @@ import 'server-only';
 
 import { createAdminClient } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
+import { AGGREGATE_PAGE_SIZE, readAllPages } from '@/lib/platform-aggregate';
 import type { Json } from '@/lib/database.types';
 import {
   aggregateTransparency,
@@ -23,18 +24,9 @@ import {
 /** 进程内最后一份成功快照 (serverless 实例级, 表缺失时的最低保障) */
 let memorySnapshot: TransparencySnapshot | null = null;
 
-const PAGE_SIZE = 1000;
-
 /** @测试钩子 — 定型降级阶梯用例的进程内缓存初态 */
 export function __setTransparencyMemoryCacheForTests(snapshot: TransparencySnapshot | null): void {
   memorySnapshot = snapshot;
-}
-
-async function readPage<T>(
-  query: PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
-): Promise<{ rows: T[]; error: { message: string } | null }> {
-  const { data, error } = await query;
-  return { rows: data ?? [], error };
 }
 
 async function readPersistedSnapshot(supabase: NonNullable<ReturnType<typeof createAdminClient>['supabase']>): Promise<TransparencySnapshot | null> {
@@ -87,62 +79,30 @@ export async function loadTransparencyWeekly(now: Date = new Date()): Promise<Tr
   }
 
   try {
+    // PostgREST 1000 行上限: readAllPages 翻页耗尽 (b90a 钉的停页规则, 单源)
     const [health, passed, profiles] = await Promise.all([
-      (async () => {
-        const rows: Array<{
-          id: string;
-          user_id: string;
-          event_type: string;
-          trigger_id: string | null;
-          created_at: string;
-        }> = [];
-        for (let offset = 0; ; offset += PAGE_SIZE) {
-          const page = await readPage(
-            supabase
-              .from('health_events')
-              .select('id,user_id,event_type,trigger_id,created_at')
-              .order('created_at', { ascending: true })
-              .range(offset, offset + PAGE_SIZE - 1),
-          );
-          if (page.error) return { error: page.error, rows };
-          rows.push(...page.rows);
-          if (page.rows.length < PAGE_SIZE) break;
-        }
-        return { error: null, rows };
-      })(),
-      (async () => {
-        const rows: Array<{ amount: number | string | null; completed_at: string | null }> = [];
-        for (let offset = 0; ; offset += PAGE_SIZE) {
-          const page = await readPage(
-            supabase
-              .from('active_challenges')
-              .select('amount,completed_at')
-              .eq('status', 'passed')
-              .order('completed_at', { ascending: true })
-              .range(offset, offset + PAGE_SIZE - 1),
-          );
-          if (page.error) return { error: page.error, rows };
-          rows.push(...page.rows);
-          if (page.rows.length < PAGE_SIZE) break;
-        }
-        return { error: null, rows };
-      })(),
-      (async () => {
-        const rows: Array<{ created_at: string | null }> = [];
-        for (let offset = 0; ; offset += PAGE_SIZE) {
-          const page = await readPage(
-            supabase
-              .from('profiles')
-              .select('created_at')
-              .order('created_at', { ascending: true })
-              .range(offset, offset + PAGE_SIZE - 1),
-          );
-          if (page.error) return { error: page.error, rows };
-          rows.push(...page.rows);
-          if (page.rows.length < PAGE_SIZE) break;
-        }
-        return { error: null, rows };
-      })(),
+      readAllPages((offset) =>
+        supabase
+          .from('health_events')
+          .select('id,user_id,event_type,trigger_id,created_at')
+          .order('created_at', { ascending: true })
+          .range(offset, offset + AGGREGATE_PAGE_SIZE - 1),
+      ),
+      readAllPages((offset) =>
+        supabase
+          .from('active_challenges')
+          .select('amount,completed_at')
+          .eq('status', 'passed')
+          .order('completed_at', { ascending: true })
+          .range(offset, offset + AGGREGATE_PAGE_SIZE - 1),
+      ),
+      readAllPages((offset) =>
+        supabase
+          .from('profiles')
+          .select('created_at')
+          .order('created_at', { ascending: true })
+          .range(offset, offset + AGGREGATE_PAGE_SIZE - 1),
+      ),
     ]);
 
     const error = health.error ?? passed.error ?? profiles.error;

@@ -14,7 +14,12 @@
  * 红线 (owner 09-06): 只读聚合 — 输出键面无任何个人字段, 邀请奖励 50 代币
  * 是积分不是钱, reward_amount 永不出现在输出。数据不足照常返回真实小数字
  * (诚实原则: K=0.3 就显示 0.3, 不美化不设阈值门槛)。
+ *
+ * batch109-a: round2 纪律收敛 platform-aggregate 单源 (b90a: 双边一致靠同一
+ * 实现); 本文件保留 K 因子域的键面契约与聚合逻辑, 键面零变化。
  */
+
+import { round2 } from '@/lib/platform-aggregate';
 
 /** invitations 聚合输入最小列 — 只为去重与状态计数, 单行不离开服务端 */
 export interface GrowthInvitationRow {
@@ -36,10 +41,6 @@ export interface GrowthStats {
   generatedAt: string;
   /** true = 聚合失败, 当前值来自缓存/降级快照而非实时聚合 */
   degraded: boolean;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }
 
 /** 零值骨架 — 聚合不可用时的最终兜底 (仍满足键面契约, 诚实为零不做样) */
