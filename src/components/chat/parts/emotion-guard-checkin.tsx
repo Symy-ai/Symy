@@ -14,6 +14,10 @@
 import { useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { reportEmotionGuardEvent, resolveEmotionWait } from '@/components/chat/parts/emotion-guard-store';
+import {
+  FollowupAnsweredBubble,
+  FollowupBubble,
+} from '@/components/chat/parts/followup-bubble';
 import type { PendingEmotionWait } from '@/types/emotion-guard';
 
 export interface EmotionGuardCheckinProps {
@@ -34,37 +38,27 @@ export function EmotionGuardCheckin({ record }: EmotionGuardCheckinProps) {
 
   if (answered) {
     return (
-      <div
-        data-testid="emotion-guard-checkin-answered"
-        className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border text-[11px] text-text-secondary"
-      >
-        🐘 {answered === 'want' ? t('chat.emotionGuard.checkinBlessing') : t('chat.emotionGuard.checkinSuccessNote')}
-      </div>
+      <FollowupAnsweredBubble
+        testId="emotion-guard-checkin-answered"
+        answer={answered === 'want' ? t('chat.emotionGuard.checkinBlessing') : t('chat.emotionGuard.checkinSuccessNote')}
+      />
     );
   }
 
   return (
-    <div
-      data-testid="emotion-guard-checkin-bar"
-      className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border flex items-center gap-2"
-    >
-      <span className="text-[11px] text-text-secondary flex-1 min-w-0">
-        🐘 {t('chat.emotionGuard.checkinQuestion')}
-      </span>
-      <button
-        onClick={() => answer(true)}
-        className="shrink-0 px-2.5 py-1 rounded-lg border border-glass-border bg-glass-fill text-[11px] font-medium text-text-primary transition-colors hover:border-emerald-500/30"
-        data-testid="emotion-guard-checkin-want"
-      >
-        {t('chat.emotionGuard.checkinStillWant')}
-      </button>
-      <button
-        onClick={() => answer(false)}
-        className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
-        data-testid="emotion-guard-checkin-passed"
-      >
-        {t('chat.emotionGuard.checkinLetGo')}
-      </button>
-    </div>
+    <FollowupBubble
+      testId="emotion-guard-checkin-bar"
+      question={t('chat.emotionGuard.checkinQuestion')}
+      primaryAction={{
+        label: t('chat.emotionGuard.checkinStillWant'),
+        testId: 'emotion-guard-checkin-want',
+        onSelect: () => answer(true),
+      }}
+      secondaryAction={{
+        label: t('chat.emotionGuard.checkinLetGo'),
+        testId: 'emotion-guard-checkin-passed',
+        onSelect: () => answer(false),
+      }}
+    />
   );
 }

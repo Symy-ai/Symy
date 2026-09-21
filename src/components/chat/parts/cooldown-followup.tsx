@@ -16,6 +16,10 @@ import { useI18n } from '@/i18n/provider';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { resolvePendingCooldown } from '@/components/chat/parts/cooldown-store';
+import {
+  FollowupAnsweredBubble,
+  FollowupBubble,
+} from '@/components/chat/parts/followup-bubble';
 import type { PendingCooldownFollowup } from '@/types/cooldown';
 
 export interface CooldownFollowupProps {
@@ -53,37 +57,31 @@ export function CooldownFollowup({ record }: CooldownFollowupProps) {
 
   if (answered) {
     return (
-      <div
-        data-testid="cooldown-followup-answered"
-        className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border text-[11px] text-text-secondary"
-      >
-        🐘 {answered === 'want' ? t('chat.cooldown.followupBlessing') : t('chat.cooldown.followupSuccessNote')}
-      </div>
+      <FollowupAnsweredBubble
+        testId="cooldown-followup-answered"
+        answer={answered === 'want' ? t('chat.cooldown.followupBlessing') : t('chat.cooldown.followupSuccessNote')}
+      />
     );
   }
 
   return (
-    <div
-      data-testid="cooldown-followup"
-      className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border flex items-center gap-2"
-    >
-      <span className="text-[11px] text-text-secondary flex-1 min-w-0">
-        🐘 {t('chat.cooldown.followupQuestion', { item: itemName })}
-      </span>
-      <button
-        onClick={() => answer(true)}
-        className="shrink-0 px-2.5 py-1 rounded-lg border border-glass-border bg-glass-fill text-[11px] font-medium text-text-primary transition-colors hover:border-emerald-500/30"
-        data-testid="cooldown-followup-want"
-      >
-        {t('chat.cooldown.followupStillWant')}
-      </button>
-      <button
-        onClick={() => answer(false)}
-        className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
-        data-testid="cooldown-followup-passed"
-      >
-        {t('chat.cooldown.followupLetGo')}
-      </button>
-    </div>
+    <FollowupBubble
+      testId="cooldown-followup"
+      question={t('chat.cooldown.followupQuestion', { item: itemName })}
+      primaryAction={{
+        label: t('chat.cooldown.followupStillWant'),
+        testId: 'cooldown-followup-want',
+        onSelect: () => {
+          void answer(true);
+        },
+      }}
+      secondaryAction={{
+        label: t('chat.cooldown.followupLetGo'),
+        testId: 'cooldown-followup-passed',
+        onSelect: () => {
+          void answer(false);
+        },
+      }}
+    />
   );
 }

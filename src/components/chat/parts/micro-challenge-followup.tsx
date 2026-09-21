@@ -15,6 +15,7 @@ import { useI18n } from '@/i18n/provider';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { resolvePendingMicroChallenge, type PendingMicroChallenge } from '@/components/chat/parts/micro-challenge-store';
+import { FollowupBubble } from '@/components/chat/parts/followup-bubble';
 
 export interface MicroChallengeFollowupProps {
   record: PendingMicroChallenge;
@@ -46,27 +47,23 @@ export function MicroChallengeFollowup({ record, onResolved }: MicroChallengeFol
   };
 
   return (
-    <div
-      data-testid="micro-challenge-followup"
-      className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border flex items-center gap-2"
-    >
-      <span className="text-[11px] text-text-secondary flex-1 min-w-0">
-        🐘 {t('chat.microChallenge.followupQuestion')}
-      </span>
-      <button
-        onClick={() => answer('passed')}
-        className="shrink-0 px-2.5 py-1 rounded-lg border border-glass-border bg-glass-fill text-[11px] font-medium text-text-primary transition-colors hover:border-emerald-500/30"
-        data-testid="micro-challenge-followup-kept"
-      >
-        {t('chat.microChallenge.followupKept')}
-      </button>
-      <button
-        onClick={() => answer('failed')}
-        className="shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
-        data-testid="micro-challenge-followup-slipped"
-      >
-        {t('chat.microChallenge.followupSlipped')}
-      </button>
-    </div>
+    <FollowupBubble
+      testId="micro-challenge-followup"
+      question={t('chat.microChallenge.followupQuestion')}
+      primaryAction={{
+        label: t('chat.microChallenge.followupKept'),
+        testId: 'micro-challenge-followup-kept',
+        onSelect: () => {
+          void answer('passed');
+        },
+      }}
+      secondaryAction={{
+        label: t('chat.microChallenge.followupSlipped'),
+        testId: 'micro-challenge-followup-slipped',
+        onSelect: () => {
+          void answer('failed');
+        },
+      }}
+    />
   );
 }

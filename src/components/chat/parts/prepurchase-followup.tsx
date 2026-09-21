@@ -21,6 +21,10 @@ import {
   recordPrepurchaseLetGo,
   resolvePendingPrepurchase,
 } from '@/components/chat/parts/prepurchase-store';
+import {
+  FollowupAnsweredBubble,
+  FollowupBubble,
+} from '@/components/chat/parts/followup-bubble';
 import type { PendingPrepurchaseFollowup } from '@/types/prepurchase';
 
 export interface PrepurchaseFollowupProps {
@@ -64,37 +68,31 @@ export function PrepurchaseFollowup({ record, onResolved }: PrepurchaseFollowupP
 
   if (answered) {
     return (
-      <div
-        data-testid="prepurchase-followup-answered"
-        className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border text-[11px] text-text-secondary"
-      >
-        🐘 {answered === 'want' ? t('chat.prepurchase.followupBlessing') : t('chat.prepurchase.followupSuccessNote')}
-      </div>
+      <FollowupAnsweredBubble
+        testId="prepurchase-followup-answered"
+        answer={answered === 'want' ? t('chat.prepurchase.followupBlessing') : t('chat.prepurchase.followupSuccessNote')}
+      />
     );
   }
 
   return (
-    <div
-      data-testid="prepurchase-followup"
-      className="mt-2 mx-3 p-2.5 rounded-xl bg-glass-fill border border-glass-border flex items-center gap-2"
-    >
-      <span className="text-[11px] text-text-secondary flex-1 min-w-0">
-        🐘 {t('chat.prepurchase.followupQuestion', { item: itemName })}
-      </span>
-      <button
-        onClick={() => answer(true)}
-        className="shrink-0 px-2.5 py-1 rounded-lg border border-glass-border bg-glass-fill text-[11px] font-medium text-text-primary transition-colors hover:border-emerald-500/30"
-        data-testid="prepurchase-followup-want"
-      >
-        {t('chat.prepurchase.followupStillWant')}
-      </button>
-      <button
-        onClick={() => answer(false)}
-        className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
-        data-testid="prepurchase-followup-passed"
-      >
-        {t('chat.prepurchase.followupLetGo')}
-      </button>
-    </div>
+    <FollowupBubble
+      testId="prepurchase-followup"
+      question={t('chat.prepurchase.followupQuestion', { item: itemName })}
+      primaryAction={{
+        label: t('chat.prepurchase.followupStillWant'),
+        testId: 'prepurchase-followup-want',
+        onSelect: () => {
+          void answer(true);
+        },
+      }}
+      secondaryAction={{
+        label: t('chat.prepurchase.followupLetGo'),
+        testId: 'prepurchase-followup-passed',
+        onSelect: () => {
+          void answer(false);
+        },
+      }}
+    />
   );
 }
