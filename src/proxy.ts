@@ -12,6 +12,11 @@ const isNonLocalizedRoute = (pathname: string) =>
   pathname.startsWith('/admin/') ||
   pathname === '/butterfly-demo' ||
   pathname.startsWith('/butterfly-demo/') ||
+  // 🤝 契约签署系统 (Symy-ai/covenant 独立项目): /covenant 由 next.config rewrites
+  //    beforeFiles 代理到 covenant 项目；此处必须放行，否则 next-intl 307 到
+  //    /en/covenant 品牌页，签名 API 请求被打断（2026-09-22 实测事故）。
+  pathname === '/covenant' ||
+  pathname.startsWith('/covenant/') ||
   pathname.startsWith('/api/');
 
 // Strip the leading locale segment (/en, /zh) so auth checks work on the app path.
