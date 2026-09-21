@@ -213,6 +213,41 @@ export const DEMO_CHAT_MESSAGES: ChatMessage[] = [
   },
 ];
 
+export function getLocalizedDemoChatMessages(t: TFn): ChatMessage[] {
+  return [
+    {
+      id: 'demo-1',
+      role: 'assistant',
+      content: t('demo.chatHistory.streak'),
+      timestamp: new Date(Date.now() - 3600000 * 4),
+    },
+    {
+      id: 'demo-2',
+      role: 'user',
+      content: t('demo.chatHistory.projectorUser'),
+      timestamp: new Date(Date.now() - 3600000 * 3.8),
+    },
+    {
+      id: 'demo-3',
+      role: 'assistant',
+      content: t('demo.chatHistory.projectorAssistant'),
+      timestamp: new Date(Date.now() - 3600000 * 3.6),
+    },
+    {
+      id: 'demo-4',
+      role: 'user',
+      content: t('demo.chatHistory.lateNightUser'),
+      timestamp: new Date(Date.now() - 3600000 * 3.4),
+    },
+    {
+      id: 'demo-5',
+      role: 'assistant',
+      content: t('demo.chatHistory.lateNightAssistant'),
+      timestamp: new Date(Date.now() - 3600000 * 3.2),
+    },
+  ];
+}
+
 // ====== Demo Impulse Events (for Insights tab) ======
 export const DEMO_IMPULSE_EVENTS: ImpulseEvent[] = [
   {

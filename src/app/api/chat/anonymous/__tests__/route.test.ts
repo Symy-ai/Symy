@@ -12,6 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import enMessages from '@/i18n/messages/en.json';
+import zhMessages from '@/i18n/messages/zh.json';
 import { POST } from '../route';
 
 // Mock dependencies
@@ -44,6 +46,7 @@ vi.mock('@/lib/sse', () => ({
 import { checkRateLimit } from '@/lib/distributed-lock';
 import { callZAIChatCompletionStream } from '@/lib/zai-sdk-types';
 import { isZAIAvailable } from '@/lib/z-ai-config';
+import { sendSSEData } from '@/lib/sse';
 
 // Helper: create mock NextRequest
 function createMockRequest(body: unknown): NextRequest {
@@ -125,5 +128,49 @@ describe('Anonymous Chat API', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('text/event-stream');
     expect(res.headers.get('X-Anonymous-Remaining')).toBe('2');
+  });
+
+  it.each([
+    { locale: 'en' as const, expected: enMessages.demo.aiResponses.default },
+    { locale: 'zh' as const, expected: zhMessages.demo.aiResponses.default },
+  ])('passes a $locale prompt that answers first and keeps one trailing signup sentence', async ({ locale, expected }) => {
+    const req = createMockRequest({
+      messages: [{ role: 'user', content: locale === 'zh' ? '我想买一双跑鞋' : 'I want to buy running shoes' }],
+      challengeContext: {
+        itemName: locale === 'zh' ? '跑鞋' : 'running shoes',
+        amount: 120,
+      },
+      locale,
+    });
+
+    await POST(req);
+
+    const [messages, options] = vi.mocked(callZAIChatCompletionStream).mock.calls[0];
+    const systemPrompt = messages[0].content;
+    expect(systemPrompt).toContain(locale === 'zh' ? '先真实回应用户这一句话' : 'First answer the user\'s actual message');
+    expect(systemPrompt).toContain(locale === 'zh' ? '必须全程使用简体中文' : 'Always write in English');
+    expect(systemPrompt).toContain(locale === 'zh' ? '只允许在整段回复的最后加一句: "想让我记住你的守护记录？注册就行。"' : 'Add exactly one sign-up sentence at the very end: "Want me to remember your guard record? Sign up."');
+    expect(systemPrompt).not.toContain(expected);
+    expect(options?.temperature).toBe(0.7);
+  });
+
+  it('appends exactly one locale-matched signup sentence to fallback replies', async () => {
+    vi.mocked(isZAIAvailable).mockReturnValue(false);
+    const req = createMockRequest({
+      messages: [{ role: 'user', content: '我想买一双跑鞋' }],
+      locale: 'zh',
+      challengeContext: { itemName: '跑鞋', amount: 100 },
+    });
+
+    const response = await POST(req) as Response;
+    expect(response.status).toBe(200);
+    const reply = vi.mocked(sendSSEData).mock.calls
+      .map(([, data]) => (data as { content?: string }).content ?? '')
+      .join('');
+
+    expect(reply).toMatch(/[\u4e00-\u9fff]/);
+    expect(reply).toContain('跑鞋');
+    expect(reply.endsWith('想让我记住你的守护记录？注册就行。')).toBe(true);
+    expect(reply.match(/注册/g)?.length).toBe(1);
   });
 });

@@ -2,7 +2,7 @@
 
 import { useRef, useEffect } from 'react';
 import { ChatMessage } from '@/components/chat-bubble';
-import { DEMO_CHAT_MESSAGES } from '@/lib/demo-data';
+import { getLocalizedDemoChatMessages } from '@/lib/demo-data';
 
 interface UseChatDemoModeArgs {
   isDemo: boolean;
@@ -10,13 +10,14 @@ interface UseChatDemoModeArgs {
   messages: ChatMessage[];
   setMessagesSync: (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
   setIsLoadingHistory: (value: boolean) => void;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }
 
 /**
  * ======== Demo 模式：预填充演示对话 + demo→auth 过渡清理 ========
  * (原为 chat-tab.tsx 内联逻辑 — File Split Wave 1 纯搬运, 行为零变化)
  */
-export function useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadingHistory }: UseChatDemoModeArgs) {
+export function useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadingHistory, t }: UseChatDemoModeArgs) {
   // Demo mode timer refs for cleanup on unmount
   const demoReplyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoAuthTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -29,8 +30,8 @@ export function useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadin
   const prevIsDemoRef = useRef(isDemo);
   useEffect(() => {
     if (isDemo && messages.length === 0) {
-      // 预填充 demo 消息 (mount-only, setMessagesSync 后续被 effect 重跑需 skip)
-      setMessagesSync(DEMO_CHAT_MESSAGES as ChatMessage[]);
+      // 预填充 demo 消息 (functional guard: t 变化但 messages prop 仍旧空时不重复写入)
+      setMessagesSync(prev => (prev.length === 0 ? getLocalizedDemoChatMessages(t) : prev));
 
       setIsLoadingHistory(false);
       // 🔧 BUG-auto-send fix: Keep ref in sync with state
@@ -42,8 +43,7 @@ export function useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadin
       setMessagesSync([]);
     }
     prevIsDemoRef.current = isDemo;
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional omission (stable ref/callback)
-  }, [isDemo]);
+  }, [isDemo, t, messages.length, setMessagesSync, setIsLoadingHistory]);
 
   return { demoReplyTimerRef, demoAuthTimerRef, demoMsgCountRef, DEMO_FREE_MESSAGES };
 }

@@ -177,7 +177,7 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   }, []);
 
   // ======== Demo 模式 (预填充 + demo→auth 清理 + demo timers/counter) ========
-  const { demoReplyTimerRef, demoAuthTimerRef, demoMsgCountRef, DEMO_FREE_MESSAGES } = useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadingHistory });
+  const { demoReplyTimerRef, demoAuthTimerRef, demoMsgCountRef, DEMO_FREE_MESSAGES } = useChatDemoMode({ isDemo, messages, setMessagesSync, setIsLoadingHistory, t });
 
   // 替换原来的 mcpNotifications state + handleMCPResults useCallback
   const { mcpNotifications, handleMCPResults, addMcpNotification } = useMcpNotifications({

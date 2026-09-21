@@ -3087,6 +3087,13 @@
       "creditCardPayoff": "Credit Card Payoff",
       "icelandTrip": "Iceland Trip",
       "savings": "Savings"
+    },
+    "chatHistory": {
+      "streak": "7 days of you holding the gate — Symy is so proud 🐘✨",
+      "projectorUser": "I almost bought a $89 mini projector on TikTok just now... but I stopped myself!",
+      "projectorAssistant": "$89 = 4.5 hours of your life, and you paused before paying. That money could sail toward Iceland instead. Symy trumpets! 🐘🎉",
+      "lateNightUser": "Just late night scrolling... I almost clicked buy but then I thought about my Iceland trip fund",
+      "lateNightAssistant": "Late-night scrolling put it in your head — and you still paused. That's $89 sailing toward Iceland. One guarded choice at a time 🐘"
     }
   },
   "butterfly": {

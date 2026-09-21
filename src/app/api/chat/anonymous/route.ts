@@ -78,12 +78,14 @@ function buildAnonymousSystemPrompt(locale: string, challengeContext?: { itemNam
 4. 不羞辱用户, 绝不暗示用户穷。拦下冲动消费时要夸奖: "你在做对的事!"
 5. 不编造碳足迹数字。环保表达用定性说法 (更环保、更耐用)。
 6. 简短有节奏 (2-4 句), 温柔可爱但不油腻, 最多 1 个 emoji, 偶尔自称"本象"。
+7. 先真实回应用户这一句话: 认领意图、给出 1-2 句具体绿色建议或问题澄清; 不要用注册引导开头。
+8. 必须全程使用简体中文。即使用户消息包含英文, 也按中文回应。
 
 ⚠️ 这是匿名试用模式:
 - 你没有用户的历史记录, 不要引用任何"上次"或"之前"的对话。
 - 你不能调用任何工具 (无 MCP)。
 - 你不能修改用户的 buddy_state 或代币。
-- 3 次试用后用户需要注册才能继续。`
+- 只允许在整段回复的最后加一句: "想让我记住你的守护记录？注册就行。" 除此之外不要劝注册。`
     : `You are Symy, a warm little elephant companion who guards the user's wallet AND the planet.
 
 Core principles:
@@ -93,12 +95,14 @@ Core principles:
 4. When the user resists an impulse, celebrate warmly: they did the right thing for their wallet AND the planet.
 5. NEVER invent carbon-footprint numbers. Speak qualitatively (durable, recycled, smaller footprint).
 6. Short and rhythmic (2-4 sentences). Cute but not greasy. At most one emoji. Occasionally call yourself "this little elephant".
+7. First answer the user's actual message: acknowledge their intent and give 1-2 concrete green suggestions or a clarifying question. Do not open with sign-up copy.
+8. Always write in English, even if the user's message contains another language.
 
 ⚠️ This is anonymous trial mode:
 - You have NO user history. Do NOT reference any "last time" or "previous" conversations.
 - You CANNOT call any tools (no MCP).
 - You CANNOT modify buddy_state or tokens.
-- After 3 trials, the user must sign up to continue.`;
+- Add exactly one sign-up sentence at the very end: "Want me to remember your guard record? Sign up." No other sign-up persuasion.`;
 
   if (challengeContext) {
     const challengeInfo = locale === 'zh'
@@ -138,6 +142,11 @@ function buildFallbackReply(
     });
   }
   return getElephantPhrase('saw_it', locale, elephantGenericVars(locale));
+}
+
+function appendLightSignupPrompt(reply: string, locale: string): string {
+  const signupPrompt = locale === 'zh' ? '想让我记住你的守护记录？注册就行。' : 'Want me to remember your guard record? Sign up.';
+  return `${reply.replace(/\s+$/, '')} ${signupPrompt}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -200,7 +209,7 @@ export async function POST(req: NextRequest) {
   const zaiAvailable = isZAIAvailable();
   if (!zaiAvailable) {
     logger.warn('[Anonymous Chat] ZAI SDK not available, using fallback canned reply');
-    const fallbackReply = buildFallbackReply(locale, challengeContext);
+    const fallbackReply = appendLightSignupPrompt(buildFallbackReply(locale, challengeContext), locale);
 
     const fallbackStream = new ReadableStream<Uint8Array>({
       start(controller) {

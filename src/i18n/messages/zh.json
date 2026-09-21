@@ -3087,6 +3087,13 @@
       "creditCardPayoff": "信用卡还款",
       "icelandTrip": "冰岛之旅",
       "savings": "储蓄"
+    },
+    "chatHistory": {
+      "streak": "你已经连续 7 天守住了这扇门，Symy 真为你骄傲 🐘✨",
+      "projectorUser": "我刚才差点在 TikTok 买下 89 美元的迷你投影仪……不过我停下来了！",
+      "projectorAssistant": "89 美元约等于你 4.5 小时的生命，而你在付款前停了下来。这笔钱可以继续驶向冰岛之旅。Symy 为你欢呼！🐘🎉",
+      "lateNightUser": "只是深夜刷着视频……我差点点击购买，后来想起了我的冰岛旅行基金",
+      "lateNightAssistant": "深夜视频把这个念头放进你脑海里——你还是停下来了。这 89 美元正在驶向冰岛。一次一个被守护的选择 🐘"
     }
   },
   "butterfly": {
