@@ -28,6 +28,10 @@ import type { ActiveChallenge } from './use-challenge-actions';
 // 🔧 ARCH fix (Round 8): Use canonical ImpulseContext type
 import type { ImpulseContext } from '@/types/impulse-context';
 import { consumeAIStream, handleToolEvent } from './consume-ai-stream';
+import {
+  createStreamErrorRetry,
+  markStreamErrorBubble,
+} from './parts/stream-error-retry';
 
 /** sendMessageLockRef 内部结构 (与 use-chat-actions.ts 结构兼容, 本地定义避免 circular dep) */
 interface SendMessageLockState {
@@ -235,21 +239,18 @@ export async function retryAiResponseImpl({
             // → AI 流返回 error 时, retryAiResponse 会用空 accumulatedReply 保存 fallback 消息
             // → 但不标记 isError, 用户无法再次重试
             const errorContent = rawContent || t('chat.aiFallback.connectionInterrupted');
-            setMessagesSync((prev) => prev.map((m) =>
-              m.id === assistantMsgId
-                ? { ...m, content: errorContent, isError: true, onRetry: () => {
-                    setMessagesSync((prev2) => prev2.filter((m2) => m2.id !== assistantMsgId));
-                    const lastUserMsg = messagesRef.current.filter((m2) => m2.role === 'user').pop();
-                    if (lastUserMsg) {
-                      // 🔧 P0-3 fix (2026-07-11): 强制释放可能残留的锁 + setTimeout(0) 避免竞态
-                      sendMessageLockRef.current.inProgress = false;
-                      setTimeout(() => {
-                        retryAiResponseRef.current?.(lastUserMsg.content);
-                      }, 0);
-                    }
-                  }}
-                : m
-            ));
+            markStreamErrorBubble({
+              assistantMsgId,
+              content: errorContent,
+              setMessagesSync,
+              onRetry: createStreamErrorRetry({
+                assistantMsgId,
+                setMessagesSync,
+                messagesRef,
+                sendMessageLockRef,
+                retryAiResponseRef,
+              }),
+            });
             return true; // 信号: break consumeAIStream 的 for + while 循环 (匹配原 `return;` 跳出流式循环)
           },
           // retryAiResponse 不处理剩余 buffer (保留原行为 — 不传 onRemainingBufferToken)
@@ -259,22 +260,20 @@ export async function retryAiResponseImpl({
         // 🔧 ARCH fix (Round 70): errorDisplayed → return 跳过 finalMsg 处理 (匹配原 SSE 循环内的 `return;`)
         if (streamResult.errorDisplayed) return;
             if (streamResult.readerError) {
-              setMessagesSync((prev) => prev.map((m) =>
-                m.id === assistantMsgId
-                  ? {
-                      ...m,
-                      content: accumulatedReply,
-                      isError: true,
-                      onRetry: () => {
-                        if (sendMessageLockRef.current.inProgress) return;
-                        setMessagesSync((prev2) => prev2.filter((m2) => m2.id !== assistantMsgId));
-                        setTimeout(() => {
-                          retryAiResponseRef.current?.(_lastUserContent);
-                        }, 0);
-                      },
-                    }
-                  : m
-              ));
+              markStreamErrorBubble({
+                assistantMsgId,
+                content: accumulatedReply,
+                setMessagesSync,
+                onRetry: createStreamErrorRetry({
+                  assistantMsgId,
+                  setMessagesSync,
+                  sendMessageLockRef,
+                  retryAiResponseRef,
+                  retryContent: _lastUserContent,
+                  releaseLockBeforeRetry: false,
+                  skipIfLocked: true,
+                }),
+              });
               return;
             }
       }
@@ -312,20 +311,18 @@ export async function retryAiResponseImpl({
     const errorContent = isAuthError
       ? t('chat.aiFallback.authRequired', { defaultValue: 'Sign in to chat with Symy and save your conversations.' })
       : t('chat.aiFallback.aiError');
-    const retryContent = _lastUserContent;
-    setMessagesSync((prev) => prev.map((m) =>
-      m.id === assistantMsgId
-        ? { ...m, content: errorContent, isError: true, onRetry: () => {
-            // 删除错误消息, 重新尝试
-            setMessagesSync((prev2) => prev2.filter((m2) => m2.id !== assistantMsgId));
-            // 🔧 P0-3 fix (2026-07-11): 强制释放可能残留的锁 + setTimeout(0) 避免竞态
-            sendMessageLockRef.current.inProgress = false;
-            setTimeout(() => {
-              retryAiResponseRef.current?.(retryContent);
-            }, 0);
-          } }
-        : m
-    ));
+    markStreamErrorBubble({
+      assistantMsgId,
+      content: errorContent,
+      setMessagesSync,
+      onRetry: createStreamErrorRetry({
+        assistantMsgId,
+        setMessagesSync,
+        sendMessageLockRef,
+        retryAiResponseRef,
+        retryContent: _lastUserContent,
+      }),
+    });
   } finally {
     // 🔧 ARCH fix (Give Up race): 同 sendMessage — 用代际判断避免新调用被旧 finally 清理。
     if (abortController && abortRef.current === abortController) {
