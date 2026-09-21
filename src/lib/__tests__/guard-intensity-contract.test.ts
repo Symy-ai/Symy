@@ -40,7 +40,7 @@ describe('guard intensity persistence read contract', () => {
     expect(getGuardIntensity()).toBe('balanced');
   });
 
-  it('reads the current four-level green-prefs intensity contract', () => {
+  it('ignores the legacy green-prefs intensity field while preserving active prefs', () => {
     window.localStorage.setItem(
       'symy-green-prefs',
       JSON.stringify({ intensity: 'firm', wording: 'neutral', pushTheme: 'seasonal' }),
@@ -48,32 +48,22 @@ describe('guard intensity persistence read contract', () => {
     _resetGreenPrefsStateForTest();
 
     expect(getGreenPrefs()).toEqual({
-      intensity: 'firm',
       wording: 'neutral',
       pushTheme: 'seasonal',
     });
   });
 
-  it('keeps the current green-prefs defaults and permissive merge', () => {
+  it('keeps the current green-prefs defaults and ignores unknown fields', () => {
     window.localStorage.setItem('symy-green-prefs', JSON.stringify({ intensity: 'lockdown' }));
     _resetGreenPrefsStateForTest();
 
     expect(getGreenPrefs()).toEqual({
-      intensity: 'lockdown',
       wording: 'cheerful',
       pushTheme: 'none',
     });
 
     _resetGreenPrefsStateForTest();
     window.localStorage.removeItem('symy-green-prefs');
-    expect(getGreenPrefs().intensity).toBe('balanced');
-  });
-
-  it('accepts every current green-prefs intensity value', () => {
-    for (const intensity of ['balanced', 'gentle', 'firm', 'lockdown'] as const) {
-      window.localStorage.setItem('symy-green-prefs', JSON.stringify({ intensity }));
-      _resetGreenPrefsStateForTest();
-      expect(getGreenPrefs().intensity).toBe(intensity);
-    }
+    expect('intensity' in getGreenPrefs()).toBe(false);
   });
 });

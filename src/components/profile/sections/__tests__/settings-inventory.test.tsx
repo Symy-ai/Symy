@@ -107,6 +107,18 @@ vi.mock('../../delete-account-button', () => ({
   DeleteAccountButton: () => <section data-testid="delete-account-button" />,
 }));
 
+vi.mock('../../guard-policy-preview-setting', () => ({
+  GuardPolicyPreviewSetting: () => <section data-testid="guard-policy-preview-setting" />,
+}));
+
+vi.mock('../../guard-rule-coverage-setting', () => ({
+  GuardRuleCoverageSetting: () => <section data-testid="guard-rule-coverage-setting" />,
+}));
+
+vi.mock('../../green-impact-dashboard', () => ({
+  GreenImpactDashboard: () => <section data-testid="green-impact-dashboard" />,
+}));
+
 vi.mock('@/lib/inventory-client', () => ({
   INVENTORY_QUERY_KEY: ['inventory'],
   fetchInventory: () => Promise.resolve({ inventoryEnabled: false, items: [] }),

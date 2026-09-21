@@ -22,20 +22,20 @@ describe('useGreenPrefs', () => {
 
   it('returns defaults when nothing stored', () => {
     const { result } = renderHook(() => useGreenPrefs());
-    expect(result.current.prefs).toEqual({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' });
+    expect(result.current.prefs).toEqual({ wording: 'cheerful', pushTheme: 'none' });
   });
 
   it('setGreenPrefField updates a single field', () => {
     const { result } = renderHook(() => useGreenPrefs());
-    act(() => result.current.setGreenPrefField('intensity', 'firm'));
-    expect(result.current.prefs.intensity).toBe('firm');
-    expect(result.current.prefs.wording).toBe('cheerful');
+    act(() => result.current.setGreenPrefField('wording', 'direct'));
+    expect(result.current.prefs.wording).toBe('direct');
+    expect(result.current.prefs.pushTheme).toBe('none');
   });
 
   it('setGreenPrefs replaces all fields', () => {
     const { result } = renderHook(() => useGreenPrefs());
-    act(() => result.current.setGreenPrefs({ intensity: 'lockdown', wording: 'direct', pushTheme: 'guardian' }));
-    expect(result.current.prefs).toEqual({ intensity: 'lockdown', wording: 'direct', pushTheme: 'guardian' });
+    act(() => result.current.setGreenPrefs({ wording: 'direct', pushTheme: 'guardian' }));
+    expect(result.current.prefs).toEqual({ wording: 'direct', pushTheme: 'guardian' });
   });
 
   it('subscribers receive updates', () => {
@@ -46,17 +46,17 @@ describe('useGreenPrefs', () => {
   });
 
   it('resetGreenPrefs clears known keys and restores defaults', () => {
-    storage['symy-green-prefs'] = JSON.stringify({ intensity: 'lockdown', wording: 'direct', pushTheme: 'guardian' });
+    storage['symy-green-prefs'] = JSON.stringify({ intensity: 'legacy', wording: 'direct', pushTheme: 'guardian' });
     storage['symy-onboarding-seen'] = 'true';
     const { result } = renderHook(() => useGreenPrefs());
     act(() => result.current.resetGreenPrefs());
-    expect(result.current.prefs).toEqual({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' });
-    expect(storage['symy-green-prefs']).toBe(JSON.stringify({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' }));
+    expect(result.current.prefs).toEqual({ wording: 'cheerful', pushTheme: 'none' });
+    expect(storage['symy-green-prefs']).toBe(JSON.stringify({ wording: 'cheerful', pushTheme: 'none' }));
     expect(storage['symy-onboarding-seen']).toBeUndefined();
   });
 
   it('does not delete unrelated localStorage keys on reset', () => {
-    storage['symy-green-prefs'] = JSON.stringify({ intensity: 'gentle', wording: 'neutral', pushTheme: 'none' });
+    storage['symy-green-prefs'] = JSON.stringify({ intensity: 'legacy', wording: 'neutral', pushTheme: 'none' });
     storage['some-other-key'] = 'keep-me';
     const { result } = renderHook(() => useGreenPrefs());
     act(() => result.current.resetGreenPrefs());
@@ -66,6 +66,6 @@ describe('useGreenPrefs', () => {
   it('survives localStorage quota/read failures by returning defaults', () => {
     storage['symy-green-prefs'] = 'not-json';
     const { result } = renderHook(() => useGreenPrefs());
-    expect(result.current.prefs).toEqual({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' });
+    expect(result.current.prefs).toEqual({ wording: 'cheerful', pushTheme: 'none' });
   });
 });

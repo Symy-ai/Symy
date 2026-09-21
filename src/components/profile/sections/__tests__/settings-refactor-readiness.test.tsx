@@ -38,8 +38,10 @@ vi.mock('@/hooks/use-green-prefs', () => ({
     setGreenPrefField: vi.fn(),
     resetGreenPrefs: vi.fn(() => Promise.resolve()),
   }),
-  // batch95-a: overlay 挂载时跑强度收敛迁移, 迁移模块消费这两个导出
+  // batch95-a: overlay 挂载时跑强度收敛迁移, 迁移模块消费这些导出
   getGreenPrefs: () => ({ intensity: 'balanced', wording: 'cheerful', pushTheme: 'none' }),
+  getLegacyGreenIntensity: () => undefined,
+  clearLegacyGreenIntensity: () => undefined,
   setGreenPrefField: vi.fn(),
 }));
 vi.mock('@/hooks/use-hourly-rate', () => ({
@@ -76,6 +78,9 @@ vi.mock('../push-notification-settings', () => ({
 }));
 vi.mock('@/components/profile/profile-parts', () => ({
   EmailConnectionSetting: () => <div data-testid="email-connection" />,
+}));
+vi.mock('../green-impact-dashboard', () => ({
+  GreenImpactDashboard: () => <div data-testid="green-impact-dashboard" />,
 }));
 vi.mock('../delete-account-button', () => ({
   DeleteAccountButton: () => <div data-testid="delete-account" />,
@@ -138,7 +143,7 @@ describe('SettingsOverlay refactor readiness', () => {
     expect(overlay.getByText('Send Feedback')).toBeDefined();
   });
 
-  it('keeps advanced guard settings collapsed until disclosed (inverted after refactor)', () => {
+  it('keeps advanced guard settings collapsed until disclosed (inverted after refactor)', async () => {
     renderOverlay();
     // 折叠态: 高级守护设置不挂载
     expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
@@ -148,9 +153,9 @@ describe('SettingsOverlay refactor readiness', () => {
 
     // 展开后照常渲染; 绿色强度选择器已被去重删除 (99-d), 不随展开回来
     fireEvent.click(screen.getByTestId('settings-advanced-toggle'));
-    expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
-    expect(screen.getByTestId('night-window-options')).toBeDefined();
-    expect(screen.getByTestId('guard-scope-categories')).toBeDefined();
+    expect(await screen.findByTestId('guard-intensity-options')).toBeDefined();
+    expect(await screen.findByTestId('night-window-options')).toBeDefined();
+    expect(await screen.findByTestId('guard-scope-categories')).toBeDefined();
     expect(screen.queryByText('Green intensity')).toBeNull();
   });
 });

@@ -1,17 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
+import dynamic from 'next/dynamic';
 import type { EmailConnection } from '@/lib/supabase';
 import type { Locale } from '@/i18n/config';
-// 🎚️ batch61-a: 守护风格向导 — 设置页内二级 overlay, 关闭后回到原位
-import { GuardianStyleWizard } from './guardian-style-wizard';
 // 🪶 batch95-a: 小白三问减法重设计 — overlay 只做编排, 默认区/高级折叠区各一小文件
 import { SettingsBasicSection } from './settings-basic-section';
 import { SettingsAdvancedSection } from './settings-advanced-section';
 // 🛡️ batch95-a (99-d 定案): 强度双系统收敛 — 历史绿色偏好 firm/lockdown 一次性映射 strict
 import { migrateLegacyGreenIntensity } from '@/hooks/use-guard-intensity';
+
+// 🎚️ batch61-a: 守护风格向导 — 二级 overlay 只在打开时加载 (batch108-b 懒加载)
+const GuardianStyleWizard = dynamic(() => import('./guardian-style-wizard').then((module) => module.GuardianStyleWizard));
 
 interface SettingsOverlayProps {
   isDemo: boolean;
@@ -99,7 +101,9 @@ export function SettingsOverlay({ isDemo, hasCustomName, displayName, onClose, o
       </div>
     </div>
     {showGuardianStyleWizard && (
-      <GuardianStyleWizard isDemo={isDemo} onClose={() => setShowGuardianStyleWizard(false)} />
+      <Suspense fallback={null}>
+        <GuardianStyleWizard isDemo={isDemo} onClose={() => setShowGuardianStyleWizard(false)} />
+      </Suspense>
     )}
     </>
   );

@@ -8,8 +8,8 @@
  *    - Load balancer health check
  *
  * 检查项:
- * 1. Supabase 连接 (简单 SELECT 1)
- * 2. (可选) Letta API 可达性 — 不阻塞, 只在超时时报 degraded
+ * 1. Supabase 业务数据面 (profiles 最小只读探针, 4.5s 超时)
+ * 2. (可选) Letta 配置 — 未配置时 skip, 不代表 API 不可达
  *
  * 返回:
  * - 200 { status: 'ok' } — 所有检查通过
@@ -34,10 +34,13 @@ export async function GET() {
       checks.supabase = 'fail';
       allOk = false;
     } else {
-      // 简单查询 — 用 RPC get_available_agent_count (如果不存在说明 DB 可达但 RPC 没有)
-      const { error: rpcError } = await supabase.rpc('get_available_agent_count');
-      if (rpcError && rpcError.code !== '42883') {
-        // 42883 = function not found is OK (means DB is reachable, just no RPC)
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .select('id', { head: true })
+        .limit(1)
+        .abortSignal(AbortSignal.timeout(4500));
+      if (profilesError) {
+        logger.warn('[Health] Supabase profiles probe failed:', profilesError);
         checks.supabase = 'fail';
         allOk = false;
       } else {

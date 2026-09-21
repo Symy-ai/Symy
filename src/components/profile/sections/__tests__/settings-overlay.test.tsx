@@ -47,6 +47,8 @@ vi.mock('@/hooks/use-green-prefs', () => ({
   // batch95-a: overlay 挂载时跑强度收敛迁移, 迁移模块消费这两个导出
   // (工厂被 hoist, 顶层 const 须惰性转发, 不可直接引用)
   getGreenPrefs: () => ({ ...prefsState }),
+  getLegacyGreenIntensity: () => undefined,
+  clearLegacyGreenIntensity: () => undefined,
   setGreenPrefField: (...args: Parameters<typeof setGreenPrefField>) => setGreenPrefField(...args),
 }));
 
@@ -79,6 +81,10 @@ vi.mock('@/lib/guard-settings-probes', () => ({
 // (路径须从 __tests__ 上跳两级到 profile/ — 旧文件的 '../x' 从未命中真实模块, batch95-a 修正)
 vi.mock('../../push-notification-settings', () => ({
   PushNotificationSettings: () => <div data-testid="push-notifications" />,
+}));
+
+vi.mock('../../guardian-style-wizard', () => ({
+  GuardianStyleWizard: () => <div data-testid="guardian-style-wizard" />,
 }));
 
 // 挂载即 fetch 的子面板 (GuardPolicyPreview / GuardRuleCoverage) — 全局 stub 掉 fetch,
@@ -154,22 +160,22 @@ describe('SettingsOverlay green preferences section', () => {
     fetchMock.mockReset();
   });
 
-  it('renders green preferences block after expanding advanced', () => {
+  it('renders green preferences block after expanding advanced', async () => {
     renderOverlay();
     expect(screen.queryByText('Green Preferences')).toBeNull();
     expandAdvanced();
-    expect(screen.getByText('Green Preferences')).toBeDefined();
+    expect(await screen.findByText('Green Preferences')).toBeDefined();
     expect(screen.getByText('Alternative wording')).toBeDefined();
     expect(screen.getByText('Push green theme')).toBeDefined();
     // batch95-a 去重: 绿色偏好区不再有独立强度选择 (强度唯一入口 = guard-intensity-options)
     expect(screen.queryByText('Green intensity')).toBeNull();
-    expect(screen.getAllByTestId('guard-intensity-options')).toHaveLength(1);
+    expect(await screen.findAllByTestId('guard-intensity-options')).toHaveLength(1);
   });
 
-  it('shows reset confirmation dialog and resets on confirm after expanding advanced', () => {
+  it('shows reset confirmation dialog and resets on confirm after expanding advanced', async () => {
     renderOverlay();
     expandAdvanced();
-    fireEvent.click(screen.getByText('Reset green preferences'));
+    fireEvent.click(await screen.findByText('Reset green preferences'));
     expect(screen.getByText('Reset all green preferences?')).toBeDefined();
     fireEvent.click(screen.getByText('Yes, reset'));
     expect(resetGreenPrefs).toHaveBeenCalled();
@@ -184,20 +190,20 @@ describe('SettingsOverlay green preferences section', () => {
     expect(resetGreenPrefs).not.toHaveBeenCalled();
   });
 
-  it('toggles lock state via lock/unlock button', () => {
+  it('toggles lock state via lock/unlock button', async () => {
     renderOverlay();
     expandAdvanced();
-    const lockButton = screen.getByText('Unlock');
+    const lockButton = await screen.findByText('Unlock');
     fireEvent.click(lockButton);
     expect(screen.getByText('Locked')).toBeDefined();
     expect(setGreenPrefField).not.toHaveBeenCalled();
   });
 
-  it('renders localized labels for zh locale', () => {
+  it('renders localized labels for zh locale', async () => {
     renderOverlay({ locale: "zh" });
     expandAdvanced();
     // t mock returns defaultValue; structure coverage is what matters here.
-    expect(screen.getByText('Green Preferences')).toBeDefined();
+    expect(await screen.findByText('Green Preferences')).toBeDefined();
     expect(screen.getByText('Alternative wording')).toBeDefined();
     expect(screen.getByText('Push green theme')).toBeDefined();
     expect(screen.queryByText('Green intensity')).toBeNull();
@@ -217,7 +223,7 @@ describe('SettingsOverlay guardian style wizard entry (batch61-a)', () => {
     fetchMock.mockReset();
   });
 
-  it('renders the entry row inside advanced and opens the wizard on click', () => {
+  it('renders the entry row inside advanced and opens the wizard on click', async () => {
     renderOverlay();
     // batch95-a: 向导入口收纳进高级折叠区, 默认不可见
     expect(screen.queryByTestId('guardian-style-entry')).toBeNull();
@@ -226,7 +232,7 @@ describe('SettingsOverlay guardian style wizard entry (batch61-a)', () => {
     expect(screen.queryByTestId('guardian-style-wizard')).toBeNull();
 
     fireEvent.click(screen.getByTestId('guardian-style-entry'));
-    expect(screen.getByTestId('guardian-style-wizard')).toBeDefined();
+    expect(await screen.findByTestId('guardian-style-wizard')).toBeDefined();
     expect(screen.getByTestId('guardian-style-step-overview').getAttribute('aria-current')).toBe('step');
 
     fireEvent.click(screen.getByTestId('guardian-style-exit'));
@@ -308,18 +314,18 @@ describe('SettingsOverlay two-layer layout (batch95-a)', () => {
     expect(screen.queryByTestId('delete-account')).toBeNull();
   });
 
-  it('remembers expansion state across overlay remounts', () => {
+  it('remembers expansion state across overlay remounts', async () => {
     const first = renderOverlay();
     expect(screen.queryByTestId('guard-intensity-options')).toBeNull();
 
     expandAdvanced();
-    expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
+    expect(await screen.findByTestId('guard-intensity-options')).toBeDefined();
     expect(window.localStorage.getItem('symy-settings-advanced-open')).toBe('true');
     first.unmount();
 
     // 重开设置 — 展开态记忆生效
     const second = renderOverlay();
-    expect(screen.getByTestId('guard-intensity-options')).toBeDefined();
+    expect(await screen.findByTestId('guard-intensity-options')).toBeDefined();
 
     // 收起后回到默认收起态并持久化
     fireEvent.click(screen.getByTestId('settings-advanced-toggle'));

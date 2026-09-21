@@ -3,8 +3,7 @@
 /**
  * useGreenPrefs — 全局绿色偏好包 (冻结态)
  *
- * 一次性管理三类绿色偏好, localStorage 持久化 (`symy-green-prefs`):
- * - intensity:  绿色强度档位
+ * 一次性管理绿色偏好, localStorage 持久化 (`symy-green-prefs`):
  * - wording:    替代话术风格
  * - pushTheme:  push 绿色主题
  *
@@ -16,12 +15,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export type Intensity = 'balanced' | 'gentle' | 'firm' | 'lockdown';
 export type Wording = 'cheerful' | 'neutral' | 'direct';
 export type PushTheme = 'none' | 'seasonal' | 'guardian';
 
 interface GreenPrefs {
-  intensity: Intensity;
   wording: Wording;
   pushTheme: PushTheme;
 }
@@ -29,7 +26,6 @@ interface GreenPrefs {
 const STORAGE_KEY = 'symy-green-prefs';
 
 const DEFAULT_PREFS: GreenPrefs = {
-  intensity: 'balanced',
   wording: 'cheerful',
   pushTheme: 'none',
 };
@@ -47,7 +43,8 @@ function readStoredPrefs(): GreenPrefs {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_PREFS;
-    const parsed = JSON.parse(raw) as Partial<GreenPrefs>;
+    const parsed = JSON.parse(raw) as Partial<GreenPrefs> & { intensity?: unknown };
+    delete parsed.intensity;
     return { ...DEFAULT_PREFS, ...parsed };
   } catch {
     // safe to ignore: corrupted localStorage falls back to default prefs
@@ -80,6 +77,17 @@ export function getGreenPrefs(): GreenPrefs {
   return sharedPrefs;
 }
 
+export function getLegacyGreenIntensity(): unknown {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '{}') as { intensity?: unknown };
+    return parsed.intensity;
+  } catch {
+    // safe to ignore: malformed legacy data cannot be migrated
+    return undefined;
+  }
+}
+
 export function setGreenPrefs(prefs: GreenPrefs): void {
   sharedPrefs = { ...prefs };
   sharedInitialized = true;
@@ -89,6 +97,12 @@ export function setGreenPrefs(prefs: GreenPrefs): void {
 
 export function setGreenPrefField<K extends keyof GreenPrefs>(key: K, value: GreenPrefs[K]): void {
   setGreenPrefs({ ...sharedPrefs, [key]: value });
+}
+
+export function clearLegacyGreenIntensity(): void {
+  if (typeof window === 'undefined') return;
+  if (getLegacyGreenIntensity() === undefined) return;
+  setGreenPrefs(getGreenPrefs());
 }
 
 export function resetGreenPrefs(): void {
@@ -118,7 +132,7 @@ export function useGreenPrefs(): UseGreenPrefsResult {
 
   useEffect(() => {
     const stored = readStoredPrefs();
-    if (!sharedInitialized || stored.intensity !== sharedPrefs.intensity || stored.wording !== sharedPrefs.wording || stored.pushTheme !== sharedPrefs.pushTheme) {
+    if (!sharedInitialized || stored.wording !== sharedPrefs.wording || stored.pushTheme !== sharedPrefs.pushTheme) {
       sharedPrefs = stored;
       sharedInitialized = true;
     }

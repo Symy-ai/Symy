@@ -9,6 +9,7 @@ import {
 import {
   _resetGreenPrefsStateForTest,
   getGreenPrefs,
+  getLegacyGreenIntensity,
 } from '@/hooks/use-green-prefs';
 
 describe('migrateLegacyGreenIntensity (batch95-a 强度收敛迁移)', () => {
@@ -27,10 +28,10 @@ describe('migrateLegacyGreenIntensity (batch95-a 强度收敛迁移)', () => {
     expect(migrateLegacyGreenIntensity()).toBe(true);
     expect(window.localStorage.getItem('symy-guard-intensity')).toBe('strict');
     expect(getGuardIntensity()).toBe('strict');
-    // 迁移后绿色偏好强度归位默认档 — 保证一次性, 用户之后显式改档不被反复覆盖
-    expect(getGreenPrefs().intensity).toBe('balanced');
+    // batch108-b: 迁移后 legacy intensity 字段被清除（死字段不再落盘），其余偏好保留
     expect(getGreenPrefs().wording).toBe('neutral');
     expect(getGreenPrefs().pushTheme).toBe('seasonal');
+    expect(getLegacyGreenIntensity()).toBeUndefined();
   });
 
   it('maps legacy lockdown choice to strict as well', () => {
@@ -41,7 +42,7 @@ describe('migrateLegacyGreenIntensity (batch95-a 强度收敛迁移)', () => {
 
     expect(migrateLegacyGreenIntensity()).toBe(true);
     expect(window.localStorage.getItem('symy-guard-intensity')).toBe('strict');
-    expect(getGreenPrefs().intensity).toBe('balanced');
+    expect(getLegacyGreenIntensity()).toBeUndefined();
   });
 
   it('respects an explicit guard-intensity choice and does not overwrite it', () => {
@@ -53,7 +54,7 @@ describe('migrateLegacyGreenIntensity (batch95-a 强度收敛迁移)', () => {
 
     expect(migrateLegacyGreenIntensity()).toBe(false);
     expect(window.localStorage.getItem('symy-guard-intensity')).toBe('gentle');
-    expect(getGreenPrefs().intensity).toBe('firm');
+    expect(getLegacyGreenIntensity()).toBe('firm');
   });
 
   it('is a no-op for non-elevated green intensities', () => {
