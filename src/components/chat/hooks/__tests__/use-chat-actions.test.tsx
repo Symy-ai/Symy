@@ -32,9 +32,7 @@ vi.mock('@/lib/posthog', () => ({
   symyEvents: { chatMessageSent: vi.fn() },
 }));
 
-const t = vi.fn(
-  (key: string, opts?: { defaultValue?: string } & Record<string, unknown>) => opts?.defaultValue ?? key
-);
+const t = vi.fn((key: string) => key);
 
 function sseResponse(events: unknown[]): Response {
   const encoder = new TextEncoder();
@@ -151,7 +149,7 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     expect(errMsg).toBeDefined();
     expect(errMsg).toMatchObject({
       role: 'assistant',
-      content: 'AI is temporarily unavailable. This might be due to high traffic or a timeout. Please try again.',
+      content: 'chat.aiFallback.aiError',
     });
     expect(typeof errMsg!.onRetry).toBe('function');
     expect(saveMessage).toHaveBeenCalledTimes(1);
@@ -203,6 +201,21 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
   });
 
+  it('网络错误 → isError + aiError fallback; 不抛出且错误气泡不落库', async () => {
+    const { params, holder, result, saveMessage } = makeHarness();
+    fetchMock.mockRejectedValueOnce(new TypeError('network dropped'));
+
+    await act(async () => {
+      await result.current.sendMessage('hi');
+    });
+
+    const errMsg = holder.list.find((m) => m.isError);
+    expect(errMsg).toMatchObject({ content: 'chat.aiFallback.aiError' });
+    expect(saveMessage).toHaveBeenCalledTimes(1);
+    expect(saveMessage.mock.calls[0][0].role).toBe('user');
+    expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+  });
+
   it('流关闭零 token (idleTimeout) → streamInterrupted 兜底文案保留 + isError + onRetry, 不 saveMessage', async () => {
     const { params, holder, result, saveMessage } = makeHarness();
     fetchMock.mockResolvedValueOnce(sseResponse([]));
@@ -218,7 +231,7 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     // batch80-a fix 回归 (/tmp/b79c-defects.md #1): finally 的 flushStreamUpdate 跳过
     //   (idleFallbackDisplayed 守卫), 不再用空 accumulatedReply 覆盖兜底文案 —
     //   气泡显示 streamInterrupted 文案而非空气泡 (isError/onRetry 保留, 重试可用)。
-    expect(errMsg!.content).toBe('The reply was cut off.');
+    expect(errMsg!.content).toBe('chat.aiFallback.streamInterrupted');
     // flush 跳过的结构证明: setMessagesSync 恰 3 次 (user 占位 + assistant 占位 + 兜底写入), 无第 4 次覆盖写
     expect(params.setters.setMessagesSync).toHaveBeenCalledTimes(3);
     // 错误路径不落库 assistant — 恰只有 userMsg

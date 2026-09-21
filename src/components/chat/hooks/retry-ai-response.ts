@@ -18,7 +18,7 @@
  */
 
 import { ChatMessage } from '@/components/chat-bubble';
-import { ApiError, getErrorStatus } from '@/lib/errors/api-error';
+import { ApiError } from '@/lib/errors/api-error';
 // 🌱 绿色守护开关 (localStorage 零 DDL): 重试请求同样透传 → /api/chat → symy_green_pref
 import { getGreenPrefEnabled } from '@/hooks/use-green-pref';
 import { getGuardIntensity } from '@/hooks/use-guard-intensity';
@@ -32,6 +32,7 @@ import {
   createStreamErrorRetry,
   markStreamErrorBubble,
 } from './parts/stream-error-retry';
+import { isAbortError, normalizeChatApiError } from './chat-api-error';
 
 /** sendMessageLockRef 内部结构 (与 use-chat-actions.ts 结构兼容, 本地定义避免 circular dep) */
 interface SendMessageLockState {
@@ -299,17 +300,17 @@ export async function retryAiResponseImpl({
       saveMessage(finalMsg);
     }
   } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') return;
+    if (isAbortError(err)) return;
     // 重新显示错误消息
     // 🔧 ARCH fix (Round 20 Frontend H6 — retryAiResponse catch 缺 onRetry, 用户卡死):
     //    旧代码不设 onRetry → 用户看到错误但无重试按钮, 必须刷新页面。
     //    根因修复: 加 onRetry, 让用户可再次重试。
     // 🔧 2026-07-20 (P0 fix): 区分 401 (需登录) vs 其他错误
     //    与 use-chat-actions.ts sendMessage 保持一致
-    const errorStatus = getErrorStatus(err);
+    const errorStatus = normalizeChatApiError(err).status;
     const isAuthError = errorStatus === 401;
     const errorContent = isAuthError
-      ? t('chat.aiFallback.authRequired', { defaultValue: 'Sign in to chat with Symy and save your conversations.' })
+      ? t('chat.aiFallback.authRequired')
       : t('chat.aiFallback.aiError');
     markStreamErrorBubble({
       assistantMsgId,

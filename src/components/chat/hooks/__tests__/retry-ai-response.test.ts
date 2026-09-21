@@ -17,9 +17,7 @@ import type { ChatMessage } from '@/types/chat-message';
 import { retryAiResponseImpl, type RetryAiResponseParams } from '../retry-ai-response';
 import { ApiError } from '@/lib/errors/api-error';
 
-const t = vi.fn(
-  (key: string, opts?: { defaultValue?: string } & Record<string, unknown>) => opts?.defaultValue ?? key
-);
+const t = vi.fn((key: string) => key);
 
 function sseResponse(events: unknown[]): Response {
   const encoder = new TextEncoder();
@@ -254,7 +252,7 @@ describe('retryAiResponseImpl', () => {
 
     const errMsg = holder.list.find((m) => m.id === 'ai-1');
     expect(errMsg).toMatchObject({
-      content: 'Sign in to chat with Symy and save your conversations.',
+      content: 'chat.aiFallback.authRequired',
       isError: true,
     });
     expect(params.saveMessage).not.toHaveBeenCalled();
@@ -272,6 +270,18 @@ describe('retryAiResponseImpl', () => {
     fetchMock.mockRejectedValueOnce(new ApiError('Chat API error (500): boom', 500));
 
     await retryAiResponseImpl(params);
+
+    expect(holder.list.find((m) => m.id === 'ai-1')).toMatchObject({
+      content: 'chat.aiFallback.aiError',
+      isError: true,
+    });
+  });
+
+  it('catch 网络错误 → 网络错误规范化为 503 后仍走 aiError fallback 文案', async () => {
+    const { params, holder } = makeHarness(makeInitialMessages());
+    fetchMock.mockRejectedValueOnce(new TypeError('network dropped'));
+
+    await expect(retryAiResponseImpl(params)).resolves.toBeUndefined();
 
     expect(holder.list.find((m) => m.id === 'ai-1')).toMatchObject({
       content: 'chat.aiFallback.aiError',

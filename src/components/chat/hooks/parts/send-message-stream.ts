@@ -474,9 +474,7 @@ export async function consumeSendMessageStream({
             m.id === currentAssistantMsgId
               ? {
                   ...m,
-                  content: t("chat.aiFallback.streamInterrupted", {
-                    defaultValue: "The reply was cut off.",
-                  }),
+                  content: t("chat.aiFallback.streamInterrupted"),
                   isError: true,
                   onRetry: () => {
                     setMessagesSync((prev2) =>

@@ -48,14 +48,8 @@ export function handleSendMessageError({
     id: errorMsgId,
     role: "assistant",
     content: isAuthError
-      ? t("chat.aiFallback.authRequired", {
-          defaultValue:
-            "Sign in to chat with Symy and save your conversations.",
-        })
-      : t("chat.aiFallback.aiError", {
-          defaultValue:
-            "AI is temporarily unavailable. This might be due to high traffic or a timeout. Please try again.",
-        }),
+      ? t("chat.aiFallback.authRequired")
+      : t("chat.aiFallback.aiError"),
     timestamp: new Date(),
     isError: true,
     onRetry: () => {
