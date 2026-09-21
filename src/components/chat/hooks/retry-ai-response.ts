@@ -106,7 +106,6 @@ export async function retryAiResponseImpl({
   retryAiResponseRef,
 }: RetryAiResponseParams): Promise<void> {
   // 🔧 BUG-018 fix: 模块级互斥锁 (retryAiResponse 也要检查)
-  // console.log('[DBG111a] retry entered, lock=', sendMessageLockRef.current.inProgress);
   if (sendMessageLockRef.current.inProgress) return;
   sendMessageLockRef.current.inProgress = true;
   setIsLoading(true);
