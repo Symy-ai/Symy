@@ -10,7 +10,7 @@
 // with a comment explaining why (e.g., analytics beacon that must fire on mount).
 
 /** @type {import('eslint').Rule.RuleModule} */
-export default {
+const rule = {
   meta: {
     type: 'problem',
     docs: {
@@ -43,7 +43,7 @@ export default {
   create(context) {
     const options = context.options[0] || {};
     const allowedPatterns = (options.allowedPatterns || []).map(p => new RegExp(p));
-    const sourceCode = context.getSourceCode();
+    const _sourceCode = context.getSourceCode();
 
     function isAllowed(url) {
       if (!url) return false;
@@ -116,3 +116,5 @@ export default {
     };
   },
 };
+
+export default rule;

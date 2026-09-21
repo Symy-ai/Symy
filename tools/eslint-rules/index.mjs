@@ -13,7 +13,7 @@ import noPutStateEndpoints from './no-put-state-endpoints.mjs';
 import noWarnOnlyCatch from './no-warn-only-catch.mjs';
 import requireJsonHelperInAuthenticatedRoutes from './require-json-helper-in-authenticated-routes.mjs';
 
-export default {
+const rule = {
   meta: {
     name: 'eslint-plugin-symy',
     version: '1.0.0',
@@ -27,3 +27,5 @@ export default {
     'require-json-helper-in-authenticated-routes': requireJsonHelperInAuthenticatedRoutes,
   },
 };
+
+export default rule;

@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- 脚本类文件 console 是本职输出 */
 /**
  * Mock PostgREST — transparency e2e 的确定性数据源 (batch85-b)
  *

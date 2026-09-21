@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- 脚本类文件 console 是本职输出 */
 /**
  * finance 月账 JSON 校验脚本 (batch89-b) — owner 工具, 非产品代码。
  *

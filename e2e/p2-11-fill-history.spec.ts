@@ -46,7 +46,7 @@ test.describe('P2-11: Fill history after deposit', () => {
 
     // 找第一个未满的基金 (点击展开)
     const fundCard = page.locator('[onclick]').filter({ hasText: /\/.*\$/ }).first();
-    const fundTextBefore = await fundCard.textContent().catch(() => '');
+    const _fundTextBefore = await fundCard.textContent().catch(() => '');
 
     // 6. 回到聊天 tab 点击 "I saw it"
     await navigateToTab(page, 'Magic Mirror');

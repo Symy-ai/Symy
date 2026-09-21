@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- 脚本类文件 console 是本职输出 */
 /**
  * Symy AI 冒烟测试脚本
  *

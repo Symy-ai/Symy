@@ -12,7 +12,7 @@
 // nothing happens, and the only trace is a console warning.
 
 /** @type {import('eslint').Rule.RuleModule} */
-export default {
+const rule = {
   meta: {
     type: 'suggestion',
     docs: {
@@ -120,3 +120,5 @@ export default {
     };
   },
 };
+
+export default rule;

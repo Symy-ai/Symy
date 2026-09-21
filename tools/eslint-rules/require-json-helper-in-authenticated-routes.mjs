@@ -10,7 +10,7 @@
 // `mergeCookies(...)` in files that use `createAuthenticatedClient`.
 
 /** @type {import('eslint').Rule.RuleModule} */
-export default {
+const rule = {
   meta: {
     type: 'problem',
     docs: {
@@ -43,7 +43,7 @@ export default {
       // Detect if the file uses createAuthenticatedClient (but NOT through withAuth)
       // 🔧 Round 124: withAuth HOF auto-merges cookies, so NextResponse.json is safe.
       //    Don't flag routes that use withAuth (they don't need mergeCookies/json helper).
-      Program(node) {
+      Program(_node) {
         const source = sourceCode.getText();
         usesWithAuth = source.includes('withAuth(') || source.includes('= withAuth');
 
@@ -108,3 +108,5 @@ export default {
     };
   },
 };
+
+export default rule;

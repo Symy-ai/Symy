@@ -11,7 +11,7 @@
 // an explicit `inFlightRef` guard.
 
 /** @type {import('eslint').Rule.RuleModule} */
-export default {
+const rule = {
   meta: {
     type: 'suggestion',
     docs: {
@@ -32,14 +32,6 @@ export default {
 
   create(context) {
     const sourceCode = context.getSourceCode();
-
-    function isUseCallbackCall(node) {
-      const callee = node.callee;
-      if (!callee) return false;
-      if (callee.type === 'Identifier' && callee.name === 'useCallback') return true;
-      if (callee.type === 'MemberExpression' && callee.property?.name === 'useCallback') return true;
-      return false;
-    }
 
     return {
       // Use ESLint selector to find: useCallback(async (args) => { ... CallExpression ... }, deps)
@@ -72,3 +64,5 @@ export default {
     };
   },
 };
+
+export default rule;

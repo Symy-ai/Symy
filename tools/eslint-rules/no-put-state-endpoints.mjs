@@ -7,7 +7,7 @@
 // versioning atomically server-side.
 
 /** @type {import('eslint').Rule.RuleModule} */
-export default {
+const rule = {
   meta: {
     type: 'problem',
     docs: {
@@ -97,3 +97,5 @@ export default {
     };
   },
 };
+
+export default rule;
