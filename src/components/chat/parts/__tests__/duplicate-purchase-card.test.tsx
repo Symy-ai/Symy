@@ -61,4 +61,41 @@ describe('DuplicatePrecheckCard', () => {
     expect(apiFetchMock.mock.calls[0][1].body.metadata.decision).toBe('wait');
     expect(getDueReuseConfirmation(Date.now() + 25 * 60 * 60 * 1000)).toBeNull();
   });
+
+  it('marks an already-reported decision after refresh without reporting again', () => {
+    render(<DuplicatePrecheckCard data={{ itemTitle: 'storage box', category: 'home' }} />);
+    fireEvent.click(screen.getByTestId('duplicate-precheck-reuse'));
+    apiFetchMock.mockClear();
+    cleanup();
+
+    render(<DuplicatePrecheckCard data={{ itemTitle: 'storage box', category: 'home' }} />);
+
+    expect(screen.getByTestId('duplicate-precheck-decision').textContent).toContain('reuse note');
+    expect(apiFetchMock).not.toHaveBeenCalled();
+    expect(getDueReuseConfirmation(Date.now() + 25 * 60 * 60 * 1000)?.card.itemTitle).toBe('storage box');
+  });
+
+  it('keeps new decision ids interactive', () => {
+    window.localStorage.setItem('symy-duplicate-precheck-decisions', JSON.stringify({
+      'duplicate-precheck:2000-01-01:storage-box:reuse': 'reuse',
+    }));
+
+    render(<DuplicatePrecheckCard data={{ itemTitle: 'storage box', category: 'home' }} />);
+
+    expect(screen.getByTestId('duplicate-precheck-reuse')).toBeTruthy();
+    expect(screen.getByTestId('duplicate-precheck-wait')).toBeTruthy();
+  });
+
+  it('keeps the primary decision flow when decision logging fails', () => {
+    const getItem = vi.spyOn(window.localStorage, 'getItem').mockImplementation(() => {
+      throw new Error('unavailable');
+    });
+
+    render(<DuplicatePrecheckCard data={{ itemTitle: 'cable', category: 'electronics' }} />);
+    getItem.mockRestore();
+    fireEvent.click(screen.getByTestId('duplicate-precheck-reuse'));
+
+    expect(apiFetchMock).toHaveBeenCalledTimes(2);
+    expect(getDueReuseConfirmation(Date.now() + 25 * 60 * 60 * 1000)?.card.itemTitle).toBe('cable');
+  });
 });

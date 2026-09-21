@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useI18n } from '@/i18n/provider';
-import { reportDuplicateDecision, savePendingReuseConfirmation } from './duplicate-purchase-store';
+import { getReportedDuplicateDecision, reportDuplicateDecision, savePendingReuseConfirmation } from './duplicate-purchase-store';
 import type { DuplicatePrecheckCardData, DuplicatePrecheckDecision } from '@/types/duplicate-purchase';
 
 export function DuplicatePrecheckCard({ data }: { data: DuplicatePrecheckCardData }) {
   const { t } = useI18n();
-  const [decision, setDecision] = useState<DuplicatePrecheckDecision | null>(null);
+  const [decision, setDecision] = useState<DuplicatePrecheckDecision | null>(() => getReportedDuplicateDecision(data));
   const itemName = data.itemTitle === 'it' ? t('chat.duplicatePrecheck.genericItem') : data.itemTitle;
 
   const act = (choice: DuplicatePrecheckDecision) => {

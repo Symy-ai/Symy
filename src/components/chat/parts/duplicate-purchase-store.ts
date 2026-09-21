@@ -5,6 +5,7 @@ import { logger } from '@/lib/logger';
 import type { DuplicatePrecheckCardData, DuplicatePrecheckDecision } from '@/types/duplicate-purchase';
 
 const REUSE_PENDING_KEY = 'symy-duplicate-precheck-reuse-pending';
+const DECISION_LOG_KEY = 'symy-duplicate-precheck-decisions';
 
 function localDateKey(now: number): string {
   const date = new Date(now);
@@ -15,8 +16,44 @@ function slug(value: string): string {
   return value.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]+/g, '-').replace(/^-|-$/g, '').slice(0, 32) || 'item';
 }
 
-function triggerId(card: DuplicatePrecheckCardData, decision: DuplicatePrecheckDecision, now = Date.now()): string {
+export function triggerId(card: DuplicatePrecheckCardData, decision: DuplicatePrecheckDecision, now = Date.now()): string {
   return `duplicate-precheck:${localDateKey(now)}:${slug(card.itemTitle)}:${decision}`;
+}
+
+function readDecisionLog(): Record<string, DuplicatePrecheckDecision> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(DECISION_LOG_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return Object.entries(parsed).reduce<Record<string, DuplicatePrecheckDecision>>((decisions, [id, decision]) => {
+      if (decision === 'reuse' || decision === 'wait') decisions[id] = decision;
+      return decisions;
+    }, {});
+  } catch {
+    // safe to ignore: a corrupted decision log only re-enables server-deduplicated reporting
+    return {};
+  }
+}
+
+export function getReportedDuplicateDecision(card: DuplicatePrecheckCardData): DuplicatePrecheckDecision | null {
+  const decisions = readDecisionLog();
+  const reuseId = triggerId(card, 'reuse');
+  if (decisions[reuseId] === 'reuse') return 'reuse';
+  const waitId = triggerId(card, 'wait');
+  if (decisions[waitId] === 'wait') return 'wait';
+  return null;
+}
+
+export function recordReportedDuplicateDecision(decisionId: string, decision: DuplicatePrecheckDecision): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const decisions = readDecisionLog();
+    decisions[decisionId] = decision;
+    window.localStorage.setItem(DECISION_LOG_KEY, JSON.stringify(decisions));
+  } catch {
+    // safe to ignore: decision reporting and the follow-up remain best-effort
+  }
 }
 
 /**
@@ -36,12 +73,13 @@ export function saveInventoryItemFromChat(card: DuplicatePrecheckCardData): void
 
 export function reportDuplicateDecision(card: DuplicatePrecheckCardData, decision: DuplicatePrecheckDecision): void {
   const now = Date.now();
+  const decisionId = triggerId(card, decision, now);
   apiFetch('/api/buddy/health-events', {
     method: 'POST',
     body: {
       eventType: 'manual_adjustment',
       triggerSource: 'manual',
-      triggerId: triggerId(card, decision, now),
+      triggerId: decisionId,
       description: 'Duplicate-purchase precheck decision',
       metadata: {
         source: 'duplicate_precheck',
@@ -53,6 +91,7 @@ export function reportDuplicateDecision(card: DuplicatePrecheckCardData, decisio
   }).catch((err: unknown) => {
     logger.warn('[duplicate-precheck] decision report failed:', err instanceof Error ? err.message : String(err));
   });
+  recordReportedDuplicateDecision(decisionId, decision);
   // reuse = 确认「家里有」→ 顺手建库 (wait 不写)
   if (decision === 'reuse') saveInventoryItemFromChat(card);
 }
