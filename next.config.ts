@@ -46,12 +46,15 @@ const nextConfig = {
     ];
   },
   // 🤝 契约签署系统 (Symy-ai/covenant 独立项目, 2026-09-21):
-  //    /covenant 代理到 covenant Vercel 项目, 浏览器 URL 保持 symy.ai/covenant
+  //    /covenant 代理到 covenant Vercel 项目（签名系统），须用 beforeFiles 盖过
+  //    主站自有的 [locale]/covenant 品牌页；品牌页仍走 /en/covenant、/zh/covenant。
   rewrites() {
-    return [
-      { source: '/covenant', destination: 'https://covenant-blond-gamma.vercel.app/' },
-      { source: '/covenant/:path*', destination: 'https://covenant-blond-gamma.vercel.app/:path*' },
-    ];
+    return {
+      beforeFiles: [
+        { source: '/covenant', destination: 'https://covenant-blond-gamma.vercel.app/' },
+        { source: '/covenant/:path*', destination: 'https://covenant-blond-gamma.vercel.app/:path*' },
+      ],
+    };
   },
 };
 
