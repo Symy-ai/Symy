@@ -77,10 +77,6 @@ export type TransparencyProfileRow = PlatformProfileRow;
 export type TransparencyPassedChallengeRow = PlatformPassedChallengeRow;
 
 /** 本周起点 — UTC 周一 00:00 (生产 Vercel 与测试均 UTC, 不吃部署机本地时区) */
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
-}
-
 export function utcWeekStart(now: Date): Date {
   const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const dow = (new Date(dayStart).getUTCDay() + 6) % 7; // Monday=0
@@ -127,7 +123,8 @@ export function aggregateTransparency(
   profileRows: TransparencyProfileRow[] | null | undefined,
   now: Date,
 ): TransparencySnapshot {
-  const weekStartMs = utcWeekStart(now).getTime();
+  const weekStart = utcWeekStart(now);
+  const weekStartMs = weekStart.getTime();
   const lastWeekStartMs = utcWeekStart(new Date(weekStartMs - 1)).getTime();
 
   const intercepts = countInterceptEvents(healthRows, { weekStartMs, lastWeekStartMs });
