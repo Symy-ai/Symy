@@ -1738,8 +1738,16 @@ describe('Architecture Guards: ApiError replaces (error as any).status (ARCH-202
   });
 
   it('use-chat-actions.ts does NOT use (error as any).status pattern', () => {
-    const rawContent = readSrcFile('components/chat/hooks/use-chat-actions.ts');
-    const content = rawContent.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+    // batch112-a/b 后错误逻辑收敛到 parts/ helpers — 检查面=主文件+parts/ 全域
+    const mainContent = readSrcFile('components/chat/hooks/use-chat-actions.ts');
+    const partsDir = join(SRC_DIR, 'components/chat/hooks/parts');
+    const partsContent = readdirSync(partsDir)
+      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+      .map((f) => readSrcFile(`components/chat/hooks/parts/${f}`))
+      .join('\n');
+    const content = `${mainContent}\n${partsContent}`
+      .replace(/\/\/.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
     expect(content).not.toMatch(/\(\s*error\s+as\s+any\s*\)\.status/);
     expect(content).not.toMatch(/\(\s*err\s+as\s+any\s*\)\.status/);
     expect(content).toMatch(/ApiError|getErrorStatus/);
