@@ -6,6 +6,7 @@
  */
 
 import { PostHog } from 'posthog-node';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 let client: PostHog | null = null;
 
@@ -13,7 +14,10 @@ export function getPostHogServer(): PostHog | null {
   if (client) return client;
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-  if (!key) return null;
+  if (!key) {
+    warnMissingEnvOnce('Product analytics');
+    return null;
+  }
 
   client = new PostHog(key, {
     host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',

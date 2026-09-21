@@ -37,6 +37,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { timingSafeCompare } from '@/lib/timing-safe-compare';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { sendPushToUsers } from '@/lib/push/push-sender';
 import { isWebPushConfigured } from '@/lib/push/web-push-config';
@@ -132,6 +133,7 @@ export async function GET(req: NextRequest) {
   const secret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!secret || !CRON_SECRET || !timingSafeCompare(secret, CRON_SECRET)) {
+    warnMissingEnvOnce('Vercel cron authentication');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

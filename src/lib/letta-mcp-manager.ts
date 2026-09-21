@@ -10,6 +10,7 @@ import 'server-only'; // 🔧 ARCH fix Round 73: server-only — prevents client
 
 import Letta from '@letta-ai/letta-client';
 import { logger } from '@/lib/logger';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 // ============================================================
 // Environment
@@ -26,6 +27,7 @@ const MCP_SERVER_URL = process.env.NEXT_PUBLIC_APP_URL || VERCEL_URL;
 
 function getMcpServerUrl(): string {
   if (!MCP_SERVER_URL) {
+    warnMissingEnvOnce('Letta MCP URL');
     throw new Error('NEXT_PUBLIC_APP_URL or VERCEL_URL is required. Set one in .env or Vercel environment variables.');
   }
   return MCP_SERVER_URL;

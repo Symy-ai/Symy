@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr';
 import type { Database } from './database.types';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -24,6 +25,7 @@ export function createClient(): SupabaseBrowserClient | null {
   if (!supabaseUrl || !supabaseAnonKey) {
     // During build time or when env vars are missing, return null
     // This prevents build failures when Vercel prerenders static pages
+    warnMissingEnvOnce('Supabase authenticated client');
     return null;
   }
   if (!_browserClient) {

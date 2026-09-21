@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from './database.types';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 // 支持新版 Publishable Key (sb_publishable_...) 和旧版 anon key (eyJ...)
@@ -17,6 +18,7 @@ export async function createClient() {
   const cookieStore = await cookies();
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    warnMissingEnvOnce('Supabase authenticated client');
     throw new Error(
       'Supabase environment variables are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     );

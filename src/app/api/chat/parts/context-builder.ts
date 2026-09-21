@@ -49,6 +49,7 @@ import {
 } from "./prompt-sanitizer";
 import { GREEN_ALTERNATIVES, type GreenLocale } from "@/lib/green-alternatives";
 import { logger } from "@/lib/logger";
+import { warnMissingEnvOnce } from "@/lib/env-consumers";
 
 export interface BuildContextParams {
   userId: string | undefined;
@@ -196,7 +197,11 @@ export async function getSymyCartTotalCents(
   const url = process.env.SYMY_SUPABASE_URL;
   const key = process.env.SYMY_SUPABASE_KEY;
   const userRef = sanitizeSymyRef(symyUserRef);
-  if (!url || !key || !userRef) return undefined;
+  if (!url || !key) {
+    warnMissingEnvOnce("Symy external shopping context");
+    return undefined;
+  }
+  if (!userRef) return undefined;
 
   try {
     const supabase = createClient(url, key);
@@ -243,7 +248,10 @@ export async function getSymyGreenContext(
 
   const url = process.env.SYMY_SUPABASE_URL;
   const key = process.env.SYMY_SUPABASE_KEY;
-  if (!url || !key) return { greenPref: "on" };
+  if (!url || !key) {
+    warnMissingEnvOnce("Symy external shopping context");
+    return { greenPref: "on" };
+  }
 
   const result: SymyGreenContext = { greenPref: "on" };
   try {

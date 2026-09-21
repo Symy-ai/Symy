@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 
 import { withAuth } from '@/lib/with-auth';
 import { NextResponse } from 'next/server';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -41,6 +42,7 @@ export const GET = withAuth(async () => {
           // 🔧 2026-07-21 audit fix: 同上 — 不返回 ZAI_TOKEN (付费 key)
         });
       }
+      warnMissingEnvOnce('Z.AI browser configuration fallback');
       return NextResponse.json({ error: 'z-ai configuration not available' }, { status: 503 });
     }
     const errMsg = err instanceof Error ? err.message : String(err);

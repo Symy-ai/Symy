@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { createServerClient } from '@supabase/ssr';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -35,6 +36,7 @@ function failureResponse(code: HandsCartFailureCode): NextResponse {
 export async function POST(request: NextRequest) {
   const secret = process.env.SYMY_HANDS_SECRET;
   if (!secret) {
+    warnMissingEnvOnce('Hands cart proxy');
     return NextResponse.json({ error: 'Cart proxy unavailable' }, { status: 503 });
   }
 

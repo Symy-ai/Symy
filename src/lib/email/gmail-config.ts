@@ -17,6 +17,8 @@
  * 但你也可以通过 GOOGLE_REDIRECT_URI 环境变量覆盖
  */
 
+import { warnPartialEnvOnce } from '@/lib/env-consumers';
+
 export const GMAIL_OAUTH_CONFIG = {
   clientId: process.env.GOOGLE_CLIENT_ID || '',
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
@@ -29,5 +31,6 @@ export const GMAIL_OAUTH_CONFIG = {
 };
 
 export function isGmailConfigured(): boolean {
+  if (!GMAIL_OAUTH_CONFIG.clientId || !GMAIL_OAUTH_CONFIG.clientSecret) warnPartialEnvOnce('Gmail OAuth connection');
   return !!(GMAIL_OAUTH_CONFIG.clientId && GMAIL_OAUTH_CONFIG.clientSecret);
 }

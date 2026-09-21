@@ -34,6 +34,7 @@ import {
   MANGA_STYLE_DARK,
   MANGA_STYLE_LIGHT,
 } from './illustration-helpers';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 // ============================================================
 // 环境变量配置
@@ -46,6 +47,7 @@ const IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || 'gpt-image-1';
 
 /** API 是否已配置（有 API key） */
 function isImageAPIConfigured(): boolean {
+  if (!IMAGE_API_KEY) warnMissingEnvOnce('Butterfly illustration generation');
   return IMAGE_API_KEY.length > 0;
 }
 

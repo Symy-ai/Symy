@@ -14,6 +14,7 @@ import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 // 🔧 ARCH fix (Round 56 R56-Bug6 — 提取共享 timingSafeCompare helper)
 import { timingSafeCompare } from '@/lib/timing-safe-compare';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 /** 期望的代理 secret — 优先 PROXY_API_SECRET, fallback MCP_API_SECRET */
 const EXPECTED_SECRET = process.env.PROXY_API_SECRET || process.env.MCP_API_SECRET || '';
@@ -29,6 +30,7 @@ const EXPECTED_SECRET = process.env.PROXY_API_SECRET || process.env.MCP_API_SECR
  */
 export function extractAndValidateApiKey(req: NextRequest): string | null {
   if (!EXPECTED_SECRET) {
+    warnMissingEnvOnce('MCP and LLM proxy authentication');
     logger.error('[Proxy Auth] PROXY_API_SECRET not configured — rejecting all requests');
     return null;
   }

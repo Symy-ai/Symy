@@ -12,6 +12,7 @@
  */
 
 import { logger } from '@/lib/logger';
+import { warnPartialEnvOnce } from '@/lib/env-consumers';
 import {
   callZAIChatCompletion,
   callZAIChatCompletionStream,
@@ -33,7 +34,9 @@ const LLM_CONFIG = {
 
 /** LLM Gateway 是否可用 */
 export function isGatewayAvailable(): boolean {
-  return !!(LLM_CONFIG.gatewayUrl && LLM_CONFIG.gatewayKey);
+  const available = !!(LLM_CONFIG.gatewayUrl && LLM_CONFIG.gatewayKey);
+  if (!available) warnPartialEnvOnce('LLM gateway');
+  return available;
 }
 
 // ============================================================

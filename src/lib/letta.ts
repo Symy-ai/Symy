@@ -17,6 +17,7 @@
 import 'server-only';
 import Letta from '@letta-ai/letta-client';
 import { logger } from '@/lib/logger';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 // 🔧 A1 移植 (commerce-agents "UI 组件即工具"): 搜索卡片结构化通道的 executor 侧校验
 import { extractSearchCardsFromContent } from '@/lib/structured-cards';
 import {
@@ -39,6 +40,7 @@ const LETTA_API_KEY = process.env.LETTA_API_KEY || '';
  * 只需要 API Key（per-user agent 模式，不再需要全局 AGENT_ID）
  */
 export function isLettaConfigured(): boolean {
+  if (!LETTA_API_KEY) warnMissingEnvOnce('Letta conversation and agent management');
   return !!LETTA_API_KEY;
 }
 

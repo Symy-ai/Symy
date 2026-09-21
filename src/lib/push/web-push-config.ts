@@ -12,6 +12,7 @@
 import 'server-only';
 import webpush from 'web-push';
 import { logger } from '@/lib/logger';
+import { warnPartialEnvOnce } from '@/lib/env-consumers';
 
 let isConfigured = false;
 
@@ -27,6 +28,7 @@ export function configureWebPush(): void {
   const subject = process.env.VAPID_SUBJECT || 'mailto:hcl.mygtt@gmail.com';
 
   if (!publicKey || !privateKey) {
+    warnPartialEnvOnce('Web Push delivery');
     logger.warn('[WebPush] VAPID keys not configured. Push notifications disabled.');
     return;
   }

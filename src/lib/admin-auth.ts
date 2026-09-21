@@ -26,6 +26,7 @@ import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 // 🔧 ARCH fix (Round 56 R56-Bug6 — 提取共享 timingSafeCompare helper)
 import { timingSafeCompare } from '@/lib/timing-safe-compare';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 
@@ -72,6 +73,7 @@ function resolveActor(request: NextRequest): string {
 export function verifyAdminAuth(request: NextRequest): AdminAuthResult {
   // 检查环境变量是否配置
   if (!ADMIN_API_KEY) {
+    warnMissingEnvOnce('Admin API authentication');
     logger.error('[Admin Auth] ADMIN_API_KEY not configured. All admin requests will be rejected.');
     return {
       authorized: false,
