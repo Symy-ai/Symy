@@ -402,6 +402,7 @@ export function useChatActions({
         //    finally 无条件 flushStreamUpdate() 用空串 accumulatedReply 覆盖 content → 空气泡。
         //    修复: 与 sseErrorDisplayed 同款守卫 — 兜底文案已写入时 finally 跳过 flush。
         let idleFallbackDisplayed = false;
+        let readerInterrupted = false;
         let productCards: ProductCardData[] = [];
         let greenAltCard: GreenAltCardData | undefined;
         // 🌱 batch68-a: green_alt_retro 预注入事件附带 (finalMsg 持久化用, 与 greenAlt 同策略)
@@ -715,6 +716,27 @@ export function useChatActions({
             accumulatedReasoning = streamResult.reasoning;
             // errorDisplayed → return 跳过 finalMsg 处理 (匹配原 SSE 循环内的 `return;`)
             if (streamResult.errorDisplayed) return;
+            if (streamResult.readerError) {
+              readerInterrupted = true;
+              setMessagesSync((prev) => prev.map((m) =>
+                m.id === currentAssistantMsgId
+                  ? {
+                      ...m,
+                      content: accumulatedReply,
+                      isError: true,
+                      onRetry: () => {
+                        if (sendMessageLockRef.current.inProgress) return;
+                        setMessagesSync((prev2) => prev2.filter((m2) => m2.id !== currentAssistantMsgId));
+                        setTimeout(() => {
+                          
+                          retryAiResponseRef.current?.(content);
+                        }, 0);
+                      },
+                    }
+                  : m
+              ));
+              return;
+            }
             // 🔧 batch43-b: idle timeout 且无内容 → 显示流中断 fallback
             if (streamResult.idleTimeout && !accumulatedReply.trim()) {
               // batch80-a fix (/tmp/b79c-defects.md #1): 标记兜底文案已写入 —
@@ -752,7 +774,7 @@ export function useChatActions({
             //    不再 flush (否则 flushStreamUpdate 用 accumulatedReply 覆盖 errorContent)。
             // batch80-a: idle timeout 兜底文案已写入同理跳过 flush (保住 streamInterrupted,
             //    否则空串 accumulatedReply 覆盖 → 空气泡, 见 /tmp/b79c-defects.md #1)。
-            if (!sseErrorDisplayed && !idleFallbackDisplayed) {
+            if (!sseErrorDisplayed && !idleFallbackDisplayed && !readerInterrupted) {
               // 🔧 ARCH fix: 始终 flush final state (不管 pendingStreamUpdate 是否 true)
               //    旧代码: if (pendingStreamUpdate) flushStreamUpdate() — 如果 rAF 已被 cancel,
               //    pendingStreamUpdate 仍为 true 但 flushStreamUpdate 不会重置它 → final state 丢失

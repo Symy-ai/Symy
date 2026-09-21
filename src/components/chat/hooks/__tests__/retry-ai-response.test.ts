@@ -33,6 +33,27 @@ function sseResponse(events: unknown[]): Response {
   return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
 }
 
+function interruptedSseResponse() {
+  const encoder = new TextEncoder();
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  let resolveRead!: () => void;
+  const firstReadStarted = new Promise<void>((resolve) => { resolveRead = resolve; });
+  const body = new ReadableStream<Uint8Array>({
+    start(c) {
+      controller = c;
+      c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content: 'Partial' })}\n`));
+    },
+  });
+  return {
+    response: new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+    firstReadStarted,
+    fail: () => controller.error(new TypeError('network dropped')),
+    readStarted: () => {
+      resolveRead();
+    },
+  };
+}
+
 function userMsg(content: string, mode?: 'normal' | 'challenge'): ChatMessage {
   return { id: `user-${content.replace(/\s+/g, '-')}`, role: 'user', content, timestamp: new Date(), mode };
 }
@@ -49,9 +70,11 @@ function makeInitialMessages() {
 function makeHarness(initial: ChatMessage[], overrides: Partial<RetryAiResponseParams> = {}) {
   // setMessagesSync 驱动的真实 state 归约器 — "不产生重复消息"断言在此基础上做
   const holder = { list: initial.map((m) => ({ ...m })) };
+  const messagesRef = { current: initial.map((m) => ({ ...m })) };
   const setMessagesSync = vi.fn(
     (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
       holder.list = typeof updater === 'function' ? updater(holder.list) : updater;
+      messagesRef.current = holder.list.map((m) => ({ ...m }));
     }
   );
   const challenge = { itemName: 'Air Fryer', amount: 89, challengeId: 'ch-1' };
@@ -70,7 +93,7 @@ function makeHarness(initial: ChatMessage[], overrides: Partial<RetryAiResponseP
     onToast: vi.fn(),
     sendMessageLockRef: { current: { inProgress: false, lastContent: '', lastTime: 0 } },
     abortRef: { current: null },
-    messagesRef: { current: initial.map((m) => ({ ...m })) },
+    messagesRef,
     activeChallengeRef: { current: challenge },
     impulseContextRef: { current: undefined },
     localeRef: { current: 'en' },
@@ -190,6 +213,37 @@ describe('retryAiResponseImpl', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(retryRefSpy).toHaveBeenCalledTimes(1);
     expect(retryRefSpy).toHaveBeenCalledWith('I want the air fryer');
+  });
+
+  it('SSE reader 中断: 保留已收 token, 标记可重试; 重试只请求 AI 不复制 user', async () => {
+    const { params, holder, saveMessage } = makeHarness(makeInitialMessages());
+    const interrupted = interruptedSseResponse();
+    fetchMock.mockResolvedValueOnce(interrupted.response);
+    const retryRefSpy = vi.fn((content: string) => retryAiResponseImpl({ ...params, lastUserContent: content }));
+    params.retryAiResponseRef.current = retryRefSpy;
+
+    const retrying = retryAiResponseImpl(params);
+    void interrupted.readStarted();
+    await interrupted.firstReadStarted;
+    await vi.waitFor(() => interrupted.fail());
+    await retrying;
+
+    const partial = holder.list.find((m) => m.id === 'ai-1');
+    expect(partial).toMatchObject({ content: 'Partial', isError: true });
+    expect(typeof partial?.onRetry).toBe('function');
+    expect(saveMessage).not.toHaveBeenCalled();
+
+    fetchMock.mockResolvedValueOnce(sseResponse([{ type: 'token', content: 'complete' }]));
+    partial!.onRetry!();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    const firstBody = fetchBody(fetchMock);
+    const retryBody = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(firstBody.messages).toEqual([{ role: 'user', content: 'I want the air fryer' }]);
+    expect(retryBody.messages).toEqual([{ role: 'user', content: 'I want the air fryer' }]);
+    expect(holder.list.filter((m) => m.role === 'user')).toHaveLength(1);
+    await vi.waitUntil(() => expect(saveMessage).toHaveBeenCalledTimes(1));
+    expect(saveMessage.mock.calls[0][0]).toMatchObject({ role: 'assistant', content: 'complete' });
   });
 
   it('catch 401 → authRequired 文案 + onRetry 经 ref 重发 lastUserContent; finally 释放锁', async () => {

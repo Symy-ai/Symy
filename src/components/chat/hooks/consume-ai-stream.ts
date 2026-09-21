@@ -208,6 +208,8 @@ export interface ConsumeAIStreamResult {
   errorDisplayed: boolean;
   /** 🔧 batch43-b: 流是否因 idle timeout 结束 (调用方显示重试兜底) */
   idleTimeout: boolean;
+  /** SSE reader 抛出非 abort 错误 (调用方保留 partial token 并提供重试) */
+  readerError: boolean;
 }
 
 /** handleToolEvent 的依赖参数 — 调用方 (sendMessage / retryAiResponse) 闭包注入 */
@@ -396,6 +398,7 @@ export async function consumeAIStream(
   let buffer = '';
   let errorDisplayed = false;
   let idleTimeout = false;
+  let readerError = false;
 
   try {
     while (true) {
@@ -681,6 +684,9 @@ export async function consumeAIStream(
         }
       }
     } // end while
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') throw err;
+    readerError = true;
   } finally {
     // 🔧 BUG-10 fix: Ensure reader lock is always released (e.g. on AbortError)
     // 🔧 ARCH fix (Round 19 Frontend H5 — releaseLock() throws if pending read()):
@@ -699,7 +705,7 @@ export async function consumeAIStream(
     }
   }
 
-  return { reply: accumulatedReply, reasoning: accumulatedReasoning, errorDisplayed, idleTimeout };
+  return { reply: accumulatedReply, reasoning: accumulatedReasoning, errorDisplayed, idleTimeout, readerError };
 }
 
 /** 重新导出 ChatMessage 类型, 方便调用方 (避免循环依赖) */

@@ -41,18 +41,21 @@ function sseResponse(events: unknown[]): Response {
 }
 
 /** 发 1 个 token 后挂起不关闭 — 由测试通过 controller.error(AbortError) 模拟卸载 abort 打断 */
-function heldSseResponse() {
+function heldSseResponse(token = 'Hello', withNetworkFailure = false) {
   const encoder = new TextEncoder();
   let controller!: ReadableStreamDefaultController<Uint8Array>;
   const body = new ReadableStream<Uint8Array>({
     start(c) {
       controller = c;
-      c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content: 'Hello' })}\n`));
+      c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content: token })}\n`));
     },
   });
   return {
     response: new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
-    failWithAbort: () => controller.error(new DOMException('The operation was aborted.', 'AbortError')),
+    controller,
+    failWithAbort: (error = withNetworkFailure
+      ? new TypeError('network dropped')
+      : new DOMException('The operation was aborted.', 'AbortError')) => controller.error(error),
   };
 }
 
@@ -209,6 +212,61 @@ describe('useChatActions — 卸载 abort 与错误后恢复 (79-c 剩余切片)
     // 落库: 2 user + 第二轮 finalMsg assistant; 错误气泡始终不落库
     expect(saveMessage).toHaveBeenCalledTimes(3);
     expect(saveMessage.mock.calls[2][0]).toMatchObject({ role: 'assistant', content: 'Fresh reply' });
+    expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+  });
+
+  it('SSE reader 中断: 保留已收 token + 幂等重试; abort signal 每代独立且旧代不误清新代', async () => {
+    const { params, holder, result, saveMessage } = makeHarness();
+    const interrupted = heldSseResponse('Partial', true);
+    fetchMock.mockResolvedValueOnce(interrupted.response);
+
+    await act(async () => {
+      const sending = result.current.sendMessage('question');
+      await vi.waitFor(() => expect(holder.list.some((message) => message.id === 'ai-2')).toBe(true));
+      interrupted.failWithAbort(new TypeError('network dropped'));
+      await sending;
+    });
+
+    const partial = holder.list.find((m) => m.id === 'ai-2');
+    expect(partial).toMatchObject({ role: 'assistant', content: 'Partial', isError: true });
+    expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+    expect(params.refs.messagesRef.current.map((message) => [message.id, message.role])).toEqual([
+      ['user-1', 'user'],
+      ['ai-2', 'assistant'],
+    ]);
+    expect(typeof partial?.onRetry).toBe('function');
+    expect(saveMessage).toHaveBeenCalledTimes(1);
+    expect(saveMessage.mock.calls[0][0].role).toBe('user');
+
+    const firstController = params.refs.abortRef.current;
+    // retry 流用挂起流: 保持 in-flight, 才能观测 retry 自己的 AbortController 代际
+    const heldRetry = heldSseResponse('complete');
+    fetchMock.mockResolvedValueOnce(heldRetry.response);
+    let retryController!: AbortController;
+    await act(async () => {
+      partial!.onRetry!();
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      retryController = params.refs.abortRef.current!;
+    });
+
+    expect(retryController).toBeInstanceOf(AbortController);
+    expect(retryController?.signal.aborted).toBe(false);
+    partial!.onRetry!();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    // 放行 retry 流（正常完成，非错误）→ retry 走到 saveMessage
+    heldRetry.controller.enqueue(new TextEncoder().encode('data: [DONE]\n'));
+    heldRetry.controller.close();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+    expect(saveMessage).toHaveBeenCalledTimes(2);
+    expect(firstController).not.toBe(retryController);
+    expect(saveMessage.mock.calls[1][0]).toMatchObject({ role: 'assistant', content: 'complete' });
+    expect(holder.list.filter((m) => m.role === 'user')).toHaveLength(1);
     expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
   });
 });

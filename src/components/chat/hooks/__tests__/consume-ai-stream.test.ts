@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { consumeAIStream } from '../consume-ai-stream';
 
 function sseStream(events: unknown[]) {
@@ -9,6 +9,21 @@ function sseStream(events: unknown[]) {
       controller.close();
     },
   });
+}
+
+function interruptedSseStream() {
+  const encoder = new TextEncoder();
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  const stream = new ReadableStream<Uint8Array>({
+    start(c) {
+      controller = c;
+      c.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content: 'Partial' })}\n\n`));
+    },
+  });
+  return {
+    read: () => stream.getReader(),
+    fail: (error = new TypeError('network dropped')) => controller.error(error),
+  };
 }
 
 describe('consumeAIStream product results', () => {
@@ -101,5 +116,25 @@ describe('consumeAIStream reasoning/content separation', () => {
     );
     expect(result.reply).toBe('正文');
     expect(result.reasoning).toBe('thinking…');
+  });
+
+  it('keeps received tokens when the SSE reader drops mid-stream', async () => {
+    const interrupted = interruptedSseStream();
+    const reader = interrupted.read();
+    const consumed = consumeAIStream(reader, new TextDecoder(), {});
+    await vi.waitFor(() => interrupted.fail());
+    const result = await consumed;
+
+    expect(result).toMatchObject({ reply: 'Partial', readerError: true, errorDisplayed: false });
+    expect(result.readerError).toBe(true);
+  });
+
+  it('still rejects AbortError so callers preserve their explicit-cancel behavior', async () => {
+    const interrupted = interruptedSseStream();
+    const reader = interrupted.read();
+    const consumed = consumeAIStream(reader, new TextDecoder(), {});
+    await vi.waitFor(() => interrupted.fail(new DOMException('aborted', 'AbortError')));
+
+    await expect(consumed).rejects.toThrow('aborted');
   });
 });

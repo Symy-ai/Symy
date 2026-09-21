@@ -106,6 +106,7 @@ export async function retryAiResponseImpl({
   retryAiResponseRef,
 }: RetryAiResponseParams): Promise<void> {
   // 🔧 BUG-018 fix: 模块级互斥锁 (retryAiResponse 也要检查)
+  // console.log('[DBG111a] retry entered, lock=', sendMessageLockRef.current.inProgress);
   if (sendMessageLockRef.current.inProgress) return;
   sendMessageLockRef.current.inProgress = true;
   setIsLoading(true);
@@ -140,9 +141,10 @@ export async function retryAiResponseImpl({
       .map((m) => ({ role: m.role, content: m.content }));
 
     // 🔧 H2 fix: 创建 AbortController, 传 signal 给 fetch (之前遗漏)
-    if (abortRef.current) abortRef.current.abort();
+    if (abortRef.current && !abortRef.current.signal.aborted) abortRef.current.abort();
     abortController = new AbortController();
     abortRef.current = abortController;
+    
 
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -257,6 +259,25 @@ export async function retryAiResponseImpl({
         accumulatedReasoning = streamResult.reasoning;
         // 🔧 ARCH fix (Round 70): errorDisplayed → return 跳过 finalMsg 处理 (匹配原 SSE 循环内的 `return;`)
         if (streamResult.errorDisplayed) return;
+            if (streamResult.readerError) {
+              setMessagesSync((prev) => prev.map((m) =>
+                m.id === assistantMsgId
+                  ? {
+                      ...m,
+                      content: accumulatedReply,
+                      isError: true,
+                      onRetry: () => {
+                        if (sendMessageLockRef.current.inProgress) return;
+                        setMessagesSync((prev2) => prev2.filter((m2) => m2.id !== assistantMsgId));
+                        setTimeout(() => {
+                          retryAiResponseRef.current?.(_lastUserContent);
+                        }, 0);
+                      },
+                    }
+                  : m
+              ));
+              return;
+            }
       }
 
       // finalMsg
