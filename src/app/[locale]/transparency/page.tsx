@@ -205,13 +205,18 @@ export default async function TransparencyPage({
         </div>
 
         {/* 增长区块 (batch82-c): K 因子近似值 + 邀请漏斗三数字 — 聚合 only,
-            取数失败时整段隐藏 (不展示假数据), 无金额 (邀请奖励是代币不是钱) */}
+            降级时展示最后成功快照与提示, 无金额 (邀请奖励是代币不是钱) */}
         {growth && (
           <div
             className="mt-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
             data-testid="transparency-growth"
           >
             <p className="text-xs text-text-tertiary mb-2">{t('transparency.growthTitle')}</p>
+            {growth.degraded && (
+              <p className="text-[11px] leading-snug text-text-tertiary">
+                {t('transparency.growthDegradedNote')}
+              </p>
+            )}
             <div className="flex items-baseline gap-3">
               <p className="text-2xl font-bold text-text-primary" data-testid="transparency-growth-k-hero">
                 {formatK(growth.kFactorApprox, locale)}

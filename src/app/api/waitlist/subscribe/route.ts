@@ -96,6 +96,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
+    // 404 = 订阅表未建 → 503, 订阅功能暂不可用而非服务端异常
+    if (response.status === 404) {
+      logger.warn('[waitlist/subscribe] table missing, subscription unavailable');
+      return apiErrors.serviceUnavailable('Waitlist not available yet');
+    }
+
     // 其他错误
     const errorBody = await response.text().catch(() => '');
     logger.error('[waitlist/subscribe] insert error', {

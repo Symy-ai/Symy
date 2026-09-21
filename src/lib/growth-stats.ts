@@ -34,6 +34,8 @@ export interface GrowthStats {
   /** K 因子近似值 = completed ÷ uniqueInviters (两位小数; 无邀请者时 0) */
   kFactorApprox: number;
   generatedAt: string;
+  /** true = 聚合失败, 当前值来自缓存/降级快照而非实时聚合 */
+  degraded: boolean;
 }
 
 function round2(n: number): number {
@@ -41,12 +43,13 @@ function round2(n: number): number {
 }
 
 /** 零值骨架 — 聚合不可用时的最终兜底 (仍满足键面契约, 诚实为零不做样) */
-export function emptyGrowthStats(now: Date): GrowthStats {
+export function emptyGrowthStats(now: Date, degraded: boolean): GrowthStats {
   return {
     invites: { total: 0, pending: 0, completed: 0 },
     uniqueInviters: 0,
     kFactorApprox: 0,
     generatedAt: now.toISOString(),
+    degraded,
   };
 }
 
@@ -74,5 +77,6 @@ export function aggregateGrowthStats(
     uniqueInviters: inviters.size,
     kFactorApprox: inviters.size === 0 ? 0 : round2(completed / inviters.size),
     generatedAt: now.toISOString(),
+    degraded: false,
   };
 }

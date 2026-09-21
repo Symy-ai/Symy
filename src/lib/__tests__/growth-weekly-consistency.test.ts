@@ -7,8 +7,8 @@
  * >1000 行两边都翻页到底不截断; 失败两边 loader 都 resolve (恒 200, 无一边 500)。
  *
  * 指标本身域不同 (invitations vs health_events/challenges/profiles), 不比对数值;
- * 已发现的口径分歧 (growth 无 degraded 标记 / 降级 generatedAt 语义 / 阶梯深度)
- * 记入 batch90-a 缺陷清单待 owner 裁决, 此处只钉一致面。
+ * 契约变更 (batch108-a): growth 与 weekly 均显式 degraded, 降级时保留最后成功
+ * generatedAt; growth 仅进程内缓存, weekly 额外持久快照表, 阶梯深度仍可不同。
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -22,12 +22,15 @@ vi.mock('@/lib/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { loadGrowthStats } from '../growth-stats-server';
+import { loadGrowthStats, __setGrowthMemoryCacheForTests } from '../growth-stats-server';
 import {
   loadTransparencyWeekly,
   __setTransparencyMemoryCacheForTests,
 } from '../transparency-weekly-server';
-import { aggregateGrowthStats, emptyGrowthStats } from '../growth-stats';
+import {
+  aggregateGrowthStats,
+  emptyGrowthStats,
+} from '../growth-stats';
 import {
   aggregateTransparency,
   emptyTransparency,
@@ -168,6 +171,7 @@ function expectAll2dp(...values: unknown[]): void {
 beforeEach(() => {
   vi.clearAllMocks();
   __setTransparencyMemoryCacheForTests(null);
+  __setGrowthMemoryCacheForTests(null);
 });
 
 describe('pure aggregates — isomorphic inputs, consistent modes', () => {
@@ -184,16 +188,18 @@ describe('pure aggregates — isomorphic inputs, consistent modes', () => {
     expect(w.co2SavedKg).toEqual({ week: 0, total: 0 });
     expect(w.guards).toBe(0);
     // 空表 = 真实数据, 两边都不是降级态
+    expect(g.degraded).toBe(false);
     expect(w.degraded).toBe(false);
     expectAllFinite(g, w);
     expect(g.generatedAt).toBe(NOW.toISOString());
     expect(w.generatedAt).toBe(NOW.toISOString());
   });
 
-  it('zero skeletons: same generatedAt for the same now, both fully zeroed', () => {
-    const g = emptyGrowthStats(NOW);
+  it('zero skeletons: same generatedAt for the same now, both degraded and fully zeroed', () => {
+    const g = emptyGrowthStats(NOW, true);
     const w = emptyTransparency(NOW, true);
 
+    expect(g.degraded).toBe(w.degraded);
     expect(g.generatedAt).toBe(w.generatedAt);
     expectAllFinite(g, w);
     for (const n of collectNumbers(g)) expect(n).toBe(0);
@@ -289,9 +295,11 @@ describe('server loaders — >1000 rows page to exhaustion with the same stop ru
 });
 
 describe('degradation mode — both loaders resolve (恒 200), honest zeros vs stale snapshot', () => {
-  it('query failure: growth resolves null (壳落骨架), weekly resolves degraded snapshot — neither rejects', async () => {
+  it('query failure: both resolve degraded snapshots — neither rejects', async () => {
     mockAdmin(makeDb({ invitations: errChain() }));
-    await expect(loadGrowthStats(NOW)).resolves.toBeNull();
+    const stats = await loadGrowthStats(NOW);
+    expect(stats.degraded).toBe(true);
+    expect(stats.invites).toEqual({ total: 0, pending: 0, completed: 0 });
 
     mockAdmin(makeDb({
       health_events: errChain(),
@@ -317,6 +325,7 @@ describe('degradation mode — both loaders resolve (恒 200), honest zeros vs s
       transparency_snapshots: makeChain(async () => ({ data: null, error: null })),
     }));
     const snapshot = await loadTransparencyWeekly(NOW);
+    expect(stats?.degraded).toBe(false);
     expect(snapshot.degraded).toBe(false);
     expect(snapshot.intercepts).toEqual({ week: 0, total: 0 });
   });

@@ -31,13 +31,14 @@ describe('aggregateGrowthStats — empty inputs', () => {
         uniqueInviters: 0,
         kFactorApprox: 0,
         generatedAt: NOW.toISOString(),
+        degraded: false,
       });
     }
   });
 
   it('emptyGrowthStats satisfies the same key contract', () => {
-    expect(Object.keys(emptyGrowthStats(NOW))).toEqual([
-      'invites', 'uniqueInviters', 'kFactorApprox', 'generatedAt',
+    expect(Object.keys(emptyGrowthStats(NOW, true))).toEqual([
+      'invites', 'uniqueInviters', 'kFactorApprox', 'generatedAt', 'degraded',
     ]);
   });
 });

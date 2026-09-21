@@ -5,7 +5,7 @@
  *   + 公共缓存头 + 序列化零个人字段 (红线)
  * - 分页耗尽: 1000 行满页 + 尾页 → .range() 依次 (0,999)/(1000,1999), 聚合不漏页
  * - 诚实小数字: <10 行照常返回真实值 (7 行 → K=0.43), 不设阈值不美化
- * - 降级 (恒 200 不抛 500): 查询失败 / 无 admin client → 零值骨架
+ * - 降级 (恒 200 不抛 500): 查询失败 / 无 admin client → degraded 零值骨架
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -21,6 +21,7 @@ vi.mock('@/lib/logger', () => ({
 
 import { GET } from '../route';
 import { createAdminClient } from '@/lib/supabase-admin';
+import { __setGrowthMemoryCacheForTests } from '@/lib/growth-stats-server';
 import type { GrowthInvitationRow } from '@/lib/growth-stats';
 
 type QueryResult = { data: readonly unknown[] | null; error: { message: string } | null };
@@ -72,6 +73,7 @@ async function getJson(): Promise<{ status: number; body: Record<string, unknown
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __setGrowthMemoryCacheForTests(null);
 });
 
 describe('GET /api/community/growth-stats — success', () => {
@@ -89,10 +91,11 @@ describe('GET /api/community/growth-stats — success', () => {
     const { status, body, raw, cacheControl } = await getJson();
 
     expect(status).toBe(200);
-    expect(Object.keys(body)).toEqual(['invites', 'uniqueInviters', 'kFactorApprox', 'generatedAt']);
+    expect(Object.keys(body)).toEqual(['invites', 'uniqueInviters', 'kFactorApprox', 'generatedAt', 'degraded']);
     expect(body.invites).toEqual({ total: 5, pending: 2, completed: 2 });
     expect(body.uniqueInviters).toBe(3);
     expect(body.kFactorApprox).toBe(0.67); // 2 completed ÷ 3 inviters, 两位小数
+    expect(body.degraded).toBe(false); // 契约反转: 成功聚合必须显式非降级
     expect(typeof body.generatedAt).toBe('string');
     // 红线: 聚合输出无个人字段, 无奖励金额 (50 代币不是钱)
     expect(raw).not.toMatch(/user_id|referee|email|reward|amount|token/i);
@@ -150,6 +153,7 @@ describe('GET /api/community/growth-stats — degrade (always 200)', () => {
     expect(body.invites).toEqual({ total: 0, pending: 0, completed: 0 });
     expect(body.uniqueInviters).toBe(0);
     expect(body.kFactorApprox).toBe(0);
+    expect(body.degraded).toBe(true);
   });
 
   it('falls back to the zeroed skeleton when there is no admin client', async () => {
@@ -160,5 +164,6 @@ describe('GET /api/community/growth-stats — degrade (always 200)', () => {
     expect(status).toBe(200);
     expect(body.invites).toEqual({ total: 0, pending: 0, completed: 0 });
     expect(body.kFactorApprox).toBe(0);
+    expect(body.degraded).toBe(true);
   });
 });

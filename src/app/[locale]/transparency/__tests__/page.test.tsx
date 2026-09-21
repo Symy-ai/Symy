@@ -42,8 +42,8 @@ import { getTranslations } from 'next-intl/server';
 import { useTranslations, useLocale } from 'next-intl';
 import { loadTransparencyWeekly } from '@/lib/transparency-weekly-server';
 import { loadGrowthStats } from '@/lib/growth-stats-server';
-import type { TransparencySnapshot } from '@/lib/transparency-weekly';
 import type { GrowthStats } from '@/lib/growth-stats';
+import type { TransparencySnapshot } from '@/lib/transparency-weekly';
 
 /** zh/en 生产词典快照 — t() 断言打在用户真实可见文案上 */
 const zhMsgs = JSON.parse(readFileSync('src/i18n/messages/zh.json', 'utf-8'));
@@ -92,6 +92,7 @@ const GROWTH_FIXTURE: GrowthStats = {
   uniqueInviters: 7,
   kFactorApprox: 0.3,
   generatedAt: '2026-09-18T12:00:00.000Z',
+  degraded: false,
 };
 
 async function renderPage(locale: 'zh' | 'en') {
@@ -201,14 +202,14 @@ describe('transparency page — growth section (batch82-c)', () => {
     expect(container.textContent).toContain('not cash');
   });
 
-  it('hides the whole growth section when aggregation fails (never fake zeros)', async () => {
+  it('shows the growth degraded note when serving a cached snapshot', async () => {
     mockMessages(flat(zhMsgs));
-    (loadGrowthStats as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    (loadGrowthStats as ReturnType<typeof vi.fn>).mockResolvedValue({ ...GROWTH_FIXTURE, degraded: true });
 
     const { container } = await renderPage('zh');
 
-    expect(screen.queryByTestId('transparency-growth')).toBeNull();
-    expect(container.textContent).not.toContain('K 因子近似口径');
+    expect(screen.getByTestId('transparency-growth')).toBeTruthy();
+    expect(container.textContent).toContain('增长数据暂时不可用，正在展示最近一次缓存快照');
   });
 
   it('growth markup carries zero personal / amount fields (aggregate only red line)', async () => {

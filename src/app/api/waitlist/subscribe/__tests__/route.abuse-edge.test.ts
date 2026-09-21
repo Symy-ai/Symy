@@ -48,6 +48,15 @@ describe('POST /api/waitlist/subscribe — duplicate and degradation', () => {
     expect(await first.text()).toBe(await duplicate.text());
   });
 
+  it('returns 201-equivalent success for a PostgREST 201 upstream response', async () => {
+    mockedFetch.mockResolvedValueOnce(restResponse(201));
+
+    const response = await POST(makeRequest({ email: 'success@example.com' }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ success: true });
+  });
+
   it('inserts a normalized email through PostgREST without read-before-write', async () => {
     await POST(makeRequest({ email: 'User@Example.com' }));
     expect(mockedFetch).toHaveBeenCalledTimes(1);
@@ -61,12 +70,12 @@ describe('POST /api/waitlist/subscribe — duplicate and degradation', () => {
     });
   });
 
-  it('currently maps a missing table response to generic 500 without leaking the raw body', async () => {
+  it('maps a missing table response to calm 503 without leaking the raw body', async () => {
     mockedFetch.mockResolvedValueOnce(new Response('relation missing', { status: 404 }));
     const response = await POST(makeRequest({ email: 'table@example.com' }));
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({
-      error: 'Failed to join waitlist',
+      error: 'Waitlist not available yet',
     });
   });
 });
