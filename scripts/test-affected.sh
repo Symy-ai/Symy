@@ -46,6 +46,10 @@ MAP_ONLY=0
 SOURCE_EXT_RE='\.(ts|tsx|js|jsx|mjs|cjs)$'
 TEST_EXT_RE='\.(test|spec)\.(ts|tsx|js|jsx|mjs|cjs)$'
 INDIRECT_EXT_RE='\.(css|scss|json|md|mdx)$'            # 由守卫/消费者测试兜住
+# 基名 needle 的闸: 同名文件超过这个数就不用基名(只留精确路径串), 防 page.tsx 类扇出爆炸
+BASENAME_NEEDLE_MAX=2
+# MAPPING 打印时, 单条原因最多列几个文件(多的截断, 完整清单在 AFFECTED 段)
+REASON_PREVIEW_MAX=8
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/test-affected.XXXXXX")" || exit 2
 trap 'rm -rf "$WORK"' EXIT
@@ -125,15 +129,28 @@ if [ ! -s "$TESTS_FILE" ]; then
 fi
 
 # ── 单文件映射 ─────────────────────────────────────────────────────────
-# 收集模块引用: 覆盖 from '@/lib/x' | from '../x' | from './x' | import('x') | require('x')
+# 引用匹配: 模式 = 「从行首一路匹配到 specifier 尾部」的固定串, 覆盖
+#   import … from '@/lib/x' | from '../x' | from "./x" | import('x') | require('x')
+#   vitest.mock('.../x') | readFileSync(join(cwd, 'app/[locale]/page.tsx'))
+# 一条模式喂给 grep -F -f 一次扫全候选集(601 文件), 不做 601×N 次进程调用。
+# 锚在 '@/' | './' | '../' | '/' 起始, 避免 'index' 这类基名撞上 'admin/users/index-guard' 之类噪声。
 collect_refs() {
-  local needle="$1" candidate
-  while IFS= read -r candidate; do
-    grep -F -e "from '$needle'" -e "from \"$needle\"" \
-            -e "import('$needle')" -e "require('$needle')" \
-            -e "from \"$needle"  -e "from '$needle" \
-            -- "$candidate" 2>/dev/null && true
-  done < "$TESTS_FILE" >> "$WORK/refs.txt"
+  local pattern_file="$1"
+  LC_ALL=C sort -u "$TESTS_FILE" \
+    | tr '\n' '\0' \
+    | xargs -0 -r   grep -F -l -f "$pattern_file" 2>/dev/null && true
+}
+# 同名文件计数(给「基名 needle 是否够独特」当闸)
+base_count() {
+  if [ -z "${BASE_COUNT_CACHE+x}" ]; then
+    BASE_COUNT_CACHE=1
+    git ls-files 'src/**' | awk -F/ '{
+      f = $NF; sub(/\.[^.]+$/, "", f); n[f]++
+    } END { for (k in n) print n[k] "\t" k }' | LC_ALL=C sort -k2,2 > "$WORK/basecount.txt"
+  fi
+  local c
+  c="$(awk -F'\t' -v k="$1" '$2 == k { print $1; exit }' "$WORK/basecount.txt")"
+  printf '%s' "${c:-0}"
 }
 
 map_one_file() {
@@ -186,38 +203,46 @@ map_one_file() {
   [ -f "$dir/__tests__/$name_.test.tsx" ] && add "$dir/__tests__/$name_.test.tsx" "in-dir-tests:$name_.test.tsx"
 
   # c) 消费者(引用扇出): 任何测试里引用了这个模块就入选 —— 覆盖 app/**/page.tsx 与所有组件。
-  #    指针串只取「被引用侧」后缀(from 'X' 收在 X), 因此 `./x` / `../x` / `@/x` 只需一条 `./x`
-  #    就能全部命中; 仓内真用的写法: 相对路径、`@/` 别名(见 vitest.config.ts)、动态 import/require。
-  #    对 @/ 额外补 src-根相对串(`@/lib/x` ⇔ `src/lib/x`), 否则别名的 import 找不到。
-  local alias_depth="$(( ${#dir} - 3 ))"   # dir=src/lib → depth 0; dir=src/lib/email → depth 1
-  : > "$WORK/needles.txt"
+  #    模式都是「锚在 specifier 开头、收到目标串」的固定串, 所以 '@/lib/x' / '../lib/x' / './x'
+  #    三种写法同一条 '/lib/x' 全中; Next 约定文件(page/layout/route)没人 import, 靠仓内
+  #    路径字面量(readFileSync/join(cwd,'app/[locale]/page.tsx'))兜住。
+  : > "$WORK/patterns.txt"
+  emit_patterns() {   # emit_patterns <tail> —— 同一目标, 覆盖全部引用写法
+    local tail="$1"
+    {
+      printf "from '%s'\n" "$tail"
+      printf 'from "%s"\n' "$tail"
+      printf "@/%s'\n"  "$tail"          # from '@/lib/x' / import('@/lib/x')
+      printf "@/%s\"\n" "$tail"
+      printf "/%s'\n"  "$tail"          # from '../lib/x'
+      printf "/%s\"\n" "$tail"
+      printf "./%s'\n" "$tail"          # from './x'
+      printf "./%s\"\n" "$tail"
+      printf "'%s'\n"  "$tail"          # import('x') / require('x') / mock('x')
+      printf "\"%s\"\n" "$tail"
+      printf "%s'\n"   "$tail"          # 分片路径字面量 readSrc('src','components','x.tsx')
+      printf "%s\"\n"  "$tail"
+    } >> "$WORK/patterns.txt"           # 追加, 不用函数局部重定向(它会开子 shell, 调用方看不到)
+  }
+  local rel=""
+  if [ "${dir#src/}" != "$dir" ]; then rel="${dir#src/}/"; fi
+  emit_patterns "${rel}${name_}"                    # lib/guard-rank
+  if [ "$stem" != "$name_" ]; then emit_patterns "${rel}${stem}"; fi
+  emit_patterns "${rel}${base}"                      # lib/guard-rank.ts —— 源码扫描型测试
   {
-    printf './%s\n' "$name_"
-    if [ "$stem" != "$name_" ]; then printf './%s\n' "$stem"; fi
-    if [ "${dir#src/}" != "$dir" ]; then
-      printf '%s\n' "src/${dir#src/}/$name_"          # @/lib/guard-rank ⇔ src/lib/guard-rank
-      [ "$stem" != "$name_" ] && printf 'src/%s/%s\n' "${dir#src/}" "$stem"
-    fi
-    # 源码扫描型测试(readFileSync/join(cwd,'x')/readdirSync)不会 import 被读的文件,
-    # 拿仓内路径 + 文件名字面量兜住(如 readSrc('src','components','buddy','dream-fund-editor.tsx'))。
-    printf '%s\n' "$changed"                        # 'src/components/daily-ritual-overlay.tsx'
-    printf '%s\n' "$dir/$base"                      # 'components/daily-ritual-overlay.tsx'
-    if [ "${dir#src/}" != "$dir" ]; then
-      printf '%s/%s\n' "${dir#src/}" "$base"         # 'components/daily-ritual-overlay.tsx'
-    fi
-    printf '%s\n' "$base"                            # 'daily-ritual-overlay.tsx'
-    printf './%s/\n' "$name_"                        # 目录字面量 './butterfly/…'
-  } >> "$WORK/needles.txt"
-  [ "$alias_depth" -gt 0 ] && printf 'src/%s/\n' "$name_" >> "$WORK/needles.txt"
+    printf "%s\n" "$changed"    # src/lib/guard-rank.ts
+    printf "%s\n" "$dir/$base"  # lib/guard-rank.ts
+  } >> "$WORK/patterns.txt"
+  # 光秃秃的文件名只在「同名文件在 src/ 下不多」时才用: page.tsx/layout.tsx/route.ts 在
+  # app/ 下几十份, 用基名会把它改一页炸成 20 个无关守卫测试; 具体路径串已经精确兜住。
+  if [ "$(base_count "$base")" -le "$BASENAME_NEEDLE_MAX" ]; then
+    printf "%s\n" "$base" >> "$WORK/patterns.txt"   # guard-rank.ts(目录扫描, 跨目录弱相关)
+  fi
 
-  local needle
-  while IFS= read -r needle; do
-    [ -n "$needle" ] || continue
-    collect_refs "$needle"          # 命中文件名逐行写进 $WORK/refs.txt
-  done < "$WORK/needles.txt"
-
-  if [ -s "$WORK/refs.txt" ]; then
-    LC_ALL=C sort -u "$WORK/refs.txt" | while IFS= read -r hit; do
+  local hits
+  hits="$(collect_refs "$WORK/patterns.txt")"
+  if [ -n "$hits" ]; then
+    printf '%s\n' "$hits" | LC_ALL=C sort -u | while IFS= read -r hit; do
       [ -n "$hit" ] || continue
       add "$hit" "refs:$changed"
     done
@@ -269,8 +294,9 @@ if [ "${#AFFECTED_LIST[@]}" -eq 0 ]; then
   echo "AFFECTED=none (only non-test files matched: ${DROPPED[*]}) → fallback full"
   exit 3
 fi
-mapfile -t AFFECTED_REASONS < <(cut -f1,2 "$AFFECTED" | LC_ALL=C sort -u | awk -F'\t' '
-  { r[$2] = r[$2] (r[$2] ? "," : "") $1 } END { for (k in r) print k "\t" r[k] }' | LC_ALL=C sort)
+mapfile -t AFFECTED_REASONS < <(cut -f1,2 "$AFFECTED" | LC_ALL=C sort -u | awk -F'\t' -v cap="$REASON_PREVIEW_MAX" '
+  { n[$2]++; if (n[$2] <= cap) r[$2] = r[$2] (r[$2] ? "," : "") $1; tot[$2]++ }
+  END { for (k in r) print k "\t" tot[k] "\t" r[k] }' | LC_ALL=C sort -k1,1)
 
 echo "SOURCE: $CHANGED_LABEL"
 echo "CHANGED: $CHANGED_COUNT file(s) under src/ (+$SKIPPED outside src/ ignored)"
@@ -279,7 +305,12 @@ for f in "${AFFECTED_LIST[@]}"; do echo "  $f"; done
 [ "${#DROPPED[@]}" -gt 0 ] && echo "  (not test files, dropped from vitest args: ${DROPPED[*]})"
 echo "MAPPING: (reason → test files)"
 for line in "${AFFECTED_REASONS[@]}"; do
-  echo "  ${line%%$'\t'*} → ${line#*$'\t'}"
+  IFS=$'\t' read -r rname rtot rfiles <<< "$line"
+  if [ "$rtot" -gt "$REASON_PREVIEW_MAX" ]; then
+    echo "  $rname → $rfiles …(+$((rtot - REASON_PREVIEW_MAX)) more, see AFFECTED list)"
+  else
+    echo "  $rname → $rfiles"
+  fi
 done
 echo "MAP-LOG: $LOG"
 
