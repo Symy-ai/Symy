@@ -15,6 +15,7 @@
     "test:coverage": "vitest run --coverage",
     "finance:validate": "node scripts/validate-finance-data.mjs",
     "green:consensus": "node scripts/green-consensus-report.mjs",
+    "jev:smoke": "node scripts/jev-registry-smoke.mjs",
     "prepare": "bash scripts/setup-precommit.sh"
   },
   "dependencies": {
