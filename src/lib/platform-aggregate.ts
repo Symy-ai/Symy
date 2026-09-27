@@ -58,6 +58,14 @@ function toFiniteTime(value: string | null | undefined): number {
   return new Date(value ?? '').getTime();
 }
 
+/** 单源: UTC 周一 00:00 原语, transparency-weekly 与消费端共用
+ *  (生产 Vercel 与测试均 UTC, 不吃部署机本地时区) */
+export function utcWeekStart(now: Date): Date {
+  const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const dow = (new Date(dayStart).getUTCDay() + 6) % 7; // Monday=0
+  return new Date(dayStart - dow * 86_400_000);
+}
+
 /** 拦截计数窗口: 本周起点与上周起点 (UTC 周一, ms) — 由消费端用 utcWeekStart 推出 */
 export interface AggregateWindow {
   weekStartMs: number;

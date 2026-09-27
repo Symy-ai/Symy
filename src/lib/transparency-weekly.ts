@@ -20,6 +20,9 @@
  * batch109-a: 拦截数/守护者数/省下金额/赢回小时等平台口径原语收敛到
  * platform-aggregate 单源, 本文件只保留快照键面契约 (类型/零值骨架/回读校验/
  * 周历) 与组合 — 三指标口径改在 platform-aggregate 单点演化。
+ *
+ * batch119-a: utcWeekStart 周历原语也收敛到 platform-aggregate 单源 (原为本地
+ * 副本), 本文件仅 re-export 保持既有消费端/测试的导入面不变。
  */
 
 import { co2FromUsdSaved } from '@/lib/co2-estimate';
@@ -33,6 +36,7 @@ import {
   type PlatformHealthRow,
   type PlatformPassedChallengeRow,
   type PlatformProfileRow,
+  utcWeekStart,
 } from '@/lib/platform-aggregate';
 
 /** 单指标双桶: 本周 / 累计 */
@@ -76,12 +80,8 @@ export type TransparencyProfileRow = PlatformProfileRow;
 /** active_challenges passed 聚合输入最小列 — 单源见 platform-aggregate (batch109-a) */
 export type TransparencyPassedChallengeRow = PlatformPassedChallengeRow;
 
-/** 本周起点 — UTC 周一 00:00 (生产 Vercel 与测试均 UTC, 不吃部署机本地时区) */
-export function utcWeekStart(now: Date): Date {
-  const dayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-  const dow = (new Date(dayStart).getUTCDay() + 6) % 7; // Monday=0
-  return new Date(dayStart - dow * 86_400_000);
-}
+/** 本周起点 — 单源见 platform-aggregate (batch119-a); 保留 re-export 兼容既有消费端 */
+export { utcWeekStart };
 
 /** 零值骨架 — 全链路降级的最终兜底 (仍满足键面契约) */
 export function emptyTransparency(now: Date, degraded: boolean): TransparencySnapshot {
