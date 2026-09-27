@@ -11,6 +11,8 @@
  *  - AbortError → 静默 (不标错误), finally 仍释放锁
  *  - Give Up 竞态: abortRef 被新一代接管后, 旧 finally 不清锁/loading/skip 标记
  *  - 空白回复 → hereForYou fallback
+ *  - 🔧 P0 fix (demo retry 死循环): 端点与 sendMessage 同源 —
+ *    isDemo=true → /api/chat/anonymous, isDemo=false → /api/chat (含 onRetry 二次重试)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { ChatMessage } from '@/types/chat-message';
@@ -79,6 +81,7 @@ function makeHarness(initial: ChatMessage[], overrides: Partial<RetryAiResponseP
   const saveMessage = vi.fn<(message: ChatMessage) => void>();
   const params: RetryAiResponseParams = {
     lastUserContent: 'please-retry-content',
+    isDemo: false,
     activeChallenge: challenge,
     t: t as unknown as RetryAiResponseParams['t'],
     setMessagesSync,
@@ -350,5 +353,56 @@ describe('retryAiResponseImpl', () => {
     expect(body.guardIntensity).toBe('balanced');
     expect(body.guardScope).toBeDefined();
     expect(body.impulseContext).toBeNull();
+  });
+
+  // 🔧 P0 fix (demo retry 死循环): 回归守卫 — 修复前此处恒为 '/api/chat' (登录端点)
+  it('🔧 P0 demo 端点选择: isDemo=true → /api/chat/anonymous (body 与登录态同构)', async () => {
+    const { params, holder } = makeHarness(makeInitialMessages(), { isDemo: true });
+    fetchMock.mockResolvedValueOnce(sseResponse([{ type: 'token', content: 'demo reply' }]));
+
+    await retryAiResponseImpl(params);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/chat/anonymous');
+    // body 字段与登录态完全一致 (greenPref/guard* 照常透传), 仅端点不同
+    const body = fetchBody(fetchMock);
+    expect(body.messages).toEqual([{ role: 'user', content: 'I want the air fryer' }]);
+    expect(body.stream).toBe(true);
+    expect(body.greenPref).toBe('on');
+    expect(body.guardIntensity).toBe('balanced');
+    expect(holder.list.find((m) => m.id === 'ai-1')).toMatchObject({ content: 'demo reply' });
+  });
+
+  it('🔧 P0 登录端点选择: isDemo=false → /api/chat (不回归)', async () => {
+    const { params } = makeHarness(makeInitialMessages());
+    fetchMock.mockResolvedValueOnce(sseResponse([{ type: 'token', content: 'ok' }]));
+
+    await retryAiResponseImpl(params);
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/chat');
+  });
+
+  it('🔧 P0 demo 死循环守卫: guest 503 后的重试仍打 anonymous (不再撞登录端点 503)', async () => {
+    const { params, holder } = makeHarness(makeInitialMessages(), { isDemo: true });
+    // 首次重试: 服务端 503 (AI 初始化中) → 标 isError + onRetry
+    fetchMock.mockResolvedValueOnce(new Response('AI is still initializing', { status: 503 }));
+
+    await retryAiResponseImpl(params);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/chat/anonymous');
+
+    const errMsg = holder.list.find((m) => m.id === 'ai-1');
+    expect(errMsg).toMatchObject({ isError: true, content: 'chat.aiFallback.aiError' });
+    expect(typeof errMsg?.onRetry).toBe('function');
+
+    // 再点重试: 仍打 anonymous 端点 (修复前第二次会打 /api/chat → guest 永远 503)
+    fetchMock.mockResolvedValueOnce(sseResponse([{ type: 'token', content: 'recovered' }]));
+    params.retryAiResponseRef.current = (content: string) => retryAiResponseImpl({ ...params, lastUserContent: content });
+    errMsg!.onRetry!();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await vi.waitUntil(() => expect(params.saveMessage).toHaveBeenCalledTimes(1));
+
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/chat/anonymous');
+    expect(fetchBody(fetchMock).messages).toEqual([{ role: 'user', content: 'I want the air fryer' }]);
+    expect(params.sendMessageLockRef.current.inProgress).toBe(false);
   });
 });

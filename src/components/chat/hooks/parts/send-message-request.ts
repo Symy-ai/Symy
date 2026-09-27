@@ -6,6 +6,7 @@ import { readMicroChallengeHistory } from "@/components/chat/parts/micro-challen
 import { readDismissedContextSignals } from "@/components/chat/parts/context-signal-store";
 import { readAskedShoppingSubjects } from "@/components/chat/parts/shopping-clarify-store";
 import { consumeGreenAltRetroForRequest } from "@/components/chat/parts/green-alt-retro-store";
+import { resolveChatEndpoint } from "./chat-endpoint";
 import { lastDataQueryMeta } from "../data-query-follow-up";
 import type { ChatMessage } from "@/components/chat-bubble";
 import type { ActiveChallenge } from "../use-challenge-actions";
@@ -52,7 +53,8 @@ export async function requestSendMessage({
 
   const currentActiveChallenge =
     activeChallenge || activeChallengeState || undefined;
-  const chatEndpoint = isDemo ? "/api/chat/anonymous" : "/api/chat";
+  // 🔧 P0 fix (demo retry 死循环): 端点选择下沉到 resolveChatEndpoint, 与 retryAiResponse 同源
+  const chatEndpoint = resolveChatEndpoint(isDemo);
   const greenAltRetroState = consumeGreenAltRetroForRequest();
   const response = await fetch(chatEndpoint, {
     method: "POST",

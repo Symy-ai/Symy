@@ -11,6 +11,8 @@
  *
  * 关键不变量:
  *   - retryMode 从最后一条用户消息推断 (而非 activeChallenge), 防止挑战中途退出后 mode 分裂。
+ *   - 端点选择与 sendMessage 同源: resolveChatEndpoint(isDemo) (见 parts/chat-endpoint.ts)。
+ *     🔧 P0 fix (demo retry 死循环): 旧代码硬编码 '/api/chat' → guest 打登录端点 → 永远 503。
  *   - SSE 流消费通过 consumeAIStream (Round 70 抽取), 无 throttling (与 sendMessage 不同)。
  *   - error 事件: setMessagesSync(errorContent, isError, onRetry) + return true → break consumeAIStream。
  *   - AbortError: 静默 return (用户主动取消或组件卸载)。
@@ -32,6 +34,8 @@ import {
   createStreamErrorRetry,
   markStreamErrorBubble,
 } from './parts/stream-error-retry';
+// 🔧 P0 fix (demo retry 死循环): 端点与 send-message-request.ts 同源 (单一真源 parts/chat-endpoint.ts)
+import { resolveChatEndpoint } from './parts/chat-endpoint';
 import { isAbortError, normalizeChatApiError } from './chat-api-error';
 
 /** sendMessageLockRef 内部结构 (与 use-chat-actions.ts 结构兼容, 本地定义避免 circular dep) */
@@ -45,6 +49,11 @@ interface SendMessageLockState {
 export interface RetryAiResponseParams {
   /** 函数参数: 最后一条用户消息内容 (用于 catch 块的 onRetry 闭包) */
   lastUserContent: string;
+  /**
+   * 🔧 P0 fix (demo retry 死循环): guest (demo) 模式标志 — 与 sendMessage 同口径。
+   * 决定重试打哪个端点 (见 parts/chat-endpoint.ts)。由 use-chat-actions.ts 闭包注入。
+   */
+  isDemo: boolean;
   /** 渲染期 state: activeChallenge — handleToolEvent 用其 amount 显示 toast */
   activeChallenge: ActiveChallenge | undefined;
   /** i18n t 函数 */
@@ -80,14 +89,15 @@ export interface RetryAiResponseParams {
  *
  * 调用方 (use-chat-actions.ts) 通过 useCallback 包装:
  *   const retryAiResponse = useCallback(
- *     (lastUserContent: string) => retryAiResponseImpl({ lastUserContent, ...deps }),
- *     [activeChallenge, t, setMessagesSync, setIsLoading, setActiveChallenge, nextId,
+ *     (lastUserContent: string) => retryAiResponseImpl({ lastUserContent, isDemo, ...deps }),
+ *     [isDemo, activeChallenge, t, setMessagesSync, setIsLoading, setActiveChallenge, nextId,
  *      saveMessage, addMcpNotification, onBuddyStateRefresh, onToast]
  *   );
  * refs + retryAiResponseRef 不进 deps (stable / self-ref)。
  */
 export async function retryAiResponseImpl({
   lastUserContent: _lastUserContent,
+  isDemo,
   activeChallenge,
   t,
   setMessagesSync,
@@ -150,7 +160,16 @@ export async function retryAiResponseImpl({
     abortRef.current = abortController;
     
 
-    const response = await fetch('/api/chat', {
+    // 🔧 P0 fix (demo retry 死循环): 端点与 sendMessage 同源。
+    //   修复前此处硬编码 '/api/chat' (登录端点) → guest 无 session → route.ts userAgentId 空
+    //   → 503 "AI is still initializing" → aiError 气泡 → 再点重试永远 503 (demo 死循环)。
+    // ⚠️ 匿名额度取舍 (有意为之, 不做退款复杂化): 每次重试打 anonymous 端点会再消耗 1 次
+    //   daily 额度 (3/天)。若原始失败是流中断 (服务端已计数), 重试即第二次消耗。
+    //   这是可接受的 — 与登录用户"重试=再请求一次"的既有行为一致, 且重试是用户显式动作;
+    //   不引入"失败即退还额度"的补偿逻辑 (跨请求幂等 + 指纹去重成本高, 收益低, 易引入新 bug)。
+    //   额度耗尽时服务端返回额度错误 → 走下方 catch → aiError 文案, 行为与登录态一致。
+    const chatEndpoint = resolveChatEndpoint(isDemo);
+    const response = await fetch(chatEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

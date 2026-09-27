@@ -20,6 +20,8 @@
  *    amount 0 → 不触发, 仅清 banner
  *  - demo 不双写: 非首条 → 仅 canned 路径 (零 fetch, 1.5s 后恰 1 条 canned 回复, 锁释放);
  *    首条挑战 → 仅真实 /api/chat/anonymous (无 canned timer), demoMsgCount 置 1
+ *  - 🔧 P0 fix (demo retry 死循环): demo 态 retryAiResponse 及其 onRetry 二次重试
+ *    端点恒为 /api/chat/anonymous (修复前打 '/api/chat' → guest 永远 503)
  */
 
 import { renderHook, act } from '@testing-library/react';
@@ -237,6 +239,50 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     // 错误路径不落库 assistant — 恰只有 userMsg
     expect(saveMessage).toHaveBeenCalledTimes(1);
     expect(saveMessage.mock.calls[0][0].role).toBe('user');
+    expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+  });
+
+  it('🔧 P0 demo retry 端点: guest 503 后点重试仍打 /api/chat/anonymous (不撞登录端点 503 死循环)', async () => {
+    // 真实复现路径: guest 首条挑战消息 → anonymous 端点 503 → 错误气泡 onRetry → 重试
+    //   修复前重试打 '/api/chat' → guest 无 session → 永远 503 "AI is still initializing"
+    const { params, holder, result, saveMessage } = makeHarness({
+      state: {
+        activeChallenge: { ...CH },
+        isLoadingHistory: false,
+        isDemo: true,
+        impulseContext: undefined,
+        locale: 'en',
+      },
+    });
+    params.refs.activeChallengeRef.current = { ...CH };
+    fetchMock.mockResolvedValueOnce(new Response('AI is still initializing', { status: 503 }));
+
+    await act(async () => {
+      await result.current.sendMessage('I want the Air Fryer');
+    });
+
+    // 首条 demo 挑战消息走真实 API (anonymous), 503 → 错误气泡 + onRetry
+    expect(params.refs.demoMsgCountRef.current).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/chat/anonymous');
+    const errMsg = holder.list.find((m) => m.isError);
+    expect(errMsg).toMatchObject({ role: 'assistant', content: 'chat.aiFallback.aiError' });
+    expect(typeof errMsg!.onRetry).toBe('function');
+
+    // 点重试: retryAiResponse 在 demo 态下仍打 anonymous 端点
+    fetchMock.mockResolvedValueOnce(sseResponse([{ type: 'token', content: 'recovered' }]));
+    await act(async () => {
+      errMsg!.onRetry!();
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/chat/anonymous');
+    expect(fetchBody(fetchMock, 1).messages).toEqual([{ role: 'user', content: 'I want the Air Fryer' }]);
+    // 重试不复制 user 消息, 只落库 1 条 assistant; 锁正常释放
+    expect(holder.list.filter((m) => m.role === 'user')).toHaveLength(1);
+    expect(holder.list.find((m) => m.role === 'assistant')?.content).toBe('recovered');
+    expect(saveMessage.mock.calls[1][0]).toMatchObject({ role: 'assistant', content: 'recovered' });
     expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
   });
 });
@@ -524,4 +570,5 @@ describe('useChatActions — demo 与真实路径不双写', () => {
     expect(saveMessage.mock.calls[1][0]).toMatchObject({ role: 'assistant', content: 'real analysis' });
     expect(params.callbacks.onAuthPrompt).not.toHaveBeenCalled();
   });
+
 });

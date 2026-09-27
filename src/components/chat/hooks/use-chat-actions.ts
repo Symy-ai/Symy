@@ -418,6 +418,8 @@ export function useChatActions({
     async (_lastUserContent: string) => {
       return retryAiResponseImpl({
         lastUserContent: _lastUserContent,
+        // 🔧 P0 fix (demo retry 死循环): 端点选择需要 isDemo (guest → /api/chat/anonymous)
+        isDemo,
         activeChallenge,
         t,
         setMessagesSync,
@@ -443,6 +445,7 @@ export function useChatActions({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional omission (stable ref/callback)
     [
+      isDemo, // 🔧 P0 fix (demo retry 死循环): retry 端点选择 (guest → /api/chat/anonymous)
       activeChallenge, // 🔧 注意: 仅 line 1450 处用闭包值 (与 sendMessage 一致, 保留)
       t,
       setMessagesSync,
