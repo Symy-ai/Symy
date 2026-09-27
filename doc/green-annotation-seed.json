@@ -1,0 +1,1951 @@
+[
+  {
+    "id": "ann-0001",
+    "locale": "zh",
+    "title": "竹制牙刷（软毛）",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0002",
+    "locale": "zh",
+    "title": "九成新二手背包",
+    "category": "箱包",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0003",
+    "locale": "zh",
+    "title": "一次性塑料杯 50 只装",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0004",
+    "locale": "zh",
+    "title": "GT-2000 跑鞋 42 码",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0005",
+    "locale": "zh",
+    "title": "再生塑料收纳盒",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0006",
+    "locale": "zh",
+    "title": "竹制牙刷",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0007",
+    "locale": "zh",
+    "title": "有机棉毛巾",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0008",
+    "locale": "zh",
+    "title": "环保洗衣液",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0009",
+    "locale": "zh",
+    "title": "低碳节能空调",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0010",
+    "locale": "zh",
+    "title": "耐用雨伞",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0011",
+    "locale": "zh",
+    "title": "替换装洗手液",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0012",
+    "locale": "zh",
+    "title": "不锈钢扳手套装",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0013",
+    "locale": "zh",
+    "title": "可持续再生棉 T 恤，可生物降解",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0014",
+    "locale": "zh",
+    "title": "便携水杯",
+    "category": "kitchen",
+    "subcategory": "reusable bottles",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0015",
+    "locale": "zh",
+    "title": "仿皮草时尚围巾",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0016",
+    "locale": "zh",
+    "title": "竹制收纳盒",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0017",
+    "locale": "zh",
+    "title": "玻璃水杯",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0018",
+    "locale": "zh",
+    "title": "无线蓝牙耳机 主动降噪",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-uncertified-tone-guard.test.ts"
+  },
+  {
+    "id": "ann-0019",
+    "locale": "zh",
+    "title": "不锈钢保温杯 500ml",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-uncertified-tone-guard.test.ts"
+  },
+  {
+    "id": "ann-0020",
+    "locale": "zh",
+    "title": "二手纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0021",
+    "locale": "zh",
+    "title": "租赁纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0022",
+    "locale": "zh",
+    "title": "再生纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0023",
+    "locale": "zh",
+    "title": "有机纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0024",
+    "locale": "zh",
+    "title": "可降解纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0025",
+    "locale": "zh",
+    "title": "环保纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0026",
+    "locale": "zh",
+    "title": "竹纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0027",
+    "locale": "zh",
+    "title": "可重复使用纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0028",
+    "locale": "zh",
+    "title": "认证纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0029",
+    "locale": "zh",
+    "title": "耐用纯棉浴巾",
+    "category": "个护家纺",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0030",
+    "locale": "zh",
+    "title": "二手亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0031",
+    "locale": "zh",
+    "title": "租赁亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0032",
+    "locale": "zh",
+    "title": "再生亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0033",
+    "locale": "zh",
+    "title": "有机亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0034",
+    "locale": "zh",
+    "title": "可降解亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0035",
+    "locale": "zh",
+    "title": "环保亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0036",
+    "locale": "zh",
+    "title": "竹亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0037",
+    "locale": "zh",
+    "title": "可重复使用亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0038",
+    "locale": "zh",
+    "title": "认证亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0039",
+    "locale": "zh",
+    "title": "耐用亚麻衬衫",
+    "category": "服饰",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0040",
+    "locale": "zh",
+    "title": "二手实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0041",
+    "locale": "zh",
+    "title": "租赁实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0042",
+    "locale": "zh",
+    "title": "再生实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0043",
+    "locale": "zh",
+    "title": "有机实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0044",
+    "locale": "zh",
+    "title": "可降解实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0045",
+    "locale": "zh",
+    "title": "环保实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0046",
+    "locale": "zh",
+    "title": "竹实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0047",
+    "locale": "zh",
+    "title": "可重复使用实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0048",
+    "locale": "zh",
+    "title": "认证实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0049",
+    "locale": "zh",
+    "title": "耐用实木餐桌椅",
+    "category": "家具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0050",
+    "locale": "zh",
+    "title": "二手竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0051",
+    "locale": "zh",
+    "title": "租赁竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0052",
+    "locale": "zh",
+    "title": "再生竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0053",
+    "locale": "zh",
+    "title": "有机竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0054",
+    "locale": "zh",
+    "title": "可降解竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0055",
+    "locale": "zh",
+    "title": "环保竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0056",
+    "locale": "zh",
+    "title": "竹竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0057",
+    "locale": "zh",
+    "title": "可重复使用竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0058",
+    "locale": "zh",
+    "title": "认证竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0059",
+    "locale": "zh",
+    "title": "耐用竹制收纳盒",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0060",
+    "locale": "zh",
+    "title": "二手棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0061",
+    "locale": "zh",
+    "title": "租赁棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0062",
+    "locale": "zh",
+    "title": "再生棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0063",
+    "locale": "zh",
+    "title": "有机棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0064",
+    "locale": "zh",
+    "title": "可降解棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0065",
+    "locale": "zh",
+    "title": "环保棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0066",
+    "locale": "zh",
+    "title": "竹棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0067",
+    "locale": "zh",
+    "title": "可重复使用棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0068",
+    "locale": "zh",
+    "title": "认证棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0069",
+    "locale": "zh",
+    "title": "耐用棉麻抱枕套",
+    "category": "家居",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0070",
+    "locale": "zh",
+    "title": "二手再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0071",
+    "locale": "zh",
+    "title": "租赁再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0072",
+    "locale": "zh",
+    "title": "再生再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0073",
+    "locale": "zh",
+    "title": "有机再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0074",
+    "locale": "zh",
+    "title": "可降解再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0075",
+    "locale": "zh",
+    "title": "环保再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0076",
+    "locale": "zh",
+    "title": "竹再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0077",
+    "locale": "zh",
+    "title": "可重复使用再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0078",
+    "locale": "zh",
+    "title": "认证再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0079",
+    "locale": "zh",
+    "title": "耐用再生纸笔记本",
+    "category": "文具",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0080",
+    "locale": "zh",
+    "title": "二手可降解垃圾袋",
+    "category": "日用",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0081",
+    "locale": "zh",
+    "title": "租赁可降解垃圾袋",
+    "category": "日用",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0082",
+    "locale": "zh",
+    "title": "再生可降解垃圾袋",
+    "category": "日用",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0083",
+    "locale": "zh",
+    "title": "有机可降解垃圾袋",
+    "category": "日用",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0084",
+    "locale": "zh",
+    "title": "可降解可降解垃圾袋",
+    "category": "日用",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0085",
+    "locale": "zh",
+    "title": "陶瓷咖啡杯 350ml",
+    "category": "家居",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0086",
+    "locale": "zh",
+    "title": "加厚玻璃保鲜盒 4 件",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0087",
+    "locale": "zh",
+    "title": "儿童拼图 100 片",
+    "category": "玩具",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0088",
+    "locale": "zh",
+    "title": "不锈钢锅具六件套",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0089",
+    "locale": "zh",
+    "title": "运动速干 T 恤",
+    "category": "服饰",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0090",
+    "locale": "zh",
+    "title": "一次性塑料餐盒 50 只",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0091",
+    "locale": "zh",
+    "title": "数据线 2 米",
+    "category": "数码配件",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0092",
+    "locale": "zh",
+    "title": "无线蓝牙耳机 主动降噪 2件装",
+    "category": "数码",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0093",
+    "locale": "zh",
+    "title": "陶瓷咖啡杯 350ml 2件装",
+    "category": "家居",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0094",
+    "locale": "zh",
+    "title": "加厚玻璃保鲜盒 4 件 2件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0095",
+    "locale": "zh",
+    "title": "儿童拼图 100 片 2件装",
+    "category": "玩具",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0096",
+    "locale": "zh",
+    "title": "不锈钢锅具六件套 2件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0097",
+    "locale": "zh",
+    "title": "运动速干 T 恤 2件装",
+    "category": "服饰",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0098",
+    "locale": "zh",
+    "title": "一次性塑料餐盒 50 只 2件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0099",
+    "locale": "zh",
+    "title": "数据线 2 米 2件装",
+    "category": "数码配件",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0100",
+    "locale": "zh",
+    "title": "无线蓝牙耳机 主动降噪 3件装",
+    "category": "数码",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0101",
+    "locale": "zh",
+    "title": "陶瓷咖啡杯 350ml 3件装",
+    "category": "家居",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0102",
+    "locale": "zh",
+    "title": "加厚玻璃保鲜盒 4 件 3件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0103",
+    "locale": "zh",
+    "title": "儿童拼图 100 片 3件装",
+    "category": "玩具",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0104",
+    "locale": "zh",
+    "title": "不锈钢锅具六件套 3件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0105",
+    "locale": "zh",
+    "title": "运动速干 T 恤 3件装",
+    "category": "服饰",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0106",
+    "locale": "zh",
+    "title": "一次性塑料餐盒 50 只 3件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0107",
+    "locale": "zh",
+    "title": "数据线 2 米 3件装",
+    "category": "数码配件",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0108",
+    "locale": "zh",
+    "title": "无线蓝牙耳机 主动降噪 4件装",
+    "category": "数码",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0109",
+    "locale": "zh",
+    "title": "陶瓷咖啡杯 350ml 4件装",
+    "category": "家居",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0110",
+    "locale": "zh",
+    "title": "加厚玻璃保鲜盒 4 件 4件装",
+    "category": "厨房",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(zh)"
+  },
+  {
+    "id": "ann-0111",
+    "locale": "en",
+    "title": "Reusable stainless cup",
+    "queryContext": "环保材质水杯",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-first-rank.test.ts"
+  },
+  {
+    "id": "ann-0112",
+    "locale": "en",
+    "title": "Organic tote bag",
+    "queryContext": "环保材质水杯",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-first-rank.test.ts"
+  },
+  {
+    "id": "ann-0113",
+    "locale": "en",
+    "title": "Steel wrench set",
+    "queryContext": "环保材质水杯",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-first-rank.test.ts"
+  },
+  {
+    "id": "ann-0114",
+    "locale": "en",
+    "title": "Organic Cotton Bath Towel",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0115",
+    "locale": "en",
+    "title": "Plastic-free lunch box, biodegradable",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0116",
+    "locale": "en",
+    "title": "FSC certified recycled bamboo shelf, durable",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-label-traceability-guard.test.ts"
+  },
+  {
+    "id": "ann-0117",
+    "locale": "en",
+    "title": "Organic cotton tote bag",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0118",
+    "locale": "en",
+    "title": "Bamboo cutting board",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0119",
+    "locale": "en",
+    "title": "Recycled paper notebook",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0120",
+    "locale": "en",
+    "title": "Certified sustainable coffee beans",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0121",
+    "locale": "en",
+    "title": "Durable steel water bottle",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0122",
+    "locale": "en",
+    "title": "Refillable ink pen",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0123",
+    "locale": "en",
+    "title": "Guizhou sauce liquor 500ml",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-level.test.ts"
+  },
+  {
+    "id": "ann-0124",
+    "locale": "en",
+    "title": "Ivory carving ornament",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0125",
+    "locale": "en",
+    "title": "Oak furniture dining table",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0126",
+    "locale": "en",
+    "title": "A different kind of lamp",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-rules.test.ts"
+  },
+  {
+    "id": "ann-0127",
+    "locale": "en",
+    "title": "Wireless earbuds charging case",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-uncertified-tone-guard.test.ts"
+  },
+  {
+    "id": "ann-0128",
+    "locale": "en",
+    "title": "Stainless steel water bottle",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-uncertified-tone-guard.test.ts"
+  },
+  {
+    "id": "ann-0129",
+    "locale": "en",
+    "title": "Ceramic coffee mug",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/__tests__/green-uncertified-tone-guard.test.ts"
+  },
+  {
+    "id": "ann-0130",
+    "locale": "en",
+    "title": "Organic Cotton Canvas Tote",
+    "category": "Fashion & Accessories",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0131",
+    "locale": "en",
+    "title": "Secondhand Picture Storybooks (4-pack)",
+    "category": "Books & Media",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0132",
+    "locale": "en",
+    "title": "Borosilicate Glass Meal Prep Containers",
+    "category": "Kitchen & Dining",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0133",
+    "locale": "en",
+    "title": "Bicycle Repair Tool Kit",
+    "category": "Tools & Repair",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0134",
+    "locale": "en",
+    "title": "Bamboo Toothbrush Set (4-pack)",
+    "category": "Personal Care",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0135",
+    "locale": "en",
+    "title": "Refillable Shampoo & Body Wash Set",
+    "category": "Personal Care",
+    "ruleLabel": "medium",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0136",
+    "locale": "en",
+    "title": "Recycled Wool Socks",
+    "category": "Fashion & Accessories",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0137",
+    "locale": "en",
+    "title": "Compostable Dish Sponges (6-pack)",
+    "category": "Household Essentials",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0138",
+    "locale": "en",
+    "title": "Solid Wood Cutting Board",
+    "category": "Kitchen & Dining",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0139",
+    "locale": "en",
+    "title": "Organic Linen Pillowcases",
+    "category": "Home Decor",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_GREEN_ITEMS"
+  },
+  {
+    "id": "ann-0140",
+    "locale": "en",
+    "title": "LED Strip Lights 32ft RGB",
+    "category": "Home Decor",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0141",
+    "locale": "en",
+    "title": "Mini Projector HD 1080p",
+    "category": "Novelty Items",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0142",
+    "locale": "en",
+    "title": "Kawaii Sticker Pack 100pc",
+    "category": "Collectibles",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0143",
+    "locale": "en",
+    "title": "Portable Blender USB",
+    "category": "Fitness Gadgets",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0144",
+    "locale": "en",
+    "title": "Moon Lamp 3D Printed 7\"",
+    "category": "Novelty Items",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0145",
+    "locale": "en",
+    "title": "Anime Figure Collection",
+    "category": "Collectibles",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0146",
+    "locale": "en",
+    "title": "Smart Watch Fitness Tracker",
+    "category": "Fitness Gadgets",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0147",
+    "locale": "en",
+    "title": "Oversized Hoodie Pastel",
+    "category": "Fashion & Accessories",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "seed-fixture:src/lib/demo-data.ts#DEMO_IMPULSE_ITEMS"
+  },
+  {
+    "id": "ann-0148",
+    "locale": "en",
+    "title": "secondhand cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0149",
+    "locale": "en",
+    "title": "rental cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0150",
+    "locale": "en",
+    "title": "recycled cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0151",
+    "locale": "en",
+    "title": "organic cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0152",
+    "locale": "en",
+    "title": "biodegradable cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0153",
+    "locale": "en",
+    "title": "sustainable cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0154",
+    "locale": "en",
+    "title": "bamboo cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0155",
+    "locale": "en",
+    "title": "reusable cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0156",
+    "locale": "en",
+    "title": "certified cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0157",
+    "locale": "en",
+    "title": "durable cotton bath towel",
+    "category": "home textiles",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0158",
+    "locale": "en",
+    "title": "secondhand linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0159",
+    "locale": "en",
+    "title": "rental linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0160",
+    "locale": "en",
+    "title": "recycled linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0161",
+    "locale": "en",
+    "title": "organic linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0162",
+    "locale": "en",
+    "title": "biodegradable linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0163",
+    "locale": "en",
+    "title": "sustainable linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0164",
+    "locale": "en",
+    "title": "bamboo linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0165",
+    "locale": "en",
+    "title": "reusable linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0166",
+    "locale": "en",
+    "title": "certified linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0167",
+    "locale": "en",
+    "title": "durable linen shirt",
+    "category": "apparel",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0168",
+    "locale": "en",
+    "title": "secondhand solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0169",
+    "locale": "en",
+    "title": "rental solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0170",
+    "locale": "en",
+    "title": "recycled solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0171",
+    "locale": "en",
+    "title": "organic solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0172",
+    "locale": "en",
+    "title": "biodegradable solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0173",
+    "locale": "en",
+    "title": "sustainable solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0174",
+    "locale": "en",
+    "title": "bamboo solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0175",
+    "locale": "en",
+    "title": "reusable solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0176",
+    "locale": "en",
+    "title": "certified solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0177",
+    "locale": "en",
+    "title": "durable solid wood dining set",
+    "category": "furniture",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0178",
+    "locale": "en",
+    "title": "secondhand bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0179",
+    "locale": "en",
+    "title": "rental bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0180",
+    "locale": "en",
+    "title": "recycled bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0181",
+    "locale": "en",
+    "title": "organic bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0182",
+    "locale": "en",
+    "title": "biodegradable bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0183",
+    "locale": "en",
+    "title": "sustainable bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0184",
+    "locale": "en",
+    "title": "bamboo bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0185",
+    "locale": "en",
+    "title": "reusable bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0186",
+    "locale": "en",
+    "title": "certified bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0187",
+    "locale": "en",
+    "title": "durable bamboo storage box",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0188",
+    "locale": "en",
+    "title": "secondhand cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0189",
+    "locale": "en",
+    "title": "rental cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0190",
+    "locale": "en",
+    "title": "recycled cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0191",
+    "locale": "en",
+    "title": "organic cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0192",
+    "locale": "en",
+    "title": "biodegradable cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0193",
+    "locale": "en",
+    "title": "sustainable cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0194",
+    "locale": "en",
+    "title": "bamboo cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0195",
+    "locale": "en",
+    "title": "reusable cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0196",
+    "locale": "en",
+    "title": "certified cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0197",
+    "locale": "en",
+    "title": "durable cotton linen cushion cover",
+    "category": "home",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0198",
+    "locale": "en",
+    "title": "secondhand recycled paper notebook",
+    "category": "stationery",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0199",
+    "locale": "en",
+    "title": "rental recycled paper notebook",
+    "category": "stationery",
+    "ruleLabel": "high",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0200",
+    "locale": "en",
+    "title": "Ceramic coffee mug 12oz",
+    "category": "home",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0201",
+    "locale": "en",
+    "title": "Borosilicate glass meal prep containers",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0202",
+    "locale": "en",
+    "title": "Kids puzzle 100 pieces",
+    "category": "toys",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0203",
+    "locale": "en",
+    "title": "Stainless steel cookware set 6pc",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0204",
+    "locale": "en",
+    "title": "Quick dry running t-shirt",
+    "category": "apparel",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0205",
+    "locale": "en",
+    "title": "Disposable plastic food containers 50ct",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0206",
+    "locale": "en",
+    "title": "USB-C cable 2m braided",
+    "category": "electronics",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0207",
+    "locale": "en",
+    "title": "Wireless earbuds charging case 2 pack",
+    "category": "electronics",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0208",
+    "locale": "en",
+    "title": "Ceramic coffee mug 12oz 2 pack",
+    "category": "home",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0209",
+    "locale": "en",
+    "title": "Borosilicate glass meal prep containers 2 pack",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0210",
+    "locale": "en",
+    "title": "Kids puzzle 100 pieces 2 pack",
+    "category": "toys",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0211",
+    "locale": "en",
+    "title": "Stainless steel cookware set 6pc 2 pack",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0212",
+    "locale": "en",
+    "title": "Quick dry running t-shirt 2 pack",
+    "category": "apparel",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0213",
+    "locale": "en",
+    "title": "Disposable plastic food containers 50ct 2 pack",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0214",
+    "locale": "en",
+    "title": "USB-C cable 2m braided 2 pack",
+    "category": "electronics",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0215",
+    "locale": "en",
+    "title": "Wireless earbuds charging case 3 pack",
+    "category": "electronics",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0216",
+    "locale": "en",
+    "title": "Ceramic coffee mug 12oz 3 pack",
+    "category": "home",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0217",
+    "locale": "en",
+    "title": "Borosilicate glass meal prep containers 3 pack",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0218",
+    "locale": "en",
+    "title": "Kids puzzle 100 pieces 3 pack",
+    "category": "toys",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0219",
+    "locale": "en",
+    "title": "Stainless steel cookware set 6pc 3 pack",
+    "category": "kitchen",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  },
+  {
+    "id": "ann-0220",
+    "locale": "en",
+    "title": "Quick dry running t-shirt 3 pack",
+    "category": "apparel",
+    "ruleLabel": "unknown",
+    "source": "seed-fixture",
+    "notes": "synthetic-from-lexicon · seed-fixture:lexicon-combination(en)"
+  }
+]
