@@ -2732,7 +2732,7 @@
     },
     "heroStats": "守护者统计",
     "hoursTogether": "共同赢回 {hours}",
-    "collectiveWonBack": "Won back together：{hours} · {guards} 位守护者",
+    "collectiveWonBack": "一起赢回：{hours} · {guards} 位守护者",
     "founderLine": "你是第 {number} 位守护者",
     "rank": {
       "gapIntercepts": "再拦下 {count} 次成为「{title}」",
@@ -3977,7 +3977,7 @@
       "practice": "每一次购买前的暂停都是练习，契约不要求一次做到完美。"
     },
     "collectiveTitle": "一起赢回",
-    "wonBackTogether": "一起赢回：{hours} 小时 · {guards} 位守护者",
+    "wonBackTogether": "一起赢回：{hours} · {guards} 位守护者",
     "collectiveUnavailable": "集体数字暂时不可用。契约仍在，稍后可以再看累计结果。",
     "trustLink": "我们的公开边界"
   }
