@@ -34,8 +34,15 @@ export interface GateLevelDesc {
 export type GateQuestion =
   /** 是非判断 → [0,1] 浮点（陈述句可直接判定，不必自己造问句） */
   | { kind: 'noul'; id: string; statement: string }
-  /** 多选一 → 与 options 等长的概率分布（和 ≈ 1） */
-  | { kind: 'choice'; id: string; options: string[] }
+  /**
+   * 多选一 → 与 options 等长的概率分布（和 ≈ 1）
+   *
+   * statement 选填（b131 加）：options 若是裸 id（`electronics` / `tired`…），模型只能
+   * 靠 state 猜该选哪一档 —— b130 实弹 9 个 choice 全落这条路上（argmax 恒高但选项判错、
+   * 或分布摊平）。给了 statement 才谈得上「写清楚怎么从消息文本推断」，故 wrapper 通道
+   * 会把它与 options 一起渲染给模型；不写时行为与 b130 逐字节一致。
+   */
+  | { kind: 'choice'; id: string; options: string[]; statement?: string }
   /** 量表评分 → [0,1] 浮点（levels 按 index/(len-1) 归一） */
   | { kind: 'score'; id: string; levels: GateLevelDesc[] };
 

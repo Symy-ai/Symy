@@ -37,6 +37,7 @@ const DEFAULT_SYSTEM_PROMPT = [
   'value 形状约定：',
   '- kind=noul：0..1 浮点（0=否，1=是）',
   '- kind=choice：与 options 等长的数组，元素为概率，和约等于 1',
+  '  （choice 若带 statement，其判断口径优先于选项字面；无把握时把概率摊给最接近的档）',
   '- kind=score：0..1 浮点，第 i 档对应 i/(档数-1)（单档按 0.5 处理）',
   '必须回答每一个问题；无法判断时给 value 0、confidence 0。',
 ].join('\n');
@@ -83,7 +84,10 @@ function normalizeValue(question: GateQuestion, raw: unknown): number | number[]
 /** 单档量表没有 index/(len-1) 可算，指令里要求按中位 0.5 解释 */
 function renderQuestion(question: GateQuestion): Record<string, unknown> {
   if (question.kind === 'choice') {
-    return { id: question.id, kind: 'choice', options: question.options };
+    // b131：statement 选填 —— 有就与 options 一起给模型（否则裸 id 只能靠猜，见 types.ts）
+    return question.statement
+      ? { id: question.id, kind: 'choice', options: question.options, statement: question.statement }
+      : { id: question.id, kind: 'choice', options: question.options };
   }
   if (question.kind === 'score' && question.levels.length === 1) {
     return { id: question.id, kind: 'score', levels: question.levels.map((l) => l.label), note: '单档量表，落在该档请给 0.5' };

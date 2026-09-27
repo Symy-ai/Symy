@@ -18,6 +18,13 @@
  * 每条注释三段：**现状规则层行为** / **Wave 1 迁移优先级**（P0 情绪冲动类、P1 查询类、
  * P2 长尾）/ **迁移时必须一起搬的约束**。question 是**合理骨架**不是最终问法——现在冻结的
  * 是「问什么维度」（kind + 槽位集合），措辞等 Wave 0 验收线过 + 拿到真实 Jev 后用 evals 调优。
+ *
+ * 📌 b131 措辞迭代（b130 实弹结论驱动）：9 个 choice 问题的**裸 id options** 两类失效已确诊 ——
+ *   品类三问「按选项顺序轮流挑」（argmax 恒高但选项判错）、shopping-clarify-slot 等摊平
+ *   （argmax<0.34）。修法不是改 options（数量/结构冻结），而是给 choice 补 statement：
+ *   以「根据用户消息判断：」开头说死推断任务 + 逐档写锚点 + 品类类补 other 强约束。
+ *   **statement 走的是 GateQuestion.choice.statement 选填字段**（b131 加），wrapper 通道
+ *   （llm-wrapper-gate.ts renderQuestion）会与 options 一起渲染给模型；实弹档待 coordinator 复跑。
  */
 
 import type { PrecheckQuestionSpec } from './unified-precheck-gate';
@@ -26,7 +33,15 @@ import type { PrecheckQuestionSpec } from './unified-precheck-gate';
 export const MOOD_OPTIONS = ['tired', 'stressed', 'anxious', 'sad', 'celebratory'] as const;
 /** 时间窗四档（三个 detector 各自抄了一份 WINDOW 词表 → Wave 1 应收敛成一个问题） */
 export const WINDOW_OPTIONS = ['lastWeek', 'thisWeek', 'lastMonth', 'thisMonth'] as const;
-/** 品类五档（GuardCategory） */
+/**
+ * 品类五档（GuardCategory）—— ⚠️ b131 实测发现三处「品类」问的**真实枚举互不相同**，
+ * 本常量是其中最宽的一份（= MicroChallengeCategory），登记簿原样沿用 b128 口径未改结构：
+ *   - micro-challenge-category  = MicroChallengeCategory  五档，规则层无 other 档（default 不发卡）
+ *   - category-query-category   = DimensionQueryCategory 五档，**无 other**（归一不到五类不命中）
+ *   - duplicate-purchase-category= DuplicatePrecheckCategory 四档 electronics/food/home/**other**，无 clothing/beauty
+ * Wave 1 点亮任一条前必须先对齐下游解包（见 doc/jev-choice-wording-result.md §5 的结构性遗留）。
+ * 措辞层已按各自真实枚举分别写锚点（b131），option 槽位留给对齐那一批动。
+ */
 export const CATEGORY_OPTIONS = ['electronics', 'clothing', 'beauty', 'home', 'food'] as const;
 /** 时段四桶（ImpulseTimeWindowId） */
 export const TIME_BUCKET_OPTIONS = ['dawn', 'daytime', 'evening', 'lateNight'] as const;
@@ -42,16 +57,32 @@ export const PRECHECK_REGISTRY: readonly PrecheckQuestionSpec[] = [
   {
     // 现状：情绪词 × 购物词双条件共现 → 5 档 mood 走情绪守护卡（三选一路）。
     // 约束：BNPL / 绿色品类 / 数据问答三类更高优先级让路要么写进问句，要么留仲裁层。
+    // b131 措辞迭代（b130 实弹 argmax 恒高但选错档）：裸 id 档位模型只能猜，本句把
+    // 「从消息文本推断」与五档各自的锚点说死。
     detectorId: 'emotion-shopping-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'emotion-shopping-mood', options: [...MOOD_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'emotion-shopping-mood',
+      options: [...MOOD_OPTIONS],
+      statement:
+        '根据用户消息判断：这条消息带情绪的同时也想买东西，用户的情绪落在哪一档。tired=疲惫/好累/exhausted/drained，stressed=压力大/烦躁/喘不过气/stressed/overwhelmed，anxious=焦虑/紧张/心慌/anxious/nervous，sad=难过/失落/想哭/sad/feeling down，celebratory=开心/庆祝/发工资/升职/payday/got the job/good news。情绪词与购物词必须都在同一条消息里才判断；都没有提到情绪时把概率摊给 tired，不要凭购物行为猜情绪。',
+    },
     ruleRef: `${PARTS}/emotion-shopping-detector.ts`,
   },
   {
     // 现状：购买意图词 + 品类词表 → 24h 微挑战卡。约束：7 天频控是算术（留规则层）。
+    // b131 措辞迭代：category-query-category / duplicate-purchase-category 三处同款
+    // 症状（按选项顺序轮流挑）。末位 other 是「猜不出」的唯一出口，必须显式约束。
     detectorId: 'micro-challenge-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'micro-challenge-category', options: [...CATEGORY_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'micro-challenge-category',
+      options: [...CATEGORY_OPTIONS],
+      statement:
+        '根据用户消息判断：这条消息里用户明确想买的那个东西属于哪个品类。提到手机/耳机/数据线/数码/cable/laptop/headphones→electronics；提到鞋/衣服/外套/clothes/shoes/jacket→clothing；提到口红/护肤/美妆/skincare/makeup→beauty；提到收纳盒/家具/日用品/furniture/storage box→home；提到奶茶/零食/饮料/吃的/milk tea/snacks→food。若提到的东西都不属于以上五类（例如会员/订阅/教材/包装纸），必须选末位 other，禁止把它硬塞进最接近的一类。**注意：other 也是本题的一个选项，不要因为它不在五类里就跳过它。**',
+    },
     ruleRef: `${PARTS}/micro-challenge-detector.ts`,
   },
   {
@@ -79,17 +110,31 @@ export const PRECHECK_REGISTRY: readonly PrecheckQuestionSpec[] = [
   {
     // 现状：拦截后反驳词表（「我就要买 / leave me alone」）→ tone 两档走降温卡。
     // 约束：afterGuardCard 是布尔前置门（客户端上行）不是判定，迁 Jev 时必须保持在闸外。
+    // b131 措辞迭代：两档只差「有没有不耐烦」，无锚点时必摊平。
     detectorId: 'pushback-detector',
     source: 'lib',
-    question: { kind: 'choice', id: 'pushback-tone', options: ['firm', 'annoyed'] },
+    question: {
+      kind: 'choice',
+      id: 'pushback-tone',
+      options: ['firm', 'annoyed'],
+      statement:
+        '根据用户消息判断：用户在小象劝阻之后仍坚持要买时，态度是哪一档。annoyed=明显不耐烦（烦/啰嗦/别说了/闭嘴/再说我就取消订/leave me alone/stop nagging）；firm=立场坚定但不烦躁（我就要买/别劝了/我知道后果/不用你管，但不带火气）。消息里没有对劝阻的回应时两档概率持平，不要硬选。',
+    },
     ruleRef: 'src/lib/pushback-detector.ts',
   },
   {
     // 现状：弱信号词表（「想奖励自己」「直播间最后三单」）→ signal × tier，是 v2 §1.1 自认
     // 「维护成本最高」的一张表 = Wave 1 最大收益点。约束：entries[] 词条要展示原词，留规则层。
+    // b131 措辞迭代：三个 id 语义相近，锚点写进句里才分得开。
     detectorId: 'shopping-context-signals',
     source: 'lib',
-    question: { kind: 'choice', id: 'context-signal-type', options: [...CONTEXT_SIGNAL_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'context-signal-type',
+      options: [...CONTEXT_SIGNAL_OPTIONS],
+      statement:
+        '根据用户消息判断：这条消费决策背后的理由属于哪一类弱信号。emotion_reward=情绪奖励（想奖励自己/犒劳一下/哄哄自己/treat myself/retail therapy）；scarcity_promo=稀缺促销（直播间最后三单/不买就亏了/限时/only 3 left/sale ends tonight）；wear_replace=耗损替换（家里那台快坏了/又修了三次/旧的用不了了/it keeps breaking）。消息没带这三种理由中的任何一种时，把概率摊给 emotion_reward。',
+    },
     ruleRef: 'src/lib/shopping-context-intent.ts',
   },
 
@@ -121,23 +166,46 @@ export const PRECHECK_REGISTRY: readonly PrecheckQuestionSpec[] = [
   {
     // 现状：时段词表 → 时段统计卡。约束：带两槽（时间窗 + 四桶时段），第二个问题用
     // TIME_BUCKET_OPTIONS；与三处 WINDOW 词表拷贝的收敛一并处理。
+    // b131 措辞迭代：四个时间窗只差「说没说周界月界」，没锚点必摊平。
     detectorId: 'impulse-time-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'impulse-time-window', options: [...WINDOW_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'impulse-time-window',
+      options: [...WINDOW_OPTIONS],
+      statement:
+        '根据用户消息判断：用户在问自己的冲动购买落在哪个时间窗。lastWeek=消息里说了上周/上一周/last week；thisWeek=说了本周/这周/这一周/this week；lastMonth=说了上个月/上月/last month；thisMonth=说了本月/这个月/这月/this month。消息里**没有任何时间窗词**时选 thisMonth（规则层缺省值），不要因为看不出区别就摊平。',
+    },
     ruleRef: `${PARTS}/impulse-time-query-detector.ts`,
   },
   {
     // 现状：品类词表 → 分类对账卡。约束：同带两槽（时间窗 + 品类），第二问用 CATEGORY_OPTIONS。
+    // b131 措辞迭代：⚠️ 本题的 options 是 DimensionQueryCategory = 五类**无 other**
+    // （category-query-detector.ts:19 显式写了「归一不到五类 → 不命中」），与 micro /
+    // duplicate 两题的 other 出口不同 —— 措辞按本题真实枚举写，别照抄另两问。
     detectorId: 'category-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'category-query-category', options: [...CATEGORY_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'category-query-category',
+      options: [...CATEGORY_OPTIONS],
+      statement:
+        '根据用户消息判断：用户在对账问句里问的是哪个品类的次数。提到奶茶/外卖/咖啡/零食/饮料/milk tea/coffee/snacks/takeout→food；提到衣服/鞋/外套/裤/clothes/shoes/jacket→clothing；提到数码/手机/耳机/电脑/游戏机/phone/laptop/headphones/console→electronics；提到美妆/护肤/化妆品/口红/skincare/makeup/lipstick→beauty；提到家居/家具/日用品/furniture/household→home。消息没点明具体品类时，按用户话里出现最多的那个品类词所在的一档给概率，没有品类词才把五档概率摊平。',
+    },
     ruleRef: `${PARTS}/category-query-detector.ts`,
   },
   {
     // 现状：统计问句 → 存款对账卡。约束：缺省 thisMonth 的默认值语义要保留，不能问空。
+    // b131 措辞迭代：与 impulse-time-window 同款四档，但本题问的是「花了多少」不是「冲动时段」。
     detectorId: 'savings-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'savings-query-window', options: [...WINDOW_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'savings-query-window',
+      options: [...WINDOW_OPTIONS],
+      statement:
+        '根据用户消息判断：用户问的存款/花销统计覆盖哪个时间窗。lastWeek=消息里说了上周/上一周/last week；thisWeek=说了本周/这周/这一周/this week；lastMonth=说了上个月/上月/last month；thisMonth=说了本月/这个月/这月/this month。消息里**没有任何时间窗词**时选 thisMonth（规则层缺省值），不要因为看不出区别就摊平。',
+    },
     ruleRef: `${PARTS}/savings-query-detector.ts`,
   },
   {
@@ -216,17 +284,32 @@ export const PRECHECK_REGISTRY: readonly PrecheckQuestionSpec[] = [
   },
   {
     // 现状：购买意图 + 具体物品词 → 重复购买决策卡。约束：itemTitle 抽取留规则层，Jev 只答品类。
+    // b131 措辞迭代：⚠️ 本题 options = DuplicatePrecheckCategory（electronics/food/home/**other**
+    // 四档，**没有 clothing/beauty** —— 与 micro 五档 + other 不同，措辞按真实枚举写。
     detectorId: 'duplicate-purchase-detect',
     source: 'parts',
-    question: { kind: 'choice', id: 'duplicate-purchase-category', options: [...CATEGORY_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'duplicate-purchase-category',
+      options: [...CATEGORY_OPTIONS],
+      statement:
+        '根据用户消息判断：用户在问「要不要再买一个」的那个东西属于哪一类。提到手机线/数据线/充电线/充电宝/耳机/phone cable/charging cable/power bank/headphones→electronics；提到调味品/香料/酱油/醋/盐/油/seasoning/spices/soy sauce/vinegar/oil→food；提到收纳盒/整理箱/储物箱/storage box/storage bin/organizer→home；提到会员/订阅/教材/课本/礼品包装/包装纸/membership/subscription/textbook/gift wrap→other。**本题的 other 表示「上面三类之外的东西」，它就是一个真选项，别因为它排在末位就跳过。**',
+    },
     ruleRef: `${PARTS}/duplicate-purchase-detect.ts`,
   },
   {
     // 现状：缺槽澄清 → 澄清卡。约束：askedSubjects[] 是会话态上行（侦察 §2.4），迁 Jev 后
     // 只能问槽位、问不了轮次（轮次跟踪留规则层）。
+    // b131 措辞迭代：argmax<0.34 的主力（b130 实测）。三个槽位各自的触发形态写进句里。
     detectorId: 'shopping-clarify',
     source: 'lib',
-    question: { kind: 'choice', id: 'shopping-clarify-slot', options: [...CLARIFY_SLOT_OPTIONS] },
+    question: {
+      kind: 'choice',
+      id: 'shopping-clarify-slot',
+      options: [...CLARIFY_SLOT_OPTIONS],
+      statement:
+        '根据用户消息判断：这条消息在追问缺失的购买信息，缺的是哪一个槽位。recipient=送给谁（给妈妈/送人/a gift for my mom/for her）；category=买什么/哪一类（买礼盒还是买杯子/给孩子的，品类或对象还没定）；timing=什么时候买（下个月再说/回头再买/next month/later/再看看）。消息已经把三件事都说明了、或根本不是在买东西时，把三档概率摊平，不要硬选。',
+    },
     ruleRef: 'src/lib/shopping-intent-clarify.ts',
   },
   {

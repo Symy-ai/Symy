@@ -73,12 +73,12 @@ const PRECHECK_REGISTRY = [
   {
     detectorId: 'emotion-shopping-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'emotion-shopping-mood', options: MOOD_OPTIONS },
+    question: { kind: 'choice', id: 'emotion-shopping-mood', options: MOOD_OPTIONS , statement: '根据用户消息判断：这条消息带情绪的同时也想买东西，用户的情绪落在哪一档。tired=疲惫/好累/exhausted/drained，stressed=压力大/烦躁/喘不过气/stressed/overwhelmed，anxious=焦虑/紧张/心慌/anxious/nervous，sad=难过/失落/想哭/sad/feeling down，celebratory=开心/庆祝/发工资/升职/payday/got the job/good news。情绪词与购物词必须都在同一条消息里才判断；都没有提到情绪时把概率摊给 tired，不要凭购物行为猜情绪。' },
   },
   {
     detectorId: 'micro-challenge-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'micro-challenge-category', options: CATEGORY_OPTIONS },
+    question: { kind: 'choice', id: 'micro-challenge-category', options: CATEGORY_OPTIONS , statement: '根据用户消息判断：这条消息里用户明确想买的那个东西属于哪个品类。提到手机/耳机/数据线/数码/cable/laptop/headphones→electronics；提到鞋/衣服/外套/clothes/shoes/jacket→clothing；提到口红/护肤/美妆/skincare/makeup→beauty；提到收纳盒/家具/日用品/furniture/storage box→home；提到奶茶/零食/饮料/吃的/milk tea/snacks→food。若提到的东西都不属于以上五类（例如会员/订阅/教材/包装纸），必须选末位 other，禁止把它硬塞进最接近的一类。**注意：other 也是本题的一个选项，不要因为它不在五类里就跳过它。**' },
   },
   {
     detectorId: 'green-alt-detect',
@@ -106,7 +106,7 @@ const PRECHECK_REGISTRY = [
   {
     detectorId: 'shopping-context-signals',
     source: 'lib',
-    question: { kind: 'choice', id: 'context-signal-type', options: CONTEXT_SIGNAL_OPTIONS },
+    question: { kind: 'choice', id: 'context-signal-type', options: CONTEXT_SIGNAL_OPTIONS , statement: '根据用户消息判断：这条消费决策背后的理由属于哪一类弱信号。emotion_reward=情绪奖励（想奖励自己/犒劳一下/哄哄自己/treat myself/retail therapy）；scarcity_promo=稀缺促销（直播间最后三单/不买就亏了/限时/only 3 left/sale ends tonight）；wear_replace=耗损替换（家里那台快坏了/又修了三次/旧的用不了了/it keeps breaking）。消息没带这三种理由中的任何一种时，把概率摊给 emotion_reward。' },
   },
   {
     detectorId: 'guard-pulse-detector',
@@ -129,17 +129,17 @@ const PRECHECK_REGISTRY = [
   {
     detectorId: 'impulse-time-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'impulse-time-window', options: WINDOW_OPTIONS },
+    question: { kind: 'choice', id: 'impulse-time-window', options: WINDOW_OPTIONS , statement: '根据用户消息判断：用户在问自己的冲动购买落在哪个时间窗。lastWeek=消息里说了上周/上一周/last week；thisWeek=说了本周/这周/这一周/this week；lastMonth=说了上个月/上月/last month；thisMonth=说了本月/这个月/这月/this month。消息里**没有任何时间窗词**时选 thisMonth（规则层缺省值），不要因为看不出区别就摊平。' },
   },
   {
     detectorId: 'category-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'category-query-category', options: CATEGORY_OPTIONS },
+    question: { kind: 'choice', id: 'category-query-category', options: CATEGORY_OPTIONS , statement: '根据用户消息判断：用户在对账问句里问的是哪个品类的次数。提到奶茶/外卖/咖啡/零食/饮料/milk tea/coffee/snacks/takeout→food；提到衣服/鞋/外套/裤/clothes/shoes/jacket→clothing；提到数码/手机/耳机/电脑/游戏机/phone/laptop/headphones/console→electronics；提到美妆/护肤/化妆品/口红/skincare/makeup/lipstick→beauty；提到家居/家具/日用品/furniture/household→home。消息没点明具体品类时，按用户话里出现最多的那个品类词所在的一档给概率，没有品类词才把五档概率摊平。' },
   },
   {
     detectorId: 'savings-query-detector',
     source: 'parts',
-    question: { kind: 'choice', id: 'savings-query-window', options: WINDOW_OPTIONS },
+    question: { kind: 'choice', id: 'savings-query-window', options: WINDOW_OPTIONS , statement: '根据用户消息判断：用户问的存款/花销统计覆盖哪个时间窗。lastWeek=消息里说了上周/上一周/last week；thisWeek=说了本周/这周/这一周/this week；lastMonth=说了上个月/上月/last month；thisMonth=说了本月/这个月/这月/this month。消息里**没有任何时间窗词**时选 thisMonth（规则层缺省值），不要因为看不出区别就摊平。' },
   },
   {
     detectorId: 'reflection-detector',
@@ -198,12 +198,12 @@ const PRECHECK_REGISTRY = [
   {
     detectorId: 'duplicate-purchase-detect',
     source: 'parts',
-    question: { kind: 'choice', id: 'duplicate-purchase-category', options: CATEGORY_OPTIONS },
+    question: { kind: 'choice', id: 'duplicate-purchase-category', options: CATEGORY_OPTIONS , statement: '根据用户消息判断：用户在问「要不要再买一个」的那个东西属于哪一类。提到手机线/数据线/充电线/充电宝/耳机/phone cable/charging cable/power bank/headphones→electronics；提到调味品/香料/酱油/醋/盐/油/seasoning/spices/soy sauce/vinegar/oil→food；提到收纳盒/整理箱/储物箱/storage box/storage bin/organizer→home；提到会员/订阅/教材/课本/礼品包装/包装纸/membership/subscription/textbook/gift wrap→other。**本题的 other 表示「上面三类之外的东西」，它就是一个真选项，别因为它排在末位就跳过。**' },
   },
   {
     detectorId: 'shopping-clarify',
     source: 'lib',
-    question: { kind: 'choice', id: 'shopping-clarify-slot', options: CLARIFY_SLOT_OPTIONS },
+    question: { kind: 'choice', id: 'shopping-clarify-slot', options: CLARIFY_SLOT_OPTIONS , statement: '根据用户消息判断：这条消息在追问缺失的购买信息，缺的是哪一个槽位。recipient=送给谁（给妈妈/送人/a gift for my mom/for her）；category=买什么/哪一类（买礼盒还是买杯子/给孩子的，品类或对象还没定）；timing=什么时候买（下个月再说/回头再买/next month/later/再看看）。消息已经把三件事都说明了、或根本不是在买东西时，把三档概率摊平，不要硬选。' },
   },
   {
     detectorId: 'alt-footprint-intent',
