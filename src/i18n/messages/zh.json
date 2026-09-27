@@ -28,7 +28,6 @@
   },
   "app": {
     "demoBanner": "演示 —— 别人的守护",
-    "demoBannerEnhanced": "👁️ 这是别人的守护。注册后，Symy 帮你完成你自己的守护。",
     "signUpFree": "开始守护 →"
   },
   "invite": {
@@ -1235,8 +1234,6 @@
           "three": "放一首熟悉的歌，跟着把整首哼完"
         },
         "sad": {
-          "one": "翻翻收藏夹里存过的好东西，重新看一看",
-          "two": "给自己泡杯热饮，捧着杯子坐一会儿",
           "three": "找个聊得来的人说说话——不聊难过的事也行"
         },
         "celebratory": {
@@ -2766,8 +2763,7 @@
     "impulseRisk": "消费风险",
     "riskLevels": {
       "high": "高",
-      "medium": "中",
-      "low": "低"
+      "medium": "中"
     },
     "thisWeek": "本周",
     "recentImpulses": "近期被抓住的时刻",
@@ -3034,7 +3030,6 @@
     "unexpectedError": "发生了意外错误"
   },
   "floatingPill": {
-    "quickActions": "快捷操作",
     "talkToAI": "与 AI 对话",
     "refund": "发起退款"
   },

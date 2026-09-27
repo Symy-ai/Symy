@@ -28,7 +28,6 @@
   },
   "app": {
     "demoBanner": "Demo — another person's guarding",
-    "demoBannerEnhanced": "👁️ This is someone else's guarding. Sign up and Symy helps you guard your own.",
     "signUpFree": "Start guarding →"
   },
   "invite": {
@@ -1226,8 +1225,6 @@
           "three": "Play a familiar song and hum it all the way through"
         },
         "sad": {
-          "one": "Revisit the nice things saved in your favorites folder",
-          "two": "Make a warm drink and just hold the cup a while",
           "three": "Message someone easy to talk to — about anything"
         },
         "celebratory": {
@@ -2766,8 +2763,7 @@
     "impulseRisk": "Spending risk",
     "riskLevels": {
       "high": "High",
-      "medium": "Medium",
-      "low": "Low"
+      "medium": "Medium"
     },
     "thisWeek": "This Week",
     "recentImpulses": "Recent moments caught",
@@ -3034,7 +3030,6 @@
     "unexpectedError": "An unexpected error occurred"
   },
   "floatingPill": {
-    "quickActions": "Quick Actions",
     "talkToAI": "Talk to AI",
     "refund": "Start Refund"
   },
