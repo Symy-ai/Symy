@@ -300,13 +300,13 @@ export function LandingPage({ forceShow = false }: { forceShow?: boolean }) {
               href={`/${locale}/legal/privacy`}
               className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
             >
-              Privacy
+              {tr('landing.footerPrivacy')}
             </Link>
             <Link
               href={`/${locale}/legal/terms`}
               className="inline-flex items-center justify-center text-xs font-medium text-text-tertiary transition-colors hover:text-text-primary"
             >
-              Terms
+              {tr('landing.footerTerms')}
             </Link>
           </div>
           <p className="text-[10px] text-text-tertiary">

@@ -3729,7 +3729,9 @@
       }
     ],
     "footerTrust": "信任",
-    "footerCovenant": "新契约"
+    "footerCovenant": "新契约",
+    "footerPrivacy": "隐私政策",
+    "footerTerms": "服务条款"
   },
   "meta": {
     "title": "Symy — 少买一点，多活一点。",

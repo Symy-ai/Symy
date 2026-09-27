@@ -3729,7 +3729,9 @@
       }
     ],
     "footerTrust": "Trust",
-    "footerCovenant": "The Covenant"
+    "footerCovenant": "The Covenant",
+    "footerPrivacy": "Privacy",
+    "footerTerms": "Terms"
   },
   "meta": {
     "title": "Symy — Buy less. Live more.",

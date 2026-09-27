@@ -78,8 +78,21 @@ export function getDemoReply(userInput: string, locale: string): string {
   // 🔧 Round 127 fix: 先检测 resist (含 "didn't buy", "not buy") 再检测 buy
   //   旧代码: buy 检测在 resist 之前, "I didn't buy" 匹配 buy (含 'buy') 而非 resist
   // 🔧 Round 129 fix: 加 'not to buy' / 'won't buy' / 'don't buy' 关键词
+  // 🔧 QA fix (2026-09-28): 「没忍住/忍不住买了」= 已经买了（impulse），不是忍住了（resist）—
+  //   旧代码 includes('忍住') 把否定形式吞进 resist，买了的人收到"钱留住啦"的错贺词。
   if (input.includes('resist') || input.includes('didn\'t buy') || input.includes('did not buy') || input.includes('not buy') || input.includes('not to buy') || input.includes('won\'t buy') || input.includes('don\'t buy') || input.includes('stopped') || input.includes('忍住') || input.includes('没买')) {
+    if (input.includes('没忍住') || input.includes('忍不住') || input.includes('couldn\'t resist')) {
+      return getElephantPhrase('demo_impulse', lang);
+    }
     return getElephantPhrase('demo_resist', lang);
+  }
+  // 🔧 QA fix (2026-09-28): 购买前咨询意图 — 「我想买X，该不该买」是产品核心场景（守护：购买前先停一下），
+  //   旧代码被 includes('买') 一字吞进 demo_impulse（买了之后的安慰话术），答非所问。
+  //   复用 batch50-a 已有的 prepurchase_welcome（买前三问迎接话术）。顺序：resist 之后、buy 之前。
+  const prepurchaseZh = ['想买', '该不该买', '要不要买', '买不买', '该买吗', '应该买吗', '值得买吗'];
+  const prepurchaseEn = ['want to buy', 'thinking of buying', 'thinking about buying', 'should i buy', 'should i get', 'worth buying'];
+  if (prepurchaseZh.some((k) => input.includes(k)) || prepurchaseEn.some((k) => input.includes(k))) {
+    return getElephantPhrase('prepurchase_welcome', lang);
   }
   if (input.includes('bought') || input.includes('buy') || input.includes('purchase') || input.includes('买')) {
     return getElephantPhrase('demo_impulse', lang);

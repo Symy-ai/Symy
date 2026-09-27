@@ -230,6 +230,21 @@ describe('demo-reply — getDemoReply (非挑战模式) 回归测试', () => {
     expect(getDemoReply('pay in 4 with Klarna', EN)).toMatch(/Buy Now Pay Later|payments|Split/i);
   });
 
+  // 🔧 QA fix (2026-09-28): 购买前咨询 → prepurchase_welcome（买前三问），不是 demo_impulse（已买安慰）
+  it('购买前咨询 (想买/该不该买) → prepurchase 买前三问，不是冲动安慰', () => {
+    const zhReply = getDemoReply('我想买一台新的平板电脑，帮我看看该不该买', ZH);
+    expect(zhReply).toMatch(/三个问题|答完|捋一捋|一起想清楚/);
+    expect(zhReply).not.toMatch(/手滑|冲动|不怪你/);
+    const enReply = getDemoReply('I want to buy a new tablet, should I buy it?', EN);
+    expect(enReply).toMatch(/three|questions|walk|think it through/i);
+    expect(enReply).not.toMatch(/happens|hand slipped|no shame/i);
+  });
+
+  it('已买陈述仍走 impulse 安慰 (回归守护)', () => {
+    expect(getDemoReply('我没忍住买了双鞋', ZH)).toMatch(/手滑|冲动|不怪你|买了就买了/);
+    expect(getDemoReply('I bought it already', EN)).toMatch(/happens|No shame|won't judge|Bought is bought/i);
+  });
+
   it('中文回复无英文混排', () => {
     assertNoMixedLanguageInZh(getDemoReply('你好呀', ZH));
     assertNoMixedLanguageInZh(getDemoReply('我没忍住买了', ZH));
