@@ -121,7 +121,7 @@ export default async function TrustPage({
                       className="text-text-primary underline"
                       data-testid={testId}
                     >
-                      {t(`trust.governanceDocs.${slug.replace(/\.md$/, '').replace(/-/g, '')}`)}
+                      {t(`trust.governanceDocs.${slug.replace(/\.md$/, '').replace(/-/g, '').toLowerCase()}`)}
                     </a>
                   </li>
                 ))}
