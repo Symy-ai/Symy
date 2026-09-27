@@ -10,6 +10,7 @@
     "start": "NODE_ENV=production bun .next/standalone/server.js",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:affected": "bash scripts/test-affected.sh",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "finance:validate": "node scripts/validate-finance-data.mjs",
