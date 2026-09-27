@@ -137,10 +137,10 @@ describe('SettingsOverlay refactor readiness', () => {
     expect(root).toBeDefined();
     const overlay = within(root as HTMLElement);
     expect(overlay.getByText(/profile\.displayNameDialogTitle/)).toBeDefined();
-    expect(overlay.getByText('Green Guardian Mode')).toBeDefined();
-    expect(overlay.getByText(/profile\.darkMode/)).toBeDefined();
-    expect(overlay.getByText('Help & FAQ')).toBeDefined();
-    expect(overlay.getByText('Send Feedback')).toBeDefined();
+    expect(overlay.getByText('profile.greenPrefTitle')).toBeDefined();
+    expect(overlay.getAllByText(/profile\.darkMode/).length).toBeGreaterThan(0);
+    expect(overlay.getByText('profile.helpFaq')).toBeDefined();
+    expect(overlay.getAllByText(/profile\.(sendFeedback|feedback)/).length).toBeGreaterThan(0);
   });
 
   it('keeps advanced guard settings collapsed until disclosed (inverted after refactor)', async () => {

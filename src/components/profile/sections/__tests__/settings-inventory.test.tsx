@@ -166,7 +166,7 @@ describe('SettingsOverlay section inventory', () => {
 
     // 默认区: 通知 + 清单卡 (小白核心行)
     expect(await screen.findAllByTestId('inventory-list-card-disabled')).toHaveLength(1);
-    expect(screen.getByText('Push Notifications')).toBeDefined();
+    expect(screen.getByText('profile.pushNotifications')).toBeDefined();
     expect(screen.getByTestId('settings-advanced-toggle')).toBeDefined();
 
     // 高级区折叠不渲染
@@ -203,8 +203,8 @@ describe('SettingsOverlay section inventory', () => {
       expect(await screen.findAllByTestId(testId)).toHaveLength(1);
     }
 
-    expect(screen.getByText('Green Preferences')).toBeDefined();
-    expect(screen.getByText('Push Notifications')).toBeDefined();
+    expect(screen.getByText('profile.greenPrefTitle')).toBeDefined();
+    expect(screen.getByText('profile.pushNotifications')).toBeDefined();
   });
 
   it('keeps a single intensity selector writing only the guard key after dedup', async () => {
