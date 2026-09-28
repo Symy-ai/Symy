@@ -17,6 +17,21 @@ export async function GET(request: NextRequest) {
 
   const apiKey = process.env.LETTA_API_KEY || '';
   const baseUrl = process.env.LETTA_BASE_URL || 'https://api.letta.com';
+
+  // 🔧 09-28: DELETE /api/admin/letta-diag?deleteMcp=<name> — 删指定 MCP server 注册
+  //   （symy-hands 旧注册无 auth 头，hands 现要求 Bearer → 删后 getOrCreate 自动带新 secret 重建）
+  const deleteMcp = request.nextUrl.searchParams.get('deleteMcp');
+  if (deleteMcp) {
+    if (!/^[a-z0-9-]+$/i.test(deleteMcp)) {
+      return NextResponse.json({ error: 'Invalid server name' }, { status: 400 });
+    }
+    const del = await fetch(
+      `${baseUrl.replace(/\/+$/, '')}/v1/mcp-servers/${deleteMcp}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${apiKey}` } },
+    );
+    return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   const startedAt = Date.now();
