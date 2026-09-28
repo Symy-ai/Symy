@@ -63,7 +63,7 @@ export const CATEGORY_WARM_COPY: Record<InterceptCategory, CategoryWarmCopy> = {
 export function normalizeInterceptCategory(raw?: string): InterceptCategory {
   const v = raw?.trim().toLowerCase();
   if (!v) return 'default';
-  if (/电子|电器|phone|laptop|computer|audio|耳机|tablet|console|3c/.test(v)) return 'electronics';
+  if (/电子|电器|手机|phone|laptop|computer|audio|耳机|平板|tablet|console|3c/.test(v)) return 'electronics';
   if (/服|衣|鞋|裤|裙|外套|夹克|clothing|fashion|jacket|shoe/.test(v)) return 'clothing';
   if (/美妆|护肤|彩妆|口红|香水|beauty|skincare|makeup|cosmetic|lipstick/.test(v)) return 'beauty';
   if (/家居|家具|收纳|清洁|纸巾|home|furniture|cleaner|tissue/.test(v)) return 'home';
