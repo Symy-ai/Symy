@@ -605,19 +605,23 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
       )}
 
       {/* 🐘 batch52-b 周复盘 — 固定入口常驻; 卡打开时入口让位 */}
-      {!weeklyReviewOpen && <WeeklyReviewEntry onOpen={openReview} />}
+      {/* 🔧 QA fix (BUG-2, 2026-09-28): demo/guest 态 derivation 恒为 null(设计上不派生个人数据), */}
+      {/*   入口点击后只会隐藏自身、卡片永不渲染 = 死按钮。demo 态直接不渲染入口(QA Round 2A 实锤)。 */}
+      {!isDemo && !weeklyReviewOpen && <WeeklyReviewEntry onOpen={openReview} />}
       {weeklyReviewOpen && weeklyReview && (
         <WeeklyReviewCard derivation={weeklyReview} onCompleted={markReviewed} onClose={closeReview} />
       )}
 
       {/* 🐘 batch58-a 守护时刻时间线 — 固定入口常驻; 卡打开时入口让位 (数据未到时点击等加载) */}
-      {!guardMomentsOpen && <GuardMomentsEntry onOpen={() => setGuardMomentsOpen(true)} />}
+      {/* 🔧 QA fix (BUG-2): 同上 — guest 态 /api/buddy/health-events 401 → timeline 恒 null, 入口成死按钮。 */}
+      {!isDemo && !guardMomentsOpen && <GuardMomentsEntry onOpen={() => setGuardMomentsOpen(true)} />}
       {guardMomentsOpen && !guardMomentsLoading && guardMoments && (
         <GuardMomentsCard timeline={guardMoments} onClose={() => setGuardMomentsOpen(false)} />
       )}
 
       {/* 🐘 batch59-a 进行中守护面板 — 固定入口常驻; 卡打开时入口让位 (数据未到时点击等加载) */}
-      {!activeGuardsOpen && <ActiveGuardsEntry onOpen={() => setActiveGuardsOpen(true)} />}
+      {/* 🔧 QA fix (BUG-2): 同上 — guest 态 activeGuards 恒 null。 */}
+      {!isDemo && !activeGuardsOpen && <ActiveGuardsEntry onOpen={() => setActiveGuardsOpen(true)} />}
       {activeGuardsOpen && !activeGuardsLoading && activeGuards && (
         <ActiveGuardsPanel
           summary={activeGuards}

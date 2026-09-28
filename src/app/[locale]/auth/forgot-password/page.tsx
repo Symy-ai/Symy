@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useI18n } from '@/i18n/provider';
 import { useTheme } from 'next-themes';
+import { useLocale } from 'next-intl';
 
 /**
  * Forgot Password page — Supabase reset password email flow
@@ -23,6 +24,7 @@ import { useTheme } from 'next-themes';
  */
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
+  const locale = useLocale();
   const { resolvedTheme } = useTheme();
   const isDark = typeof window !== 'undefined' ? resolvedTheme === 'dark' : true;
   const elephantSrc = isDark ? '/symy-elephant-dark.png' : '/symy-elephant.png';
@@ -201,7 +203,7 @@ export default function ForgotPasswordPage() {
         {/* Back to login */}
         <p className="text-center text-sm text-text-tertiary mt-6">
           <Link
-            href={`/auth/login${email ? `?email=${encodeURIComponent(email)}` : ''}`}
+            href={`/${locale}/auth/login${email ? `?email=${encodeURIComponent(email)}` : ''}`}
             className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium inline-flex items-center gap-1.5"
           >
             <svg viewBox="0 0 16 16" className="w-3.5 h-3.5" fill="currentColor">

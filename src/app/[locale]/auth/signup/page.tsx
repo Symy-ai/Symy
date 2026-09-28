@@ -160,7 +160,11 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setError(error.message);
+      // 🔧 QA fix (B2-01, 2026-09-28): supabase 某些错误对象 message 为空/非串 → setError(error.message)
+      //   曾把非字符串（空对象等）直接塞进错误框渲染成字面 "{}"。统一收敛：
+      //   message 是非空字符串才用原文，否则给一句人话兜底（zh/en 走 i18n 键）。
+      const raw = (error as { message?: unknown }).message;
+      setError(typeof raw === 'string' && raw.trim() ? raw : t('auth.signup.errors.serviceNotConfigured'));
     } else {
       symyEvents.userSignedUp({ method: 'email' });
       setMessage(t('auth.signup.checkEmailConfirm'));
@@ -237,6 +241,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
                 maxLength={128}
                 className="w-full px-4 py-3 bg-glass-fill border border-glass-border rounded-xl text-text-primary placeholder-text-tertiary focus:outline-none focus:border-emerald-400/50 focus:ring-1 focus:ring-emerald-400/30 transition-all"
                 placeholder={t('auth.placeholders.passwordMinLength')}
