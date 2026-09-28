@@ -98,10 +98,10 @@ describe('路由链序锁 — 情绪守护块在数据问答之后、通用购�
   it('emotion 块晚于 57-c/58-c 数据问答检测 (更高优先级规则先答)', () => {
     const emotionIdx = source.indexOf('buildEmotionGuardTurn');
     expect(emotionIdx).toBeGreaterThan(-1);
-    expect(source.indexOf('detectSavingsQuery')).toBeLessThan(emotionIdx);
-    expect(source.indexOf('detectCategoryQuery')).toBeLessThan(emotionIdx);
-    expect(source.indexOf('detectImpulseTimeQuery')).toBeLessThan(emotionIdx);
-    expect(source.indexOf('detectFollowUpQuery')).toBeLessThan(emotionIdx);
+    expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(source.indexOf('buildFollowUpTurn') /* 🔧b137随动:59-c未下沉,锚其build */).toBeLessThan(emotionIdx);
   });
 
   it('emotion 块早于 loadLettaTurnContext 调用点 (BNPL/green/reuse/micro 通用购买预检之前)', () => {

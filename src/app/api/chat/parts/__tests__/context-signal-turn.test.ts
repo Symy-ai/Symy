@@ -413,10 +413,10 @@ describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用�
     const idx = source.indexOf('buildContextSignalTurn');
     expect(idx).toBeGreaterThan(-1);
     expect(source.indexOf('buildEmotionGuardTurn')).toBeLessThan(idx);
-    expect(source.indexOf('detectSavingsQuery')).toBeLessThan(idx);
-    expect(source.indexOf('detectCategoryQuery')).toBeLessThan(idx);
-    expect(source.indexOf('detectImpulseTimeQuery')).toBeLessThan(idx);
-    expect(source.indexOf('detectFollowUpQuery')).toBeLessThan(idx);
+    expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(source.indexOf('buildFollowUpTurn') /* 🔧b137随动:59-c未下沉,锚其build */).toBeLessThan(idx);
   });
 
   it('弱信号块早于 loadLettaTurnContext 调用点 (不吞通用购买预检)', () => {

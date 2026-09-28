@@ -521,34 +521,14 @@ async function handleChatRequest(req: NextRequest) {
     // 🐘 batch58-c 分类问句 ("这个月奶茶拦截了几次") — 57-c 问账的维度细化:
     //    品类词归一到五类之一才命中, 否则回落下方 57-c 月度总答。canned
     //    分类对账卡 (拦截/替代/复用计数, resolveGuardCategory 同口径), 零金额。
+    // 🔧 b137 拆解第三刀 (2026-09-29): 块本体下沉 parts/canned/category-query-block.ts
     {
-      const { detectCategoryQuery } = await import('./parts/category-query-detector');
-      if (detectCategoryQuery(userContent)) {
-        const { buildCategoryQueryTurn, buildCategoryQuerySseStream } = await import('./parts/category-query-turn');
-        const { loadSavingsQueryEvents } = await import('./parts/savings-query-context');
-        const events = await loadSavingsQueryEvents({
-          userId,
-          // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
-          store: (supabase ?? undefined) as unknown as import('./parts/savings-query-context').SavingsQueryStore | undefined,
-        });
-        const turn = buildCategoryQueryTurn({ userContent, locale, events, now: new Date() })!;
-        logger.info('[Chat API] Category query detected, returning category turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildCategoryQuerySseStream(turn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: turn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            categoryQueryCard: turn.categoryQueryCard,
-          }),
-        );
-      }
+      const { tryCategoryQueryBlock } = await import('./parts/canned/category-query-block');
+      const categoryQueryResponse = await tryCategoryQueryBlock({
+        userContent, locale, stream, userId, supabase,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (categoryQueryResponse) return categoryQueryResponse;
     }
 
     // 🐘 batch58-c 时段问句 ("我晚上冲动买的多吗") — 复用 48-c

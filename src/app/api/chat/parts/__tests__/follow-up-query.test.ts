@@ -151,7 +151,7 @@ describe('路由顺序 — 追问检测在 57-c/58-c 检测之前 (源码链序�
   it('route.ts 中 follow-up 块先于 category/impulse/savings 检测', () => {
     const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
     const followUpIdx = source.indexOf('detectFollowUpQuery');
-    const categoryIdx = source.indexOf('detectCategoryQuery');
+    const categoryIdx = source.indexOf('tryCategoryQueryBlock'); // 🔧 b137随动: 58-c分类下沉锚点改块调用
     const impulseIdx = source.indexOf('tryImpulseTimeQueryBlock'); // 🔧 b137随动: 58-c下沉锚点改块调用
     // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
     const savingsIdx = source.indexOf('trySavingsQueryBlock');
