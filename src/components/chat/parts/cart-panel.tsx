@@ -70,7 +70,8 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
       const data = await apiFetch<{ ok?: boolean; data?: { cart_lines?: CartLine[]; cart_total_cents?: number }; error?: string }>('/api/hands/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'list' }),
+        // 🔧 QA D-1 fix (2026-09-28): apiFetch 内部自动 JSON.stringify — 此处传裸对象，旧的双重序列化致 400
+        body: { action: 'list' },
       });
       if (data?.ok === false) {
         // upstream 解包成功但业务层失败 (ok:false) — 同样视为不可达
@@ -100,7 +101,8 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
       await apiFetch('/api/hands/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'remove', item: { product_ref: productRef, qty: 0 } }),
+        // 🔧 QA D-1 fix: 同上，裸对象防双重序列化
+        body: { action: 'remove', item: { product_ref: productRef, qty: 0 } },
       });
       setCartError(null);
       await load();
@@ -117,7 +119,8 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
       await apiFetch('/api/hands/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'checkout' }),
+        // 🔧 QA D-1 fix: 同上，裸对象防双重序列化
+        body: { action: 'checkout' },
       });
       const greenCount = lines.filter((line) => (
         greenPrefEnabled && evaluateGreenSignal(line.title, [line])[0].green_score >= GREEN_SCORE_BADGE_THRESHOLD

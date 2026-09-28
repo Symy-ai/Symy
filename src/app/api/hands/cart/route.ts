@@ -18,7 +18,9 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const bodySchema = z.object({
-  action: z.enum(['add', 'list', 'remove']),
+  // 🔧 QA D-1/D-4 fix (2026-09-28): 补 'checkout' 档 — cart-panel 一直调 checkout 但 enum 只有三档必 400；
+  //   上游 symy_cart 实测支持 checkout（空车返回 CART_EMPTY 合法业务语义）
+  action: z.enum(['add', 'list', 'remove', 'checkout']),
   // remove 语义 = { product_ref, qty: 0 } — symy_cart 契约里 item 是 arguments 顶层字段
   item: z.record(z.string(), z.unknown()).optional(),
 });

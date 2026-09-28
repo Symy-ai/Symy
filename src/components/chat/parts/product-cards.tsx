@@ -60,11 +60,14 @@ export function ProductCards({ cards, query }: { cards: ProductCardData[]; query
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
+        // 🔧 QA D-2 fix (2026-09-28): 对齐 route.ts zod 契约 {action, item} —
+        //   ①payload 包装→item 顶层（route bodySchema 只认 item，payload 被 zod 剥掉）
+        //   ②quantity→qty（上游 pydantic extra_forbidden，CartItem 契约字段是 qty）
         body: JSON.stringify({
           action: 'add',
-          payload: {
+          item: {
             product_ref: card.product_ref,
-            quantity: 1,
+            qty: 1,
             title: card.title,
             price_cents: card.price_cents,
             currency: card.currency,

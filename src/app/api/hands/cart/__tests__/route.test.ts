@@ -65,7 +65,8 @@ describe('/api/hands/cart', () => {
   });
 
   it('returns 400 on invalid body, 503 without secret', async () => {
-    expect((await POST(makeRequest({ action: 'checkout' }))).status).toBe(400);
+    // 🔧 QA D-4 fix 随动: checkout 已是合法 action 档 — 换用真非法值验证 400 路径
+    expect((await POST(makeRequest({ action: 'explode' }))).status).toBe(400);
 
     vi.stubEnv('SYMY_HANDS_SECRET', '');
     expect((await POST(makeRequest({ action: 'list' }))).status).toBe(503);

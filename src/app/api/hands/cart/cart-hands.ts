@@ -10,7 +10,8 @@
  *   { trace_id, ok, data }) 里 — unwrapCartEnvelope 负责解包成 { ok, data, error }。
  */
 
-export type CartAction = 'add' | 'list' | 'remove';
+// 🔧 QA D-4 fix (2026-09-28): 补 'checkout' — 与 route.ts bodySchema 对齐（上游 symy_cart 支持）
+export type CartAction = 'add' | 'list' | 'remove' | 'checkout';
 export type CartLang = 'zh' | 'en';
 export type CartCurrency = 'CNY' | 'USD';
 

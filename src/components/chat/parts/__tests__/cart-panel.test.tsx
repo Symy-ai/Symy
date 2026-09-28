@@ -170,6 +170,7 @@ describe('ChatCartPanel', () => {
     apiFetchMock.mockResolvedValue({ ok: true, data: { cart_lines: [], cart_total_cents: 0 } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0]);
     await waitFor(() => expect(apiFetchMock).toHaveBeenCalledTimes(2));
-    expect(apiFetchMock.mock.calls[1][1]?.body).toContain('"action":"remove"');
+    // 🔧 QA D-1 fix 随动: body 现在是裸对象（apiFetch 内部负责 stringify），不再是预序列化字符串
+    expect(apiFetchMock.mock.calls[1][1]?.body).toMatchObject({ action: 'remove', item: { product_ref: greenLine.product_ref, qty: 0 } });
   });
 });
