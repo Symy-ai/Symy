@@ -37,3 +37,28 @@ export {
 export function isDecisionGateEnabled(): boolean {
   return process.env.DECISION_GATE_ENABLED === '1';
 }
+
+/**
+ * 🎯 Wave 1 首条点亮（doc/jev-wave1-first-light-plan §3.2）：
+ * 生产用 gate 工厂 — Jev 到位前用 LLMWrapperGate + createLLMCompletion 模拟层。
+ * gate-agnostic：消费方只拿 DecisionGate 接口，Jev 到位后只换此工厂内部实现。
+ * 惰性构造（模块级缓存）：开关关闭时零开销（不建 gate 对象、不发任何调用）。
+ */
+let _productionGate: import('./types').DecisionGate | null = null;
+export function getProductionGate(): import('./types').DecisionGate | null {
+  if (!isDecisionGateEnabled()) return null;
+  if (_productionGate === null) {
+    try {
+      _productionGate = new LLMWrapperGate({ call: createLLMCompletion });
+    } catch (err) {
+      // safe to ignore: 工厂构造失败由调用方 fallback 分支兜住, 此处只留痕
+      logger.warn('[DecisionGate] production gate 构造失败, 点亮接线将全部回退原生', err);
+      return null;
+    }
+  }
+  return _productionGate;
+}
+
+import { logger } from '@/lib/logger';
+import { LLMWrapperGate } from './llm-wrapper-gate';
+import { createLLMCompletion } from '@/lib/llm-client';

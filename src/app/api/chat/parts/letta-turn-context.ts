@@ -30,6 +30,7 @@ import { detectGreenAltCard } from './green-alt-detect';
 import { detectReuseHint } from './reuse-detect';
 // 🐞 batch46-b 微挑战预检: 购买意图 + 品类命中 + 7 天频控 → micro_challenge 提案
 import { detectMicroChallenge } from './micro-challenge-detector';
+import { getProductionGate, findPrecheckSpec, runUnifiedPrecheck, PRECHECK_DEFAULT_TIMEOUT_MS } from '@/lib/decision-gate';
 // 📖 batch47-a 知识问答: 知识型提问 → 词条内容注入 Letta 上下文 + 来源 chip payload
 import { buildGreenKnowledge } from './green-knowledge-context';
 // 🧭 batch52-c 冲动触发画像: 独立注入点 — 聚合拦截原因画像, 单行摘要拼入 symyFields
@@ -49,7 +50,7 @@ import { loadSpendingCapContext, type SpendingCapStore } from './spending-cap-co
 import { loadGreenAltPreferenceContext, type GreenAltPreferenceStore } from './green-alt-preference-context';
 // 🌱 batch68-a 绿色采纳后复盘: 独立注入点 — 复盘证据行拼入 symyFields + 偏好 gap-fill 合并
 import { loadGreenAltRetroContext, mergeGreenAltRetroPreference, type GreenAltRetroStore } from './green-alt-retro-context';
-import type { MicroChallengeHistoryEntry } from '@/types/micro-challenge';
+import type { MicroChallengeHistoryEntry, MicroChallengeCategory } from '@/types/micro-challenge';
 // 🔧 ARCH fix (Round 56 R56-Bug8): 用共享 getChallengeType 替代内联阈值
 import { getChallengeType } from '@/lib/challenge-rules';
 // 🛡️ batch48-a: 守护强度三档 → prompt 档位指令行 (balanced = 空串, 现状逐字节一致)
@@ -347,9 +348,39 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
     : detectReuseHint(userContent, locale, userHourlyRate);
   // 🐞 batch46-b 微挑战预检: 与绿色守护同一开关 — guard-off → null (整卡静默, 不注入)。
   //    品类来自守护账本词表 (normalizeInterceptCategory), 频控吃客户端历史。
+  // 🎯 Wave 1 首条点亮 (doc/jev-wave1-first-light-plan §3): flag 开时品类档由
+  //    runUnifiedPrecheck(['micro-challenge-category']) 的 choice 结果供给 (argmax 档),
+  //    三级回退 (flag 关 / gate throw / 非法档) 全部落回词表原生归一 — 行为与点亮前一致。
+  let microChallengeGateCategory: MicroChallengeCategory | undefined;
+  const microGate = getProductionGate();
+  if (microGate) {
+    const spec = findPrecheckSpec('micro-challenge-category');
+    if (spec) {
+      try {
+        const gateResult = await runUnifiedPrecheck(
+          microGate,
+          { id: 'micro-challenge-turn', text: userContent },
+          [spec],
+          { timeoutMs: PRECHECK_DEFAULT_TIMEOUT_MS },
+        );
+        const dist = gateResult.results[0]?.value;
+        if (Array.isArray(dist)) {
+          const argmax = dist.indexOf(Math.max(...dist));
+          const picked = spec.question.kind === 'choice' ? spec.question.options[argmax] : undefined;
+          if (picked) microChallengeGateCategory = picked as MicroChallengeCategory;
+        }
+        if (gateResult.fallbackUsed) {
+          logger.warn('[TurnContext] micro-challenge gate fallback (timeout/throw), 回退原生归一');
+        }
+      } catch (err) {
+        // safe to ignore: gate 失败按方案回退词表原生归一, 用户无感
+        logger.warn('[TurnContext] micro-challenge gate 异常, 回退原生归一:', err instanceof Error ? err.message : String(err));
+      }
+    }
+  }
   const microChallenge = symyGreenContext.greenPref === 'off' || suppressGuardCards || spendingCap.exceeded
     ? null
-    : detectMicroChallenge({ userContent, recentMicroChallenges: microChallengeHistory });
+    : detectMicroChallenge({ userContent, recentMicroChallenges: microChallengeHistory, gateCategory: microChallengeGateCategory });
   // 📖 batch47-a 知识问答检索注入: 开关关/购买意图/未命中 → 双 null; 命中 → 上下文块 + chip
   const greenKnowledge = buildGreenKnowledge(userContent, locale, symyGreenContext.greenPref);
   const symyFields = [symyUserRef ? ` | symy_user_ref: ${symyUserRef}` : '', ` | symy_session_ref: ${randomUUID()}`, ` | symy_lang: ${locale === 'zh' ? 'zh' : 'en'}`, ' | symy_currency: ' + (locale === 'zh' ? 'CNY' : 'USD'), symyCartTotalCents !== null && symyCartTotalCents !== undefined && Number.isInteger(symyCartTotalCents) && symyCartTotalCents >= 0 ? ` | symy_cart_total_cents: ${symyCartTotalCents}` : '', ` | symy_green_pref: ${symyGreenContext.greenPref}`, symyShoppingFacts ? ` | symy_shopping_facts: ${sanitizeShoppingFactsForPrompt(symyShoppingFacts)}` : '', symyImpulseProfile ? ` | ${symyImpulseProfile}` : '', symyImpulseForecast ? ` | ${symyImpulseForecast}` : '', symyGreenCommitment ? ` | ${symyGreenCommitment}` : '', symyRecentWins ? ` | ${symyRecentWins}` : '', altAdoption.line ? ` | ${altAdoption.line}` : '', guardStyle.line ? ` | ${guardStyle.line}` : '', greenAltPreference.line ? ` | ${greenAltPreference.line}` : '', greenAltRetro.line ? ` | ${greenAltRetro.line}` : '', greenAltRetroAnswerContext ? ` | ${greenAltRetroAnswerContext.evidenceLine}` : '', spendingCap.line || ''].join('');

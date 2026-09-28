@@ -5,6 +5,7 @@ import {
   hasPurchaseIntent,
   microChallengeSseEvent,
   MICRO_CHALLENGE_COOLDOWN_MS,
+  resolveCategory,
 } from '../micro-challenge-detector';
 
 const NOW = 1_700_000_000_000;
@@ -70,5 +71,29 @@ describe('microChallengeSseEvent (SSE 事件组装)', () => {
     const event = microChallengeSseEvent(proposal!);
     expect(event.type).toBe('micro_challenge');
     expect(event.microChallenge).toBe(proposal);
+  });
+});
+
+// 🎯 Wave 1 首条点亮回归 (doc/jev-wave1-first-light-plan §4): resolveCategory 四断言
+describe('resolveCategory (Wave 1 首条点亮 gate 供给)', () => {
+  it('gate 合法档覆盖原生归一 (gate 优先)', () => {
+    // 词表原生会把"耳机"归 electronics; gate 给 clothing → 用 clothing
+    expect(resolveCategory('我想买耳机', 'clothing')).toBe('clothing');
+  });
+
+  it('gate 非法档回退词表原生归一', () => {
+    // 'banana' 不在五档, 字面直通与归一都落不到 → 回退原生 (electronics)
+    expect(resolveCategory('我想买耳机', 'banana' as never)).toBe('electronics');
+  });
+
+  it('gate undefined 走原生归一 (行为与点亮前逐字节一致)', () => {
+    expect(resolveCategory('我想买耳机')).toBe('electronics');
+    expect(resolveCategory('随便聊聊')).toBeNull();
+  });
+
+  it('gate 档 + 无原生命中时 gate 仍可发起 (语义供给价值)', () => {
+    // "帮我挑个礼物" 词表不命中(default); gate 判 beauty → 发 beauty 卡
+    expect(resolveCategory('帮我挑个礼物', 'beauty')).toBe('beauty');
+    expect(resolveCategory('帮我挑个礼物')).toBeNull();
   });
 });

@@ -8,6 +8,7 @@
  * 触发克制 (红线):
  * - 消息必须含明确购买意图词 — 闲聊零触发
  * - 品类必须命中守护账本的品类词表 (normalizeInterceptCategory), 'default' 不发起
+ *   (🎯 Wave 1 首条点亮: gateCategory 有值时优先, 非法档回退词表原生归一)
  * - 同一品类 7 天内已发起过 → 频控不发
  *
  * 绿色守护开关 (symy_green_pref) 由调用方判断 — off 时不调用本文件, 整卡静默。
@@ -52,6 +53,36 @@ export interface DetectMicroChallengeInput {
   recentMicroChallenges?: readonly MicroChallengeHistoryEntry[];
   /** 可注入时钟 (测试用), 缺省 Date.now */
   now?: number;
+  /**
+   * 🎯 Wave 1 首条点亮 (doc/jev-wave1-first-light-plan §3): gate 供给的品类档。
+   * 有值时优先于词表原生归一 (意图门/频控不动); 合法性由 resolveCategory 内的
+   * normalizeInterceptCategory 归一验证兜底 — gate 是外部语义输出, 非法档回退原生。
+   */
+  gateCategory?: MicroChallengeCategory;
+}
+
+/**
+ * 品类归一 (Wave 1 首条点亮拆出的纯函数):
+ * - gateCategory 有值: 字面直通五档优先 (账本正则不覆盖 'electronics' 字面量,
+ *   同 guard-category-insight 的直通表先例), 未中再过 normalizeInterceptCategory
+ *   归一验证; 两步都落不到可发起档 → 回退词表原生归一 (回退纪律 2:
+ *   gate 非法档既不阻断发卡、也不放行 default 档)
+ * - gateCategory 缺省: 守护账本词表原生归一 (行为与点亮前逐字节一致)
+ * 返回 null = 无可发起档 ('default' 不发卡)
+ */
+export function resolveCategory(
+  userContent: string,
+  gateCategory?: MicroChallengeCategory,
+): MicroChallengeCategory | null {
+  if (gateCategory !== undefined) {
+    const direct = MICRO_CATEGORIES.find((c) => c === gateCategory);
+    if (direct) return direct;
+    const normalized = normalizeInterceptCategory(gateCategory);
+    const matched = MICRO_CATEGORIES.find((c) => c === normalized);
+    if (matched) return matched;
+  }
+  const rawCategory = normalizeInterceptCategory(userContent);
+  return MICRO_CATEGORIES.find((c) => c === rawCategory) ?? null;
 }
 
 /**
@@ -59,11 +90,10 @@ export interface DetectMicroChallengeInput {
  * 纯函数: 只做字符串匹配 + 历史比对, 不读库、不改状态、不抛异常。
  */
 export function detectMicroChallenge(input: DetectMicroChallengeInput): MicroChallengeProposal | null {
-  const { userContent, recentMicroChallenges, now } = input;
+  const { userContent, recentMicroChallenges, now, gateCategory } = input;
   if (!hasPurchaseIntent(userContent)) return null;
 
-  const rawCategory = normalizeInterceptCategory(userContent);
-  const category = MICRO_CATEGORIES.find((c) => c === rawCategory);
+  const category = resolveCategory(userContent, gateCategory);
   if (!category) return null;
 
   const currentTime = typeof now === 'number' ? now : Date.now();
