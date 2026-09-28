@@ -499,13 +499,20 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   const [guardMomentsOpen, setGuardMomentsOpen] = useState(false);
 
   // 🐘 batch59-a 进行中守护面板 — 固定入口随时可开 (空态用最近胜利时刻激励);
-  // 冷静期 pending 由组件层读 localStorage 传入 hook (hooks 层禁依赖 components)
-  const pendingCooldown = getActivePendingPrepurchase();
-  const { summary: activeGuards, isLoading: activeGuardsLoading } = useActiveGuards({
-    cooldown: pendingCooldown
-      ? { subject: pendingCooldown.subject, askedAt: pendingCooldown.askedAt, dueAt: pendingCooldown.dueAt, amount: pendingCooldown.amount }
-      : null,
-  });
+    // 冷静期 pending 由组件层读 localStorage 传入 hook (hooks 层禁依赖 components)
+    // 🔧 b138 §2.2 (2026-09-29): getActivePendingPrepurchase 每次 render 做 JSON.parse —
+    //   useActiveGuards 的 effect deps 是挂载快照语义, 入参变化不重跑 → render 期读取纯浪费。
+    //   useRef 一次性固化 (挂载快照, 与下游 deps 语义对齐)。
+    const pendingCooldownRef = useRef<ReturnType<typeof getActivePendingPrepurchase>>(null);
+    if (pendingCooldownRef.current === null) {
+      pendingCooldownRef.current = getActivePendingPrepurchase();
+    }
+    const pendingCooldown = pendingCooldownRef.current;
+    const { summary: activeGuards, isLoading: activeGuardsLoading } = useActiveGuards({
+      cooldown: pendingCooldown
+        ? { subject: pendingCooldown.subject, askedAt: pendingCooldown.askedAt, dueAt: pendingCooldown.dueAt, amount: pendingCooldown.amount }
+        : null,
+    });
   const [activeGuardsOpen, setActiveGuardsOpen] = useState(false);
 
   // 🐘 batch53-a: 绿色承诺到期回访 — 到期当天首轮对话自动开一次结算卡 (一次性)
