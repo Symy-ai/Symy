@@ -9,18 +9,13 @@ import { useChallengeFetch } from './chat/hooks/use-challenge-fetch';
 import { useChatPersistence } from './chat/hooks/use-chat-persistence';
 import { useChatActions } from './chat/hooks/use-chat-actions';
 import { useChatHistory } from './chat/hooks/use-chat-history';
-import { useChatRecap } from './chat/hooks/use-chat-recap';
 // 🐞 batch46-b: 微挑战次日一次性回访条
-import { useMicroChallengeFollowup } from './chat/hooks/use-micro-challenge-followup';
-import { useCooldownFollowup } from './chat/hooks/use-cooldown-followup';
 // 🐘 batch50-a 买前三问: 「冷静 24h」次日回访
-import { usePrepurchaseFollowup } from './chat/hooks/use-prepurchase-followup';
-import { useDuplicateReuseFollowup } from './chat/hooks/use-duplicate-reuse-followup';
-import { useEmotionGuardFollowup } from './chat/hooks/use-emotion-guard-followup';
-import { usePostPurchaseReview } from '@/hooks/use-post-purchase-review';
 // 🐘 batch52-b: 小象引导式周复盘对话 (固定入口 + due 自动开一次)
 import { useWeeklyReview } from '@/hooks/use-weekly-review';
 // ====== File Split Wave 1: 剩余内联逻辑拆到 chat/hooks/* + chat/sections/* (纯搬运, 行为零变化) ======
+import { useFollowupStrips } from './chat/hooks/use-followup-strips';
+import { FollowupStrips } from './chat/sections/followup-strips';
 import { useChatDemoMode } from './chat/hooks/use-chat-demo-mode';
 import { useChatLifecycleCleanup } from './chat/hooks/use-chat-lifecycle-cleanup';
 import { usePendingContext } from './chat/hooks/use-pending-context';
@@ -28,15 +23,8 @@ import { useImpulseContext } from './chat/hooks/use-impulse-context';
 import { ChatHeader } from './chat/parts/chat-header';
 import { ChatBanners } from './chat/parts/chat-banners';
 import { ChatMessages } from './chat/parts/chat-messages';
-import { ChatRecap } from './chat/parts/chat-recap';
-import { MicroChallengeFollowup } from './chat/parts/micro-challenge-followup';
-import { CooldownFollowup } from './chat/parts/cooldown-followup';
 // 🐘 batch50-a 买前三问: 「冷静 24h」次日回访条
-import { PrepurchaseFollowup } from './chat/parts/prepurchase-followup';
-import { DuplicateReuseFollowup } from './chat/parts/duplicate-reuse-followup';
 // 🐘 batch60-c 情绪守护: 「先等 10 分钟」到期待追问条 (刷新/换会话后接棒)
-import { EmotionGuardCheckin } from './chat/parts/emotion-guard-checkin';
-import { PostPurchaseReview } from './chat/parts/post-purchase-review';
 import { WeeklyReviewCard } from './chat/parts/weekly-review';
 import { WeeklyReviewEntry } from './chat/parts/weekly-review-entry';
 import { GuardMomentsCard } from './chat/parts/guard-moments';
@@ -433,47 +421,10 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   const accentClass = BUDDY_ACCENT[health];
   const gradientClass = BUDDY_GRADIENT[health];
 
-  // 🌱 会话连续性: 上次聊到一半的绿色话题 → 一次性「上次我们聊到」回顾条
-  const { recap, dismiss: dismissRecap } = useChatRecap({
+  // 🔧 b138 批B (2026-09-29): 回访条全家桶收拢 useFollowupStrips —
+  //    7 个同构 hook 调用点 → 1 个聚合 hook (纯转发, 原 hook 零改动)
+  const followupStrips = useFollowupStrips({
     messages,
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  // 🐞 batch46-b: 到期微挑战的次日一次性回访条 (localStorage 待回访记录驱动)
-  const { dueRecord: dueMicroChallenge, clear: clearMicroChallengeFollowup } = useMicroChallengeFollowup({
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  // 🐘 batch48-b: 到期冷静卡的次日一次性回访条 (localStorage 待回访记录驱动;
-  // 二选一后回访条内联展示祝福/成功文案, 记录已在 store 内消解)
-  const { dueRecord: dueCooldown } = useCooldownFollowup({
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  // 🐘 batch50-a: 买前三问选「冷静 24h」的次日一次性回访条 (localStorage 待回访
-  // 记录驱动; 二选一后回访条内联展示祝福/成功文案, 记录已在 store 内消解)
-  const { dueRecord: duePrepurchase, clear: clearPrepurchaseFollowup } = usePrepurchaseFollowup({
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  const { due: dueDuplicateReuse, clear: clearDuplicateReuseFollowup } = useDuplicateReuseFollowup({
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  // 🐘 batch60-c: 情绪守护选「先等 10 分钟」的到期待追问条 (localStorage one-shot
-  // 等待记录驱动; 刷新/换会话后卡不在了, 由追问条接棒二选一)
-  const { dueRecord: dueEmotionWait } = useEmotionGuardFollowup({
-    isDemo,
-    historyReady: !isLoadingHistory && !historyLoadError,
-  });
-
-  // 🐘 batch51-a: 拦截失败后 1–2 天的购后复盘回访条 (health_events 派生, 一次性展示)
-  const { dueReview, reviewSummary, recordReview } = usePostPurchaseReview({
     isDemo,
     historyReady: !isLoadingHistory && !historyLoadError,
   });
@@ -548,54 +499,15 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
         />
       </ChatHeader>
 
-      {/* 🌱 「上次我们聊到」一次性回顾条 (chat-header 之下、消息列表之上, 不侵入消息数组) */}
-      {recap && (
-        <ChatRecap
-          topic={recap}
-          onContinue={(prompt) => {
-            setInput(prompt);
-            inputRef.current?.focus();
-            dismissRecap();
-          }}
-          onDismiss={dismissRecap}
-        />
-      )}
-
-      {/* 🐞 batch46-b 微挑战次日回访条 — recap 条之下, 同一一次性展示语义 */}
-      {dueMicroChallenge && (
-        <MicroChallengeFollowup
-          record={dueMicroChallenge}
-          onResolved={clearMicroChallengeFollowup}
-        />
-      )}
-
-      {/* 🐘 batch48-b 冷静卡次日回访条 — 微挑战回访条之下, 同一一次性展示语义 */}
-      {dueCooldown && (
-        <CooldownFollowup record={dueCooldown} />
-      )}
-
-      {/* 🐘 batch50-a 买前三问「冷静 24h」次日回访条 — 冷静卡回访条之下, 同一一次性展示语义 */}
-      {duePrepurchase && (
-        <PrepurchaseFollowup record={duePrepurchase} onResolved={clearPrepurchaseFollowup} />
-      )}
-
-      {dueDuplicateReuse && (
-        <DuplicateReuseFollowup
-          card={dueDuplicateReuse.card}
-          decisionId={dueDuplicateReuse.decisionId}
-          onResolved={clearDuplicateReuseFollowup}
-        />
-      )}
-
-      {/* 🐘 batch60-c 情绪守护「先等 10 分钟」到期待追问条 — 三问回访条之下, 同一一次性展示语义 */}
-      {dueEmotionWait && (
-        <EmotionGuardCheckin record={dueEmotionWait} />
-      )}
-
-      {/* 🐘 batch51-a 购后复盘回访条 — 三问回访条之下, 同一一次性展示语义 */}
-      {dueReview && (
-        <PostPurchaseReview record={dueReview} summary={reviewSummary} onAnswered={recordReview} />
-      )}
+      {/* 🔧 b138 批B: 回访条编排下沉 sections/followup-strips.tsx (7 条同序搬移) */}
+      <FollowupStrips
+        strips={followupStrips}
+        onRecapContinue={(prompt) => {
+          setInput(prompt);
+          inputRef.current?.focus();
+          followupStrips.dismissRecap();
+        }}
+      />
 
       {/* 🐘 batch53-a 承诺到期结算卡 — 到期当天开场, 看完/重启承诺后消解 */}
       {commitmentSettlementOpen && greenCommitment?.dueSettlement && (
