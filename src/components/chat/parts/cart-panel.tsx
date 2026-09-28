@@ -101,8 +101,9 @@ export function ChatCartPanel({ open, onClose }: { open: boolean; onClose: () =>
       await apiFetch('/api/hands/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // 🔧 QA D-1 fix: 同上，裸对象防双重序列化
-        body: { action: 'remove', item: { product_ref: productRef, qty: 0 } },
+        // 🔧 QA D-2 追加 (2026-09-28): 上游 pydantic CartItem qty Field(ge=1) — qty:0 被拒;
+        //   action=remove 的语义是整行删除(cart.py:44-45 不用 qty), 发 qty:1 仅为过 schema
+        body: { action: 'remove', item: { product_ref: productRef, qty: 1 } },
       });
       setCartError(null);
       await load();

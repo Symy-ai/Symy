@@ -103,14 +103,14 @@ describe('/api/hands/cart', () => {
     });
   });
 
-  it('forwards remove item as a top-level arguments field (qty 0)', async () => {
+  it('forwards remove item as a top-level arguments field (qty 1 passes schema)', async () => {
     fetchMock.mockResolvedValueOnce(upstreamEnvelope({ ok: true, data: { cart_lines: [] } }));
 
-    await POST(makeRequest({ action: 'remove', item: { product_ref: 'p9', qty: 0 } }));
+    await POST(makeRequest({ action: 'remove', item: { product_ref: 'p9', qty: 1 } }));
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const rpcBody = JSON.parse(String(init.body));
-    expect(rpcBody.params.arguments.item).toEqual({ product_ref: 'p9', qty: 0 });
+    expect(rpcBody.params.arguments.item).toEqual({ product_ref: 'p9', qty: 1 });
   });
 
   it('propagates a business-level ok:false to the client with 200', async () => {

@@ -21,7 +21,8 @@ const bodySchema = z.object({
   // 🔧 QA D-1/D-4 fix (2026-09-28): 补 'checkout' 档 — cart-panel 一直调 checkout 但 enum 只有三档必 400；
   //   上游 symy_cart 实测支持 checkout（空车返回 CART_EMPTY 合法业务语义）
   action: z.enum(['add', 'list', 'remove', 'checkout']),
-  // remove 语义 = { product_ref, qty: 0 } — symy_cart 契约里 item 是 arguments 顶层字段
+  // remove 语义 = 整行删除 (symy_cart cart.py: remove(user_ref, product_ref) 不用 qty);
+  // item.qty 仅为过上游 pydantic schema (Field(ge=1), qty:0 会被拒)
   item: z.record(z.string(), z.unknown()).optional(),
 });
 
