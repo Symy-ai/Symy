@@ -1527,7 +1527,7 @@
       "cancelCheckout": "Cancel",
       "successTitle": "Checkout Successful!",
       "successBody": "Your guarded choices have been processed",
-      "successSummary": "You saved {greenCount} items, totaling {hours} hours",
+      "successSummary": "You saved {greenCount} items, totaling {hours}",
       "successToast": "Guardian checkout complete",
       "removeConfirm": "Remove this item?",
       "removeNo": "Keep it",
@@ -1539,11 +1539,11 @@
       "checkoutFailed": "Checkout failed",
       "unreachable": "Can't reach the cart right now — please try again later.",
       "adminNotified": "Cart service is temporarily unavailable — admins have been notified.",
-      "hoursBadge": "{hours} hours",
+      "hoursBadge": "{hours}",
       "greenPick": "Green pick",
       "greenerHint": "Consider greener alternatives",
       "nonGreenOrderHint": "Non-green items in your cart",
-      "totalHoursBadge": "{hours} hours saved",
+      "totalHoursBadge": "{hours} saved",
       "remove": "Remove item"
     },
     "guardDiary": {

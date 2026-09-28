@@ -1527,7 +1527,7 @@
       "cancelCheckout": "取消",
       "successTitle": "结算成功！",
       "successBody": "你的守护选择已处理",
-      "successSummary": "你节省了 {greenCount} 项，共计 {hours} 小时",
+      "successSummary": "你节省了 {greenCount} 项，共计 {hours}",
       "successToast": "守护结算完成",
       "removeConfirm": "移除这个项目？",
       "removeNo": "保留",
@@ -1539,11 +1539,11 @@
       "checkoutFailed": "结算失败",
       "unreachable": "购物车暂时连不上，稍后再试试",
       "adminNotified": "购物车服务暂不可用，已通知管理员",
-      "hoursBadge": "{hours} 小时",
+      "hoursBadge": "{hours}",
       "greenPick": "绿色优选",
       "greenerHint": "考虑更绿色的替代方案",
       "nonGreenOrderHint": "你的购物车里有非绿色选项",
-      "totalHoursBadge": "节省了 {hours} 小时",
+      "totalHoursBadge": "节省了 {hours}",
       "remove": "移除项目"
     },
     "guardDiary": {
