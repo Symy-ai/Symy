@@ -33,6 +33,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-28: GET ?resyncUser=<uuid> — 按用户查 profiles.letta_agent_id 并重挂工具（一步到位）
+  const resyncUser = request.nextUrl.searchParams.get('resyncUser');
+  if (resyncUser) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resyncUser)) {
+      return NextResponse.json({ error: 'Invalid user uuid' }, { status: 400 });
+    }
+    try {
+      const { createAdminClient } = await import('@/lib/supabase-admin');
+      const { supabase, error: adminErr } = createAdminClient();
+      if (adminErr || !supabase) {
+        return NextResponse.json({ error: 'admin client unavailable' }, { status: 500 });
+      }
+      const { data: profile, error: pErr } = await supabase
+        .from('profiles').select('letta_agent_id').eq('id', resyncUser).maybeSingle();
+      if (pErr || !profile?.letta_agent_id) {
+        return NextResponse.json({ error: 'profile or letta_agent_id not found', detail: pErr?.message ?? null }, { status: 404 });
+      }
+      const agentId = profile.letta_agent_id;
+      const { syncAgentSymyTools } = await import('@/lib/letta-agent-tools');
+      await syncAgentSymyTools(agentId);
+      return NextResponse.json({ resyncedUser: resyncUser, agentId, ok: true });
+    } catch (err) {
+      // safe to ignore: 错误已通过 500 诊断响应显式返回给调用方, 非吞错
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    }
+  }
+
   // 🔧 09-28: GET ?resyncAgent=<agentId> — MCP 重建后给 agent 重新 attach 工具
   //   （旧 server 删除后 agent 上的工具引用悬空 → messages.create 抛错 503）
   const resyncAgent = request.nextUrl.searchParams.get('resyncAgent');
