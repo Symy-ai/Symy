@@ -398,6 +398,29 @@ export function ButterflyTab({ isDemo, onAuthPrompt, sharedSessionId, onSharedSe
   // 🔧 2026-07-15: phase !== 'complete' is always true here (line 359 already returned
   //    for phase === 'complete'). TS flags this as unintentional comparison.
   //    Simplified to just check isLoading.
+  // 🔧 B136 partial fix A: 活跃 session 恢复中不落到全新建表单
+  //    场景: session 已从后端恢复 (sessionId 存在) 但 currentChapterInfo 尚未就绪
+  //    (章节派生 useMemo 依赖 phase/chapters dispatch 时序), 渲染树此前直接掉到
+  //    底部的全新建表单. 现在此窗口内显示 ButterflyLoadingState (无 onCancel).
+  //    判别式: decisionTypeP !== null — 活跃 session 恢复会 dispatch 决策信息,
+  //    而 V31 已完成会话恢复后保持 idle 且 decisionType 被清为 null,
+  //    以此避免已完成会话用户被卡死在 loading (回归风险).
+  //    注: 统一接口 ButterflyPhase 暂无 'streaming' 值 (machine streaming 映射为
+  //    playing), 此比较为防御性保留 — 若未来 phase 携带 'streaming' 同样进 loading.
+  //    errorP 防护: 恢复失败时让渲染落到表单/错误卡片, 不被 loading 遮蔽.
+  const isRestoringActiveSession =
+    (phase as string) === 'streaming' ||
+    (!!player.sessionId && !currentChapterInfoP && decisionTypeP !== null && phase !== 'chapterComplete' && !errorP);
+  if (isRestoringActiveSession) {
+    return (
+      <ButterflyLoadingState
+        isLight={isLight}
+        stageIndex={stageIndex}
+        elapsedSec={elapsedSec}
+      />
+    );
+  }
+
   if (isLoading) {
     return (
       <ButterflyLoadingState
