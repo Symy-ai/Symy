@@ -6,8 +6,16 @@
  * 与 greenAlt/reuseHint 同一「独立结构化卡通道」: 不解析模型正文, 历史持久化只存 content。
  */
 
-/** 微挑战覆盖的品类 (与守护账本的 InterceptCategory 对齐, 'default' 不发起) */
-export type MicroChallengeCategory = 'electronics' | 'clothing' | 'beauty' | 'home' | 'food';
+import type { InterceptCategory } from '@/features/butterfly/green-alt-copy';
+
+/**
+ * 微挑战覆盖的品类 (与守护账本的 InterceptCategory 对齐, 'default' 不发起)
+ *
+ * 📌 b134 / 方案 A：改为从 SSOT 源类型**投影**（Exclude 掉 'default'），
+ * 不再独立声明字面量清单 —— 源加档时此处自动跟随，杜绝抄写漂移。
+ * 投影关系由 src/app/api/chat/parts/__tests__/category-keywords-guard.test.ts 锁死。
+ */
+export type MicroChallengeCategory = Exclude<InterceptCategory, 'default'>;
 
 /** detector 输出: null (不发起) 或一张 24h 微挑战卡提案 */
 export interface MicroChallengeProposal {

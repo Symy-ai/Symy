@@ -3,6 +3,18 @@
  *
  * 产品叙事: 拦截不是「退款/已拦」，而是「又守住了一次」。
  * 这里只负责内容库和文案映射，不改 context-builder green-alt 数据管道。
+ *
+ * 📌 b134 / 方案 A：**品类 SSOT** —— 下面 `InterceptCategory`（账本五档 + 'default'）
+ * 是全仓唯一的品类源类型，下游一律以类型级引用投影，不允许再独立声明字面量清单。
+ * 投影关系（b132 侦察结论，详见 doc/jev-category-align-result.md §1 / §3）：
+ *   - MicroChallengeCategory = Exclude<InterceptCategory, 'default'>   （不发起 default）
+ *   - DimensionQueryCategory = Exclude<InterceptCategory, 'default'>   （无 other 兜底桶）
+ *   - GuardInsightCategory    = InterceptCategory | 'other'            （展示超集，lib/guard-category-insight）
+ *   - DuplicatePrecheckCategory 是**物品形态归并**的四档特化投影，clothing/beauty 落 other
+ *     是设计使然（衣/美妆无稳定复用语义），不是词表漏配 —— 见 src/types/duplicate-purchase.ts。
+ * ⚠️ 唯一的运行时词表副本是 category-query-detector 的 CATEGORY_KEYWORDS（人工同步），
+ *    已由 `src/app/api/chat/parts/__tests__/category-keywords-guard.test.ts` 加同步守卫；
+ *    往本类型加档时守卫会红，提示同步那张表。
  */
 
 export type InterceptCategory =

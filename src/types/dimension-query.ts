@@ -14,9 +14,18 @@
  */
 
 import type { SavingsQueryWindow } from '@/types/savings-query';
+import type { InterceptCategory } from '@/features/butterfly/green-alt-copy';
 
-/** 分类问句可答品类 — resolveGuardCategory 的已知五类 (不含 other 兜底桶) */
-export type DimensionQueryCategory = 'electronics' | 'clothing' | 'beauty' | 'home' | 'food';
+/**
+ * 分类问句可答品类 — resolveGuardCategory 的已知五类 (不含 other 兜底桶)
+ *
+ * 📌 b134 / 方案 A：与 MicroChallengeCategory 一样改为从 SSOT 源类型**投影**（Exclude 掉
+ * 'default'；无 'other' 兜底桶是本投影的固有语义 —— 归一不到五类即不命中，见
+ * category-query-detector.ts 的 resolveCategoryFromText 返回 null）。
+ * 字面量清单只在 category-query-detector 的 CATEGORY_KEYWORDS 运行时词表里存一份，
+ * 该副本由 src/app/api/chat/parts/__tests__/category-keywords-guard.test.ts 同步守卫。
+ */
+export type DimensionQueryCategory = Exclude<InterceptCategory, 'default'>;
 
 export interface CategoryQueryCardData {
   window: SavingsQueryWindow;
