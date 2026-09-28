@@ -47,6 +47,8 @@ describe('GET /api/admin/letta-diag', () => {
       baseUrl: 'set',
       upstream: 'ok',
       upstreamLatencyMs: 23,
+      // 🔧 09-28 随动: diag 新增 mcpServers 清单字段（默认空数组 — mcp fetch 未 mock 时 catch 留空）
+      mcpServers: [],
     });
     expect(globalThis.fetch).toHaveBeenCalledWith(
       'https://letta.example.com/v1/agents?limit=1',
