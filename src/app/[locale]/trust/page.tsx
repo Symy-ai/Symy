@@ -33,7 +33,7 @@ export async function generateMetadata({
     description: isZh
       ? '业务公开、财务公开、治理公开，以及防漂绿与结构性中立边界。'
       : 'Business, financial, and governance disclosure, with anti-greenwashing and structural neutrality boundaries.',
-    alternates: { canonical: '/trust' },
+    alternates: { canonical: `/${locale}/trust` },
   };
 }
 

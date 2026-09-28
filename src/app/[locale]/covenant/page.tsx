@@ -44,7 +44,7 @@ export async function generateMetadata({
       ? '探索更大宇宙，尽量少占家乡资源。三个条款，一份可以晒的身份契约。'
       : 'Explore a larger universe while taking fewer resources from home. Three articles and an identity worth sharing.',
     alternates: {
-      canonical: '/covenant',
+      canonical: `/${locale}/covenant`,
       languages: { en: '/en/covenant', zh: '/zh/covenant' },
     },
     openGraph: {

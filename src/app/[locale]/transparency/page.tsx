@@ -39,7 +39,7 @@ export async function generateMetadata({
     description: isZh
       ? '拦截次数、为用户省下的金额、赢回的小时——北极星指标，全部公开。'
       : 'Intercepts, money saved for users, hours won back — our north-star metrics, all in the open.',
-    alternates: { canonical: '/transparency' },
+    alternates: { canonical: `/${locale}/transparency` },
     openGraph: { images: [{ url: image, width: 1200, height: 630 }] },
     twitter: { images: [{ url: image, width: 1200, height: 630 }] },
   };

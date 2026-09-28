@@ -24,11 +24,11 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: '/blog' },
+    alternates: { canonical: `/${locale}/blog` },
     openGraph: {
       title,
       description: ogDescription,
-      url: 'https://symy.ai/blog',
+      url: `https://symy.ai/${locale}/blog`,
       siteName: 'Symy',
       type: 'website',
       images: [{ url: '/icon-1024.png', width: 1024, height: 1024, alt: 'Symy logo' }],
