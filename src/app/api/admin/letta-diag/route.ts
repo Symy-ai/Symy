@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
   //   （symy-hands 旧注册无 auth 头，hands 现要求 Bearer → 删后 getOrCreate 自动带新 secret 重建）
   const deleteMcp = request.nextUrl.searchParams.get('deleteMcp');
   if (deleteMcp) {
-    if (!/^[a-z0-9-]+$/i.test(deleteMcp)) {
+    // 允许 server name 或 mcp server id 两种形式
+    if (!/^[a-z0-9][a-z0-9_-]*$/i.test(deleteMcp)) {
       return NextResponse.json({ error: 'Invalid server name' }, { status: 400 });
     }
     const del = await fetch(
