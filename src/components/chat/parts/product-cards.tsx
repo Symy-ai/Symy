@@ -60,18 +60,14 @@ export function ProductCards({ cards, query }: { cards: ProductCardData[]; query
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        // 🔧 QA D-2 fix (2026-09-28): 对齐 route.ts zod 契约 {action, item} —
-        //   ①payload 包装→item 顶层（route bodySchema 只认 item，payload 被 zod 剥掉）
-        //   ②quantity→qty（上游 pydantic extra_forbidden，CartItem 契约字段是 qty）
+        // 🔧 QA D-2 fix 追加 (2026-09-28 UI 实测): 上游 pydantic extra_forbidden —
+        //   CartItem 只收 product_ref + qty, title/price_cents/currency/marketplace_url 全被拒
+        //   (商品详情上游按 product_ref 自查 catalog)。发最小契约。
         body: JSON.stringify({
           action: 'add',
           item: {
             product_ref: card.product_ref,
             qty: 1,
-            title: card.title,
-            price_cents: card.price_cents,
-            currency: card.currency,
-            marketplace_url: card.marketplace_url,
           },
         }),
       });
