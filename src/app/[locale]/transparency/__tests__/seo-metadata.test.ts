@@ -41,11 +41,14 @@ describe('/transparency metadata', () => {
 
   it('canonical + OG/Twitter 图指向本 locale OG route', async () => {
     const m = await meta('zh');
-    expect(m.alternates?.canonical).toBe('/transparency');
+    // 🔧 QA C-1 fix (2026-09-28): canonical 现随 locale 区分（旧 '/transparency' 造成 zh/en 重复 canonical）
+    expect(m.alternates?.canonical).toBe('/zh/transparency');
+    const mEn = await meta('en');
+    expect(mEn.alternates?.canonical).toBe('/en/transparency');
     const og = Array.isArray(m.openGraph?.images) ? m.openGraph.images : [m.openGraph?.images];
-    const tw = Array.isArray(m.twitter?.images) ? m.twitter.images : [m.twitter?.images];
+    const tw = m.twitter && (Array.isArray(m.twitter.images) ? m.twitter.images : [m.twitter.images]);
     expect(imageUrl(og[0])).toBe('/zh/transparency/og');
-    expect(imageUrl(tw[0])).toBe('/zh/transparency/og');
+    expect(imageUrl(tw?.[0])).toBe('/zh/transparency/og');
   });
 });
 
