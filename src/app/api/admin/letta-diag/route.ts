@@ -33,6 +33,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-28: GET ?resyncAgent=<agentId> — MCP 重建后给 agent 重新 attach 工具
+  //   （旧 server 删除后 agent 上的工具引用悬空 → messages.create 抛错 503）
+  const resyncAgent = request.nextUrl.searchParams.get('resyncAgent');
+  if (resyncAgent) {
+    if (!/^agent-[a-z0-9-]+$/i.test(resyncAgent)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    try {
+      const { syncAgentSymyTools } = await import('@/lib/letta-agent-tools');
+      await syncAgentSymyTools(resyncAgent);
+      return NextResponse.json({ resynced: resyncAgent, ok: true });
+    } catch (err) {
+      // safe to ignore: 错误已通过 500 诊断响应显式返回给调用方, 非吞错
+      return NextResponse.json({ resynced: resyncAgent, ok: false, error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    }
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   const startedAt = Date.now();
@@ -61,7 +78,7 @@ export async function GET(request: NextRequest) {
           hasAuthHeader: !!((s.config as Record<string, unknown> | undefined)?.custom_headers),
         }));
       }
-    } catch { /* silent: 非关键诊断信息 */ }
+    } catch { /* safe to ignore: 非关键诊断信息, 主 ping 已通过; mcpServers 留空即可 */ }
 
     return NextResponse.json({
       lettaConfigured: !!apiKey,
