@@ -250,10 +250,16 @@ export function ButterflyTab({ isDemo, onAuthPrompt, sharedSessionId, onSharedSe
   // ============================================================
 
   const handleCreateSession = useCallback(async () => {
-    if (!description.trim()) return;
+    // 🔧 QA F1 fix (2026-09-28): 早退分支全部显式日志 — 此前静默 return 是 P1 隐形化的根因
+    //   (QA 三轮取证: onClick 被调但无 POST 无 loading 无 error = await 前早退且零反馈)
+    if (!description.trim()) {
+      logger.warn('[ButterflyTab] create skipped: empty description');
+      return;
+    }
     // 🔧 PM-NEW-24 fix: 检查每日限制
     // 🔧 PM3-P1-3 fix: demo 模式也限制 (每天 1 次), 用完弹 auth prompt
     if (gachaRemaining <= 0) {
+      logger.warn('[ButterflyTab] create skipped: gacha exhausted', { gachaRemaining, isDemo });
       if (isDemo && onAuthPrompt) {
         onAuthPrompt('gacha');
       }

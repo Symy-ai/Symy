@@ -10,12 +10,20 @@
 
 import type { ButterflyMachineContext, ButterflyMachineEvent } from './butterfly-machine';
 import { AuthExpiredError } from './auth-expired-error';
+import { logger } from '@/lib/logger';
 
 export const MachineGuards = {
   // BUG-223: 非 demo 模式 user 不为 null
   canCreateSession: ({ context }: { context: ButterflyMachineContext }) => {
     if (context.isDemo) return true;
-    return !!context.userId;
+    const ok = !!context.userId;
+    // 🔧 QA F1 fix (2026-09-28): XState guard 拒绝 = 事件静默丢弃 — 必须留痕,
+    //   否则 UI 侧 onClick 正常执行、无 POST 无 loading 无 error, P1 隐形化无法定位
+    //   (三轮 QA 取证才定位到此)。use-butterfly-session 的 SYNC_CONTEXT 负责补 userId。
+    if (!ok) {
+      logger.warn('[ButterflyMachine] CREATE_SESSION dropped by guard: userId missing (SYNC_CONTEXT not applied?)');
+    }
+    return ok;
   },
 
   // BUG-250: 检查是否可以提交选择（session 存在 + 未做过选择）
