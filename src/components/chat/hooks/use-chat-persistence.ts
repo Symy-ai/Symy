@@ -21,7 +21,7 @@ export interface ChatPersistenceParams {
   messagesRef: React.MutableRefObject<ChatMessage[]>;
   setMessagesSync: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   hasMore: boolean;
-  setHasMore: (value: boolean) => void;
+  setHasMore: import('react').Dispatch<import('react').SetStateAction<boolean>>;
   setFirstItemIndex: React.Dispatch<React.SetStateAction<number>>;
   isLoadingMoreRef: React.MutableRefObject<boolean>;
   setIsLoadingMore: (value: boolean) => void;

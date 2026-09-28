@@ -91,20 +91,11 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   // N62+BUG-003: ref 必须同步更新 (setState + ref.current 同时更新, 防 finally 竞态)
-  const [isLoading, setIsLoadingState] = useState(false);
-  const setIsLoading = useCallback((value: boolean) => {
-    setIsLoadingState(value);
-  }, []);
-
-  const [isLoadingHistory, setIsLoadingHistoryState] = useState(true);
-  const setIsLoadingHistory = useCallback((value: boolean) => {
-    setIsLoadingHistoryState(value);
-  }, []);
-
-  const [hasMore, setHasMoreState] = useState(false);
-  const setHasMore = useCallback((value: boolean) => {
-    setHasMoreState(value);
-  }, []);
+  // 🔧 b138 批A (2026-09-29): 三个转发壳 useCallback 移除 — setState 引用天然稳定,
+  //    包一层零稳定性收益 (b138 §2.4); 下游类型同步放宽
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
   //    Virtuoso startReached 可能在同 tick 内双发, state 异步无法拦截, 必须用 ref
   const isLoadingMoreRef = useRef(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

@@ -36,8 +36,8 @@ export interface UseChatHistoryParams {
   pendingDisplayContentRef: React.MutableRefObject<string | null>;
   // setters
   setMessagesSync: (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
-  setIsLoadingHistory: (value: boolean) => void;
-  setHasMore: (value: boolean) => void;
+  setIsLoadingHistory: import('react').Dispatch<import('react').SetStateAction<boolean>>;
+  setHasMore: import('react').Dispatch<import('react').SetStateAction<boolean>>;
   setHistoryLoadError: (value: string | null) => void;
   setPendingContextReady: (value: boolean) => void;
   setActiveChallenge: (value: { itemName: string; amount: number; challengeId?: string } | undefined) => void;

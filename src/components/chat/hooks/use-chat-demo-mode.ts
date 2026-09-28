@@ -9,7 +9,7 @@ interface UseChatDemoModeArgs {
   /** effect 内读取 messages.length (deps 保持 [isDemo], 与原实现一致) */
   messages: ChatMessage[];
   setMessagesSync: (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
-  setIsLoadingHistory: (value: boolean) => void;
+  setIsLoadingHistory: import('react').Dispatch<import('react').SetStateAction<boolean>>;
   t: (key: string, values?: Record<string, string | number>) => string;
 }
 
