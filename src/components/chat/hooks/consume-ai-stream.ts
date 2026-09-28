@@ -340,7 +340,12 @@ export function handleToolEvent(parsed: SseToolEvent, params: HandleToolEventPar
     }
   }
   // 根据工具类型显示通知
-  const toolContent = parsed.content || '';
+  // 🔧 QA D-6 fix (2026-09-28): MCP 工具的 tool_result content 可能是结构化 JSON 信封
+  //   (如 symy_search 的 {trace_id,cards,...} 整段) — 直接当通知文案渲染会泄漏原始 JSON。
+  //   检测 JSON 形状则弃用 content, 走下方 toolName switch 的 i18n 默认文案。
+  const rawContent = typeof parsed.content === 'string' ? parsed.content.trim() : '';
+  const looksLikeJson = rawContent.startsWith('{') || rawContent.startsWith('[');
+  const toolContent = rawContent && !looksLikeJson ? rawContent : '';
   const notifType: 'reward' | 'penalty' | 'badge' =
     parsed.notifType === 'penalty' ? 'penalty' :
     parsed.notifType === 'badge' ? 'badge' :
