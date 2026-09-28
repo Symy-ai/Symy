@@ -119,7 +119,7 @@ describe('source-order 锁 — 预报块不抢既有路由', () => {
     // 🔧 b137 拆解随动: 57-c 问账块下沉 parts/canned/savings-query-block.ts —
     //   route 内锚点从 detector import 改为块调用点 (调用顺序=链序, 语义等价)
     const impulseTime = routeSource.indexOf("tryImpulseTimeQueryBlock");
-    const forecast = routeSource.indexOf("import('./parts/impulse-forecast-detector')");
+    const forecast = routeSource.indexOf("tryImpulseForecastBlock"); // 🔧 b137随动: 62-c下沉锚点改块调用
     const savings = routeSource.indexOf("trySavingsQueryBlock");
     const emotion = routeSource.indexOf("import('./parts/emotion-guard-turn')");
     expect(impulseTime).toBeGreaterThan(-1);
@@ -129,6 +129,8 @@ describe('source-order 锁 — 预报块不抢既有路由', () => {
   });
 
   it('单日追问只在预报卡上文 (kind=forecast) 时启用', () => {
-    expect(routeSource).toContain("dataQueryContext?.kind === 'forecast'");
+    // 🔧 b137随动: 62-c 块已下沉 parts/canned/ — 资格标记断言改读块文件源
+    const blockSource = readFileSync(new URL('../canned/impulse-forecast-block.ts', import.meta.url), 'utf8');
+    expect(blockSource).toContain("dataQueryContext?.kind === 'forecast'");
   });
 });

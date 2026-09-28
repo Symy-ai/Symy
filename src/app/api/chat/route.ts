@@ -552,40 +552,14 @@ async function handleChatRequest(req: NextRequest) {
     //    标记, 星期词由 detectForecastDayFollowUp 归一。放在 58-c 时段问句
     //    之后、57-c 问账之前: 回顾型统计问句在 detector 内让路, 完整数据
     //    问答仍走既有链路不抢路由 (source-order 测试锁定)。
+    // 🔧 b137 拆解第四刀 (2026-09-29): 块本体下沉 parts/canned/impulse-forecast-block.ts
     {
-      const { detectForecastQuery, detectForecastDayFollowUp } = await import('./parts/impulse-forecast-detector');
-      const isForecastQuery = detectForecastQuery(userContent);
-      const forecastPrev = dataQueryContext?.kind === 'forecast';
-      const forecastDay = forecastPrev && !isForecastQuery ? detectForecastDayFollowUp(userContent) : null;
-      if (isForecastQuery || forecastDay !== null) {
-        const { buildImpulseForecastTurn, buildImpulseForecastDayTurn, buildImpulseForecastSseStream } = await import('./parts/impulse-forecast-turn');
-        const { loadImpulseForecastEvents } = await import('./parts/impulse-forecast-context');
-        const events = await loadImpulseForecastEvents({
-          userId,
-          // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
-          store: (supabase ?? undefined) as unknown as import('./parts/impulse-forecast-context').ImpulseForecastStore | undefined,
-        });
-        const now = new Date();
-        const forecastTurn = forecastDay !== null
-          ? buildImpulseForecastDayTurn({ day: forecastDay, locale, events, now })
-          : buildImpulseForecastTurn({ userContent, locale, events, now })!;
-        logger.info('[Chat API] Impulse forecast detected, returning forecast turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildImpulseForecastSseStream(forecastTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: forecastTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            impulseForecastCard: forecastTurn.impulseForecastCard,
-          }),
-        );
-      }
+      const { tryImpulseForecastBlock } = await import('./parts/canned/impulse-forecast-block');
+      const forecastResponse = await tryImpulseForecastBlock({
+        userContent, locale, stream, userId, supabase, dataQueryContext,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (forecastResponse) return forecastResponse;
     }
 
     // 🐘 batch68-c 按小时守护脉搏: 用户问自己的小时级节奏 ("我什么时候最容易
