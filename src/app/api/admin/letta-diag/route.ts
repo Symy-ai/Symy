@@ -28,11 +28,31 @@ export async function GET(request: NextRequest) {
       signal: controller.signal,
     });
 
+    // 🔧 09-28: 列 MCP servers（诊断 hands 旧注册——symy-hands 复用旧 secret 不重建的排查）
+    let mcpServers: unknown[] = [];
+    try {
+      const mcpRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/mcp-servers/`, {
+        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (mcpRes.ok) {
+        const payload = await mcpRes.json();
+        mcpServers = (Array.isArray(payload) ? payload : []).map((s: Record<string, unknown>) => ({
+          id: s.id, name: s.server_name || s.name,
+          url: (s.config as Record<string, unknown> | undefined)?.server_url,
+          // 不回传 headers（内含 secret）——只回传有无
+          hasAuthHeader: !!((s.config as Record<string, unknown> | undefined)?.custom_headers),
+        }));
+      }
+    } catch { /* silent: 非关键诊断信息 */ }
+
     return NextResponse.json({
       lettaConfigured: !!apiKey,
       baseUrl: process.env.LETTA_BASE_URL ? 'set' : 'unset',
       upstream: 'ok',
       upstreamLatencyMs: Date.now() - startedAt,
+      mcpServers,
     });
   } catch (error) {
     const aborted = error instanceof Error && (
