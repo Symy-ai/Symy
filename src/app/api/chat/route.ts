@@ -554,33 +554,14 @@ async function handleChatRequest(req: NextRequest) {
     // 🐘 batch58-c 时段问句 ("我晚上冲动买的多吗") — 复用 48-c
     //    aggregateImpulseWindows 的分桶统计 (次数/天数 only), canned 回复,
     //    零金额零碳数值, 非羞辱框架 (看见规律不是认罪)。
+    // 🔧 b137 拆解第二刀 (2026-09-29): 块本体下沉 parts/canned/impulse-time-block.ts
     {
-      const { detectImpulseTimeQuery } = await import('./parts/impulse-time-query-detector');
-      if (detectImpulseTimeQuery(userContent)) {
-        const { buildImpulseTimeQueryTurn, buildImpulseTimeSseStream } = await import('./parts/impulse-time-query-turn');
-        const { loadSavingsQueryEvents } = await import('./parts/savings-query-context');
-        const events = await loadSavingsQueryEvents({
-          userId,
-          store: (supabase ?? undefined) as unknown as import('./parts/savings-query-context').SavingsQueryStore | undefined,
-        });
-        const turn = buildImpulseTimeQueryTurn({ userContent, locale, events, now: new Date() })!;
-        logger.info('[Chat API] Impulse time query detected, returning impulse time turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildImpulseTimeSseStream(turn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: turn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            impulseTimeCard: turn.impulseTimeCard,
-          }),
-        );
-      }
+      const { tryImpulseTimeQueryBlock } = await import('./parts/canned/impulse-time-block');
+      const impulseTimeResponse = await tryImpulseTimeQueryBlock({
+        userContent, locale, stream, userId, supabase,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (impulseTimeResponse) return impulseTimeResponse;
     }
 
     // 🐘 batch62-c 未来 7 天冲动风险预报: 用户往前问 ("下周容易冲动吗 /

@@ -118,7 +118,7 @@ describe('source-order 锁 — 预报块不抢既有路由', () => {
   it('预报块在 58-c 时段问句之后、57-c 问账之前、60-c 情绪守护之前', () => {
     // 🔧 b137 拆解随动: 57-c 问账块下沉 parts/canned/savings-query-block.ts —
     //   route 内锚点从 detector import 改为块调用点 (调用顺序=链序, 语义等价)
-    const impulseTime = routeSource.indexOf("import('./parts/impulse-time-query-detector')");
+    const impulseTime = routeSource.indexOf("tryImpulseTimeQueryBlock");
     const forecast = routeSource.indexOf("import('./parts/impulse-forecast-detector')");
     const savings = routeSource.indexOf("trySavingsQueryBlock");
     const emotion = routeSource.indexOf("import('./parts/emotion-guard-turn')");
