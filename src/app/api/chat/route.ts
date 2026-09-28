@@ -669,46 +669,15 @@ async function handleChatRequest(req: NextRequest) {
     //    对账回复 + 问账卡 (数字全部来自既有聚合 lib, 绝不经手 Letta)。
     //    放在购物类 detector 之后: 问账是提问不是购物意图, 互斥由 detector
     //    内排除 + 链序双保险。
+    // 🔧 b137 拆解第一刀 (2026-09-29): 块本体下沉 parts/canned/savings-query-block.ts
+    //    (纯机械搬移, 返回 null=未命中继续链路 — 链序不变, source-order 测试锁定)
     {
-      const { detectSavingsQuery } = await import('./parts/savings-query-detector');
-      if (detectSavingsQuery(userContent)) {
-        const { buildSavingsQueryTurn, buildSavingsQuerySseStream } = await import('./parts/savings-query-turn');
-        const { loadSavingsQueryEvents } = await import('./parts/savings-query-context');
-        const { getUserHourlyRate } = await import('@/lib/user-hourly-rate');
-        const [events, hourlyRate] = await Promise.all([
-          loadSavingsQueryEvents({
-            userId,
-            // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
-            store: (supabase ?? undefined) as unknown as import('./parts/savings-query-context').SavingsQueryStore | undefined,
-          }),
-          userId ? getUserHourlyRate(userId).catch(() => 25) : Promise.resolve(25),
-        ]);
-        const savingsQueryTurn = buildSavingsQueryTurn({
-          userContent,
-          locale,
-          events,
-          now: new Date(),
-          hourlyRate,
-        });
-        if (savingsQueryTurn) {
-          logger.info('[Chat API] Savings query detected, returning statement turn');
-          if (stream) {
-            return mergeCookiesOnResponse(
-              new Response(buildSavingsQuerySseStream(savingsQueryTurn),
-                { headers: { ...SSE_HEADERS } },
-              ),
-            );
-          }
-          return mergeCookies(
-            NextResponse.json({
-              reply: savingsQueryTurn.reply,
-              reasoning: undefined,
-              toolCalls: undefined,
-              savingsQueryCard: savingsQueryTurn.savingsQueryCard,
-            }),
-          );
-        }
-      }
+      const { trySavingsQueryBlock } = await import('./parts/canned/savings-query-block');
+      const savingsQueryResponse = await trySavingsQueryBlock({
+        userContent, locale, stream, userId, supabase,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (savingsQueryResponse) return savingsQueryResponse;
     }
 
     let suppressGuardCards = false;

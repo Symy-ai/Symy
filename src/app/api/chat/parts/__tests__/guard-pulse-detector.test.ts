@@ -61,7 +61,8 @@ describe('source-order 锁 — 脉搏块不抢既有路由', () => {
   it('脉搏块在 62-c 预报之后、57-c 问账之前、60-c 情绪守护之前', () => {
     const forecast = routeSource.indexOf("import('./parts/impulse-forecast-detector')");
     const guardPulse = routeSource.indexOf("import('./parts/guard-pulse-detector')");
-    const savings = routeSource.indexOf("import('./parts/savings-query-detector')");
+    // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
+    const savings = routeSource.indexOf("trySavingsQueryBlock");
     const emotion = routeSource.indexOf("import('./parts/emotion-guard-turn')");
     expect(forecast).toBeGreaterThan(-1);
     expect(guardPulse).toBeGreaterThan(forecast);

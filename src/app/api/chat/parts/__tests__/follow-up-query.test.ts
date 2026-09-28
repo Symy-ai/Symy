@@ -153,7 +153,8 @@ describe('路由顺序 — 追问检测在 57-c/58-c 检测之前 (源码链序�
     const followUpIdx = source.indexOf('detectFollowUpQuery');
     const categoryIdx = source.indexOf('detectCategoryQuery');
     const impulseIdx = source.indexOf('detectImpulseTimeQuery');
-    const savingsIdx = source.indexOf('detectSavingsQuery');
+    // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
+    const savingsIdx = source.indexOf('trySavingsQueryBlock');
     expect(followUpIdx).toBeGreaterThan(-1);
     expect(categoryIdx).toBeGreaterThan(followUpIdx);
     expect(impulseIdx).toBeGreaterThan(followUpIdx);
