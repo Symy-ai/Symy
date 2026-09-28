@@ -9,6 +9,11 @@ vi.mock('@/lib/api-client', () => ({
   apiFetch: vi.fn(),
 }));
 
+// 🔧 QA 2H P4 随动: useImpulseWindow 现内嵌 useAuth — 测试默认已登录态
+vi.mock('@/components/auth/auth-provider', () => ({
+  useAuth: () => ({ user: { id: 'test-user' }, loading: false }),
+}));
+
 import { apiFetch } from '@/lib/api-client';
 
 vi.mock('@/i18n/provider', () => ({

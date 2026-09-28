@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/components/auth/auth-provider';
 import {
   aggregateGuardMoments,
   type GuardMomentsTimeline,
@@ -63,11 +64,20 @@ export interface UseGuardMomentsResult {
   isLoading: boolean;
 }
 
-export function useGuardMoments(): UseGuardMomentsResult {
+export function useGuardMoments(options?: { enabled?: boolean }): UseGuardMomentsResult {
+  // 🔧 QA 2H P4: 无 auth 时自动禁用 — 打 API 必 401, warn 刷屏
+  const { user } = useAuth();
+  const enabled = options?.enabled !== false && !!user;
   const [timeline, setTimeline] = useState<GuardMomentsTimeline | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // 🔧 QA 2H P4: demo/guest 态跳过 fetch (无 auth 必 401, warn 刷屏)
+    if (!enabled) {
+      setTimeline(null);
+      setIsLoading(false);
+      return;
+    }
     let cancelled = false;
 
     (async () => {
@@ -90,7 +100,7 @@ export function useGuardMoments(): UseGuardMomentsResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [enabled]);
 
   return { timeline, isLoading };
 }

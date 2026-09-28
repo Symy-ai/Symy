@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/components/auth/auth-provider';
 import { aggregateImpulseWindows, type ImpulseWindowSummary } from '@/lib/impulse-window';
 import { useNightWindow } from '@/hooks/use-night-window';
 import { nightWindowToHours } from '@/lib/night-window';
@@ -54,12 +55,21 @@ async function fetchGuardEvents(): Promise<ImpulseWindowEventLite[]> {
   return events;
 }
 
-export function useImpulseWindow(): UseImpulseWindowResult {
+export function useImpulseWindow(options?: { enabled?: boolean }): UseImpulseWindowResult {
+  // 🔧 QA 2H P4: 无 auth 时自动禁用 — 打 API 必 401, warn 刷屏
+  const { user } = useAuth();
+  const enabled = options?.enabled !== false && !!user;
   const [summary, setSummary] = useState<ImpulseWindowSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { nightWindow } = useNightWindow();
 
   useEffect(() => {
+    // 🔧 QA 2H P4: demo/guest 态跳过 fetch (无 auth 必 401, warn 刷屏)
+    if (!enabled) {
+      setSummary(null);
+      setIsLoading(false);
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -79,7 +89,7 @@ export function useImpulseWindow(): UseImpulseWindowResult {
     return () => {
       cancelled = true;
     };
-  }, [nightWindow]);
+  }, [enabled, nightWindow]);
 
   return { summary, isLoading };
 }

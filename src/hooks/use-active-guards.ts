@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
+import { useAuth } from '@/components/auth/auth-provider';
 import {
   aggregateActiveGuards,
   type ActiveGuardsCooldownInput,
@@ -65,14 +66,25 @@ export interface UseActiveGuardsResult {
 export interface UseActiveGuardsOptions {
   /** 冷静期 pending 记录 (组件层读 localStorage 后传入; 无则 null) */
   cooldown?: ActiveGuardsCooldownInput | null;
+  /** 🔧 QA 2H P4: demo/guest 态跳过 fetch (无 auth 必 401, warn 刷屏污染日志) */
+  enabled?: boolean;
 }
 
 export function useActiveGuards(options?: UseActiveGuardsOptions): UseActiveGuardsResult {
   const cooldown = options?.cooldown ?? null;
+  // 🔧 QA 2H P4: 无 auth (guest/demo 未登录) 时自动禁用 — 打 API 必 401, warn 刷屏
+  const { user } = useAuth();
+  const enabled = options?.enabled !== false && !!user;
   const [summary, setSummary] = useState<ActiveGuardsSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // 🔧 QA 2H P4: 禁用时直接空态 (demo 数据由 UI 层静态展示, 不打 API)
+    if (!enabled) {
+      setSummary(null);
+      setIsLoading(false);
+      return;
+    }
     let cancelled = false;
 
     (async () => {
