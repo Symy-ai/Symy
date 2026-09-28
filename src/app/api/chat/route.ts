@@ -569,34 +569,14 @@ async function handleChatRequest(req: NextRequest) {
     //    看见节奏不是认罪。放在 62-c 预报之后、57-c 问账之前: 前瞻词让回
     //    预报、四桶时段词让回 58-c、品类词让回分类问句 (detector 内让路 +
     //    source-order 测试锁定)。
+    // 🔧 b137 拆解第五刀 (2026-09-29): 块本体下沉 parts/canned/guard-pulse-block.ts
     {
-      const { detectGuardPulseQuery } = await import('./parts/guard-pulse-detector');
-      if (detectGuardPulseQuery(userContent)) {
-        const { buildGuardPulseTurn, buildGuardPulseSseStream } = await import('./parts/guard-pulse-turn');
-        const { loadGuardPulseQueryData } = await import('./parts/guard-pulse-context');
-        const { events, timezone } = await loadGuardPulseQueryData({
-          userId,
-          // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
-          store: (supabase ?? undefined) as unknown as import('./parts/guard-pulse-context').GuardPulseStore | undefined,
-        });
-        const pulseTurn = buildGuardPulseTurn({ userContent, locale, events, now: new Date(), timezone })!;
-        logger.info('[Chat API] Guard pulse detected, returning guard pulse turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildGuardPulseSseStream(pulseTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: pulseTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            guardPulseCard: pulseTurn.guardPulseCard,
-          }),
-        );
-      }
+      const { tryGuardPulseBlock } = await import('./parts/canned/guard-pulse-block');
+      const guardPulseResponse = await tryGuardPulseBlock({
+        userContent, locale, stream, userId, supabase,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (guardPulseResponse) return guardPulseResponse;
     }
 
     // 🐘 batch57-c 问账: 用户直接问账 ("这个月省了多少 / 上周守护了几次")
