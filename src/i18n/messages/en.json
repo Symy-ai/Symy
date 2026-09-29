@@ -11,7 +11,6 @@
     "tryAgain": "Try Again",
     "viewAll": "View All",
     "disconnect": "Disconnect",
-    "comingSoon": "Coming Soon",
     "or": "or",
     "days": "days",
     "justNow": "Just now",
@@ -19,16 +18,10 @@
     "hoursAgo": "{n}h ago",
     "daysAgo": "{n}d ago",
     "unknown": "Unknown",
-    "viewMonitor": "View Monitor",
-    "iSee": "I see",
     "retry": "Retry",
     "save": "Save",
     "delete": "Delete",
     "refresh": "Refresh"
-  },
-  "app": {
-    "demoBanner": "Demo — another person's guarding",
-    "signUpFree": "Start guarding →"
   },
   "invite": {
     "covenantPill": "Guardian Covenant",
@@ -36,9 +29,7 @@
     "covenantHeading": "I'm guarding your future time",
     "covenantSubtitle": "Join guardian No. {guardianRank}",
     "covenantJoinLabel": "Become the person who is guarded",
-    "covenantFooter": "Symy Guardian Forest",
-    "covenantToast": "You guarded another friend.",
-    "covenantBadgeProgress": "Guardian Forest badge: {completed}/10 guardians"
+    "covenantFooter": "Symy Guardian Forest"
   },
   "tabs": {
     "buddy": "🐘 Buddy",
@@ -1849,21 +1840,14 @@
     "toast": {
       "unknownError": "Unknown error occurred",
       "connectionFailed": "Email connection failed. Try again.",
-      "disconnectFailed": "Failed to disconnect email. Please try again.",
       "networkError": "Network error. Please check your connection.",
       "receiptIgnored": "Receipt ignored",
-      "ignoreFailed": "Failed to ignore receipt",
-      "refundInitiated": "Refund initiated! Check your email for instructions.",
       "refundMarkedManual": "Marked for manual refund — open the order on {platform} to start the return",
       "refundConfirmed": "Refund confirmed! Your companion just got a boost. 💚",
       "refundFailed": "Failed to initiate refund. Please try again.",
       "noMatchingReceipt": "No matching receipt found",
       "demoRefundDisabled": "Demo mode — connect your email to use refund features",
       "demoIgnoreDisabled": "Demo mode — ignoring disabled",
-      "scanComplete": "Scan complete",
-      "scanNoNewReceipts": "No new receipts found",
-      "emailConnected": "Email connected successfully!",
-      "emailDisconnected": "Email disconnected",
       "healthImpactDelayed": "Refund recorded, but companion boost delayed — will apply on next sync."
     }
   },
@@ -2659,24 +2643,13 @@
     "title": "🌱 The Guard Grove",
     "subtitle": "A community of green spenders. Less bought, less made — together.",
     "details": "Details",
-    "detailsTitle": "Inducement Insights",
-    "dataSourceNote": "Based on anonymous reports from Symy savers",
     "defenders": "Green Guards",
-    "savedTogether": "Saved together",
-    "timesSeen": "Times guarded",
-    "lifeRecovered": "Time won back",
     "yourContribution": "Your contribution",
     "notEnoughData": "Be one of the first guards!",
     "notEnoughDataDesc": "Complete a See-it challenge to contribute anonymously to The Guard Grove.",
-    "youArePioneer": "You're a pioneer!",
-    "youArePioneerDesc": "Your spending matters. Once 5+ savers join, group insights will appear here.",
-    "platformIndex": "Spending Triggers by Platform",
     "platformIndexDesc": "Index = spending triggers / total challenges on each platform, based on Symy savers' anonymous reports this week",
-    "noPlatformData": "No platform data yet.",
     "platformIndexEmpty": "Not enough community data yet — check back soon.",
-    "topStrategies": "⚡ Top Inducement Tactics",
     "topStrategiesDesc": "Most common spending traps Symy users faced this week",
-    "sampleData": "📋 Sample data — updates with real insights as more users join",
     "sampleDataDemo": "Sample data — yours will be real when you sign up",
     "sampleDataBadge": "📋 Sample data — real insights building",
     "strategyLimitedTime": "Limited-time countdown",
@@ -2689,9 +2662,6 @@
     "strategyCashAdvance": "Cash advance offer",
     "strategyPaydayLoan": "Payday loan / \"Borrow until payday\"",
     "strategySubprimeCreditCard": "Subprime credit card targeted ad",
-    "communityChallenges": "🤝 Community Challenges",
-    "challengesComingSoon": "Community challenges coming soon.",
-    "shareHint": "Share to Instagram / X / TikTok / Reddit to protect others",
     "noChallenges": "No active challenges this week. Check back soon!",
     "joinChallenge": "Join Challenge",
     "joinLastDay": "🔥 Last day! Join now",
@@ -2705,7 +2675,6 @@
     "checkin": "📍 Check in today",
     "checkedInToday": "✓ Checked in today",
     "checkinLocked": "⏳ Check-in opens when challenge starts",
-    "checkinNeedChallenge": "Complete a See-it challenge first!",
     "checkinFailed": "Check-in failed. Try again.",
     "challengeCompleted": "🎉 Challenge completed!",
     "communityProgress": "Community progress",
@@ -2724,11 +2693,8 @@
     "peopleChallenging": "people challenging now",
     "challenge": {
       "tiktok": "7-day no TikTok Shop",
-      "tiktokDesc": "Seven days, nothing from TikTok Shop recommendations — cut the scroll, cut the waste.",
       "livestream": "7-day no livestream buys",
-      "livestreamDesc": "Seven days, nothing from any livestream — no hype, no boxes.",
-      "budget50": "7-day no $50+ induced buys",
-      "budget50Desc": "Seven days, no non-essential buys over $50 — wants wait, waste shrinks."
+      "budget50": "7-day no $50+ induced buys"
     },
     "heroStats": "Guardian stats",
     "hoursTogether": "Won back together: {hours}",
@@ -2743,9 +2709,7 @@
   },
   "family": {
     "dashboard": "Family Symy",
-    "monitorSpending": "Guard your family's spending moments",
     "members": "Members",
-    "impulses": "Spending moments",
     "saved": "Hours won back",
     "vitality": {
       "thriving": "Thriving",
@@ -2755,23 +2719,13 @@
       "dormant": "Dormant"
     },
     "trend": {
-      "rising": "Rising",
-      "declining": "Declining",
       "stable": "Stable"
     },
-    "impulsesLabel": "moments caught",
-    "impulseRisk": "Spending risk",
     "riskLevels": {
       "high": "High",
       "medium": "Medium"
     },
-    "thisWeek": "This Week",
-    "recentImpulses": "Recent moments caught",
-    "lastActive": "Last active",
-    "privacyProtected": "Privacy Protected",
-    "privacyDesc": "Family members' data is desensitized. Exact items and merchant names are hidden. Only spending categories and spending patterns are shared.",
-    "inviteDesc": "Invite family members to join your Symy Family Group",
-    "inviteMember": "Invite Member (Coming Soon)"
+    "thisWeek": "This Week"
   },
   "onboarding": {
     "badge": {
@@ -3030,17 +2984,10 @@
     "unexpectedError": "An unexpected error occurred"
   },
   "floatingPill": {
-    "talkToAI": "Talk to AI",
     "refund": "Start Refund"
   },
   "impulseDetector": {
-    "purchaseDetected": "Purchase recorded",
     "lateNight": "Late night purchase (22:00-06:00)",
-    "amountExceedsAvg": "Amount {amount} exceeds 2x average ({avg})",
-    "rapidOrders": "{n} orders in the last hour",
-    "flashSale": "Flash sale seen",
-    "impulsiveCategory": "Spending category: {category}",
-    "livestreamPurchase": "Livestream purchase seen",
     "scoreLabels": {
       "low": "Clean pass",
       "moderate": "Worth another look",
@@ -3052,9 +2999,7 @@
     "quickReplies": {
       "regret": "I regret it a little 😔",
       "livestream": "Bought on a livestream",
-      "withoutThinking": "Clicked without thinking",
       "dontNeed": "I don't really need it",
-      "helpRefund": "Help me get my money back",
       "boughtImpulse": "Bought when induced",
       "boughtIt": "I bought it",
       "resisted": "I held the gate"
@@ -3368,14 +3313,10 @@
   "navigation": {
     "challengePurchase": "I want to see something before I buy"
   },
-  "pricing": {
-    "premiumMonthly": "$9.90/mo · 30 minutes of your life"
-  },
   "metadata": {
     "title": "Symy — Buy less, live more",
     "description": "Symy is your AI green-shopping companion — holding the green gate before you buy, so you buy better, buy less, and live more.",
-    "ogDescription": "Your AI green-shopping companion. Every guarded choice is a medal.",
-    "twitterDescription": "Your AI green-shopping companion. Every guarded choice is a medal."
+    "ogDescription": "Your AI green-shopping companion. Every guarded choice is a medal."
   },
   "about": {
     "title": "Symy AI",
@@ -3449,17 +3390,7 @@
     "invitePrompt50": "💡 Invite a friend as a green guardian — +30 days Premium each. Every 5 friends → extra +30 days. At 10 → +60 days + Guardian Ambassador badge."
   },
   "dreamFund": {
-    "depositedToast": "🎉 {amount} saved to your Dream Fund!",
-    "alreadyDeposited": "This challenge has already been deposited.",
-    "depositFailed": "Deposit failed — try again later.",
-    "skipToast": "That's okay — money in your pocket is a win too! 💪",
-    "challengePassed": "Challenge Passed!",
-    "savedAmount": "You saved {amount}",
-    "whatToDo": "What would you like to do with this money?",
-    "depositing": "Depositing...",
-    "confirmDeposit": "✅ Confirm: Save {amount} to Dream Fund",
-    "depositButton": "✅ I'll save {amount}",
-    "skipButton": "Keep it as savings"
+    "savedAmount": "You saved {amount}"
   },
   "ritual": {
     "greetingMorning": "Good morning",
@@ -3651,7 +3582,6 @@
     }
   },
   "reflection": {
-    "boughtBack": "You've won back {months} months of freedom",
     "label": "Today's reflection"
   },
   "landing": {
@@ -3696,16 +3626,8 @@
     "feature3Desc": "Money you don't spend still works for you — toward a dream, not a shelf of stuff you barely use.",
     "feature4Label": "Green streak",
     "feature4Desc": "Guard choices day by day and watch your green streak grow — small passes compound into a lighter footprint and a freer life.",
-    "finalCta": "Start guarding your choices — free",
     "finalNote": "No credit card required. Buy less, waste less, live more — every pass is a medal.",
     "footer": "symy.ai · Buy less. Live more.",
-    "waitlistTitle": "Be the first to know when we launch",
-    "waitlistSubtitle": "Join the waitlist for early access and launch updates.",
-    "waitlistPlaceholder": "your@email.com",
-    "waitlistButton": "Join Waitlist",
-    "waitlistSuccess": "You're on the list! We'll find you.",
-    "waitlistError": "Something went wrong. Please try again.",
-    "waitlistSubmitting": "Joining...",
     "testimonialsTitle": "Winning their hours back",
     "testimonialsDisclaimer": "Illustrative scenarios of the product's philosophy.",
     "testimonials": [
@@ -3735,9 +3657,7 @@
   },
   "meta": {
     "title": "Symy — Buy less. Live more.",
-    "description": "Symy holds the green gate before you buy — checking every purchase against your wallet, your hours, and the planet. Buy less, waste less, live more.",
-    "ogTitle": "Symy — Buy less. Live more.",
-    "ogDescription": "Symy holds the green gate before you buy — checking every purchase against your wallet, your hours, and the planet. Buy less, waste less, live more."
+    "description": "Symy holds the green gate before you buy — checking every purchase against your wallet, your hours, and the planet. Buy less, waste less, live more."
   },
   "inward": {
     "tabTitle": "The Guard Grove",

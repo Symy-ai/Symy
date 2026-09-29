@@ -11,7 +11,6 @@
     "tryAgain": "重试",
     "viewAll": "查看全部",
     "disconnect": "断开连接",
-    "comingSoon": "即将推出",
     "or": "或",
     "days": "天",
     "justNow": "刚刚",
@@ -19,16 +18,10 @@
     "hoursAgo": "{n}小时前",
     "daysAgo": "{n}天前",
     "unknown": "未知",
-    "viewMonitor": "查看监控",
-    "iSee": "看见了",
     "retry": "重试",
     "save": "保存",
     "refresh": "刷新",
     "delete": "删除"
-  },
-  "app": {
-    "demoBanner": "演示 —— 别人的守护",
-    "signUpFree": "开始守护 →"
   },
   "invite": {
     "covenantPill": "守护者之约",
@@ -36,9 +29,7 @@
     "covenantHeading": "我在守护你未来的时间",
     "covenantSubtitle": "加入第 {guardianRank} 位守护者的行列",
     "covenantJoinLabel": "成为被守护的人",
-    "covenantFooter": "Symy 守护林",
-    "covenantToast": "你又守护了一位朋友。",
-    "covenantBadgeProgress": "守护林徽章：已守护 {completed}/10 位朋友"
+    "covenantFooter": "Symy 守护林"
   },
   "tabs": {
     "buddy": "🐘 伙伴",
@@ -1849,21 +1840,14 @@
     "toast": {
       "unknownError": "发生未知错误",
       "connectionFailed": "邮箱连接失败，请重试。",
-      "disconnectFailed": "断开邮箱连接失败，请重试。",
       "networkError": "网络错误，请检查你的网络连接。",
       "receiptIgnored": "收据已忽略",
-      "ignoreFailed": "忽略收据失败",
-      "refundInitiated": "退款已发起！请查看邮箱获取指引。",
       "refundMarkedManual": "已标记为手动退款 — 请前往 {platform} 打开订单发起退货",
       "refundConfirmed": "退款已确认！你的小伙伴获得了一次加成 💚",
       "refundFailed": "发起退款失败，请重试。",
       "noMatchingReceipt": "未找到匹配的收据",
       "demoRefundDisabled": "演示模式 — 连接邮箱后才能使用退款功能",
       "demoIgnoreDisabled": "演示模式 — 忽略功能已禁用",
-      "scanComplete": "扫描完成",
-      "scanNoNewReceipts": "未发现新收据",
-      "emailConnected": "邮箱连接成功！",
-      "emailDisconnected": "邮箱已断开连接",
       "healthImpactDelayed": "退款已记录，但伙伴状态提升延迟 — 将在下次同步时生效。"
     }
   },
@@ -2659,24 +2643,13 @@
     "title": "🌱 守护林",
     "subtitle": "一群绿色消费者。少买一件，少造一件 —— 而且是一起。",
     "details": "详情",
-    "detailsTitle": "诱导洞察",
-    "dataSourceNote": "基于 Symy 守护者的匿名报告",
     "defenders": "守护者",
-    "savedTogether": "共同省下",
-    "timesSeen": "次守护",
-    "lifeRecovered": "赢回的时间",
     "yourContribution": "你的贡献",
     "notEnoughData": "成为最早的守护者！",
     "notEnoughDataDesc": "完成 See-it 挑战，匿名贡献到守护林。",
-    "youArePioneer": "你是先行者！",
-    "youArePioneerDesc": "你的守护很重要。当 5+ 位守护者加入后，群体洞察将在此显示。",
-    "platformIndex": "各平台消费触发指数",
     "platformIndexDesc": "指数 = 该平台失败挑战 / 总挑战，基于 Symy 守护者本周匿名贡献的数据",
-    "noPlatformData": "暂无平台数据。",
     "platformIndexEmpty": "社区数据还在积累中，敬请期待。",
-    "topStrategies": "⚡ 高发诱导策略",
     "topStrategiesDesc": "本周 Symy 用户最常见的消费陷阱",
-    "sampleData": "📋 示例数据 — 随着更多用户加入将更新为真实洞察",
     "sampleDataDemo": "示例数据 — 注册后你将看到真实数据",
     "sampleDataBadge": "📋 样本数据 — 真实洞察积累中",
     "strategyLimitedTime": "限时秒杀倒计时",
@@ -2689,9 +2662,6 @@
     "strategyCashAdvance": "现金预借邀请",
     "strategyPaydayLoan": "发薪日贷款 / \"借到发薪日\"",
     "strategySubprimeCreditCard": "次级信用卡精准投放",
-    "communityChallenges": "🤝 社区挑战",
-    "challengesComingSoon": "社区挑战即将上线。",
-    "shareHint": "分享到 Instagram / X / TikTok / Reddit，保护更多人",
     "noChallenges": "本周暂无活跃挑战。敬请期待！",
     "joinChallenge": "加入挑战",
     "joinLastDay": "🔥 最后一天！立即加入",
@@ -2705,7 +2675,6 @@
     "checkin": "📍 今日签到",
     "checkedInToday": "✓ 今日已签到",
     "checkinLocked": "⏳ 挑战开始后可签到",
-    "checkinNeedChallenge": "请先完成一次 See-it 挑战！",
     "checkinFailed": "签到失败，请重试。",
     "challengeCompleted": "🎉 挑战完成！",
     "communityProgress": "社区进度",
@@ -2724,11 +2693,8 @@
     "peopleChallenging": "人正在挑战",
     "challenge": {
       "tiktok": "7天不买TikTok推荐",
-      "tiktokDesc": "7 天不买 TikTok Shop 推荐的商品 —— 少刷少买，少几个包裹。",
       "livestream": "7天不买直播间商品",
-      "livestreamDesc": "7 天不在直播间买东西 —— 少一分上头，少一个快递。",
-      "budget50": "7天不买超过$50的非必需品",
-      "budget50Desc": "7 天不买超过 $50 的非必需品 —— 想要的等一等，浪费少一点。"
+      "budget50": "7天不买超过$50的非必需品"
     },
     "heroStats": "守护者统计",
     "hoursTogether": "共同赢回 {hours}",
@@ -2743,9 +2709,7 @@
   },
   "family": {
     "dashboard": "家庭 Symy",
-    "monitorSpending": "守护你家人的消费时刻",
     "members": "成员",
-    "impulses": "消费时刻",
     "saved": "赢回的时间",
     "vitality": {
       "thriving": "茁壮",
@@ -2755,23 +2719,13 @@
       "dormant": "沉睡"
     },
     "trend": {
-      "rising": "上升",
-      "declining": "下降",
       "stable": "稳定"
     },
-    "impulsesLabel": "被抓住的时刻",
-    "impulseRisk": "消费风险",
     "riskLevels": {
       "high": "高",
       "medium": "中"
     },
-    "thisWeek": "本周",
-    "recentImpulses": "近期被抓住的时刻",
-    "lastActive": "最近活跃",
-    "privacyProtected": "隐私已保护",
-    "privacyDesc": "家庭成员的数据已脱敏。具体商品和商家名已隐藏。只有消费类别和消费分数在家庭组内共享。",
-    "inviteDesc": "邀请家人加入你的 Symy 家庭组",
-    "inviteMember": "邀请成员（即将推出）"
+    "thisWeek": "本周"
   },
   "onboarding": {
     "badge": {
@@ -3030,17 +2984,10 @@
     "unexpectedError": "发生了意外错误"
   },
   "floatingPill": {
-    "talkToAI": "与 AI 对话",
     "refund": "发起退款"
   },
   "impulseDetector": {
-    "purchaseDetected": "记录到一笔消费",
     "lateNight": "深夜消费（22:00-06:00）",
-    "amountExceedsAvg": "金额 {amount} 超过2倍平均值（{avg}）",
-    "rapidOrders": "过去1小时内 {n} 笔订单",
-    "flashSale": "看到限时促销",
-    "impulsiveCategory": "消费类别: {category}",
-    "livestreamPurchase": "看到直播购物",
     "scoreLabels": {
       "low": "稳稳路过",
       "moderate": "值得再看一眼",
@@ -3055,9 +3002,7 @@
       "resisted": "我守住门，没买",
       "dontNeed": "其实我不需要",
       "regret": "我有点后悔 😔",
-      "livestream": "直播时买的",
-      "withoutThinking": "顺手就点了",
-      "helpRefund": "帮我把钱拿回来"
+      "livestream": "直播时买的"
     },
     "chatQuickReplies": {
       "almostBought": "什么在召唤我...",
@@ -3368,14 +3313,10 @@
   "navigation": {
     "challengePurchase": "我想在买之前看见它"
   },
-  "pricing": {
-    "premiumMonthly": "$9.90/月 · 你 30 分钟的生命"
-  },
   "metadata": {
     "title": "Symy —— 你早已知道",
     "description": "Symy 是你的 AI 绿色消费助手——买之前替你和地球把好绿色关，买得更好、买得更少、活得更多。",
-    "ogDescription": "你的 AI 绿色消费伙伴。每一次守护都是勋章。",
-    "twitterDescription": "你的 AI 绿色消费伙伴。每一次守护都是勋章。"
+    "ogDescription": "你的 AI 绿色消费伙伴。每一次守护都是勋章。"
   },
   "about": {
     "title": "Symy AI",
@@ -3449,17 +3390,7 @@
     "invitePrompt50": "💡 邀朋友当绿色守护者——各 +30 天高级版；每满 5 位 → 额外 +30 天；满 10 位 → +60 天 + 守护大使徽章。"
   },
   "dreamFund": {
-    "depositedToast": "🎉 {amount} 已存入你的梦想基金！",
-    "alreadyDeposited": "这个挑战已经存过了。",
-    "depositFailed": "存入失败。请稍后重试。",
-    "skipToast": "没关系 — 钱在你口袋里也是赢！💪",
-    "challengePassed": "挑战通过！",
-    "savedAmount": "你省下了 {amount}",
-    "whatToDo": "这笔钱你想怎么处理？",
-    "depositing": "存入中...",
-    "confirmDeposit": "✅ 确认：存 {amount} 到梦想基金",
-    "depositButton": "✅ 我要存 {amount}",
-    "skipButton": "留在储蓄里"
+    "savedAmount": "你省下了 {amount}"
   },
   "ritual": {
     "greetingMorning": "早安",
@@ -3651,7 +3582,6 @@
     }
   },
   "reflection": {
-    "boughtBack": "你已经找回了 {months} 个月自由",
     "label": "今日守护"
   },
   "landing": {
@@ -3696,16 +3626,8 @@
     "feature3Desc": "你没花的钱依然为你工作 —— 流向梦想，而不是堆满角落的闲置。",
     "feature4Label": "绿色连续",
     "feature4Desc": "一天天守住选择，看你的绿色连续生长 —— 小小的拦截会复利，变成更轻的足迹和更自由的生活。",
-    "finalCta": "开始守护你的选择 —— 免费",
     "finalNote": "无需信用卡。少买一点，少废一点，多活一点 —— 每一次拦截都是勋章。",
     "footer": "symy.ai · 少买一点，多活一点。",
-    "waitlistTitle": "抢先体验，第一时间通知你",
-    "waitlistSubtitle": "加入候补名单，获取抢先体验资格和上线通知。",
-    "waitlistPlaceholder": "你的邮箱",
-    "waitlistButton": "加入候补名单",
-    "waitlistSuccess": "已加入！上线第一时间通知你。",
-    "waitlistError": "出错了，请重试。",
-    "waitlistSubmitting": "加入中...",
     "testimonialsTitle": "正在赢回时间的人",
     "testimonialsDisclaimer": "以上为产品理念示意场景。",
     "testimonials": [
@@ -3735,9 +3657,7 @@
   },
   "meta": {
     "title": "Symy — 少买一点，多活一点。",
-    "description": "Symy 在买之前替你把好绿色关 —— 每笔消费都对照钱包、时间和地球。少买一点，少废一点，多活一点。",
-    "ogTitle": "Symy — 少买一点，多活一点。",
-    "ogDescription": "Symy 在买之前替你把好绿色关 —— 每笔消费都对照钱包、时间和地球。少买一点，少废一点，多活一点。"
+    "description": "Symy 在买之前替你把好绿色关 —— 每笔消费都对照钱包、时间和地球。少买一点，少废一点，多活一点。"
   },
   "inward": {
     "tabTitle": "守护林",
