@@ -33,6 +33,58 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?updatePersonaUser=<uuid> — 按用户把 agent persona block 热更到最新 SSOT
+  //   (新定位: 契约签署者+多物种文明; 复用 letta-agent-manager 的 upsert 逻辑由 syncAgentSymyTools 先例)
+  const updatePersonaUser = request.nextUrl.searchParams.get('updatePersonaUser');
+  if (updatePersonaUser) {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(updatePersonaUser)) {
+      return NextResponse.json({ error: 'Invalid user uuid' }, { status: 400 });
+    }
+    try {
+      const { createAdminClient } = await import('@/lib/supabase-admin');
+      const { supabase, error: adminErr } = createAdminClient();
+      if (adminErr || !supabase) {
+        return NextResponse.json({ error: 'admin client unavailable' }, { status: 500 });
+      }
+      const { data: profile, error: pErr } = await supabase
+        .from('profiles').select('letta_agent_id').eq('id', updatePersonaUser).maybeSingle();
+      if (pErr || !profile?.letta_agent_id) {
+        return NextResponse.json({ error: 'profile or letta_agent_id not found' }, { status: 404 });
+      }
+      const agentId = profile.letta_agent_id;
+      // 列 blocks 找 persona label → PUT value (Letta v1 blocks by-agent upsert)
+      const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/blocks`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      const blocksJson = await blocksRes.json() as { id?: string; label?: string }[];
+      const blocks = Array.isArray(blocksJson) ? blocksJson : [];
+      const personaBlock = blocks.find((b) => b.label === 'persona');
+      const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
+      let upsertRes: Response;
+      if (personaBlock?.id) {
+        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/blocks/${personaBlock.id}`, {
+          method: 'PUT',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: SYMY_PERSONA_BLOCK, limit: 5000 }),
+        });
+      } else {
+        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/blocks`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label: 'persona', value: SYMY_PERSONA_BLOCK, limit: 5000 }),
+        });
+      }
+      return NextResponse.json({
+        agentId, personaBlockId: personaBlock?.id ?? 'created',
+        status: upsertRes.status, ok: upsertRes.ok,
+        personaLength: SYMY_PERSONA_BLOCK.length,
+      });
+    } catch (err) {
+      // safe to ignore: 错误以 500 诊断响应显式返回, 非吞错
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    }
+  }
+
   // 🔧 09-28: GET ?resyncUser=<uuid> — 按用户查 profiles.letta_agent_id 并重挂工具（一步到位）
   const resyncUser = request.nextUrl.searchParams.get('resyncUser');
   if (resyncUser) {
