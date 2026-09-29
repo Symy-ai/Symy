@@ -33,6 +33,34 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?probeBlocks=<agentId> — 探测 Letta blocks 端点真身 (status+body前缀)
+  const probeBlocks = request.nextUrl.searchParams.get('probeBlocks');
+  if (probeBlocks) {
+    if (!/^agent-[a-z0-9-]+$/i.test(probeBlocks)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    const candidates = [
+      `/agents/${probeBlocks}/blocks`,
+      `/agents/${probeBlocks}/memory-blocks`,
+      `/agents/${probeBlocks}/core_memory`,
+      `/agents/${probeBlocks}`,
+    ];
+    const results: Array<{ path: string; status: number; head: string }> = [];
+    for (const path of candidates) {
+      try {
+        const res = await fetch(`https://api.letta.com/v1${path}`, {
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(15000),
+        });
+        const text = await res.text();
+        results.push({ path, status: res.status, head: text.replace(/\s+/g, ' ').slice(0, 160) });
+      } catch (err) {
+        results.push({ path, status: -1, head: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return NextResponse.json({ results });
+  }
+
   // 🔧 09-29: GET ?updatePersonaUser=<uuid> — 按用户把 agent persona block 热更到最新 SSOT
   //   (新定位: 契约签署者+多物种文明; 复用 letta-agent-manager 的 upsert 逻辑由 syncAgentSymyTools 先例)
   const updatePersonaUser = request.nextUrl.searchParams.get('updatePersonaUser');
