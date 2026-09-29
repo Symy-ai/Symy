@@ -249,6 +249,8 @@ describe('Architecture Guards: File size limits', () => {
   const fileLimits: Array<{ path: string; maxLines: number; description: string }> = [
     // 已拆分的组件 — 不能回涨
     { path: 'components/chat-tab.tsx', maxLines: 870, description: 'chat-tab (已拆出 hooks/ + parts/ + challenge-fetch + silent-moment + reflection-popup)' },
+    // 🔧 b137 (2026-09-29): chat route 14 块短路下沉 parts/canned/ (1116→858) — 锁 880 防回涨
+    { path: 'app/api/chat/route.ts', maxLines: 880, description: 'chat route (b137: 14 canned 短路块已下沉 parts/canned/)' },
     { path: 'features/butterfly/components/butterfly-tab.tsx', maxLines: 880, description: 'butterfly-tab' },
     { path: 'components/profile-tab.tsx', maxLines: 810, description: 'profile-tab (已拆出 profile-parts/)' },
     // 🔧 Round 95: buddy-sync.ts deleted (React Query replacement), guard removed
