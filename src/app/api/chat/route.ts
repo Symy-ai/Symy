@@ -296,27 +296,14 @@ async function handleChatRequest(req: NextRequest) {
     // 🐘 batch48-b 反驳降温: 上一轮发过守护卡 + 本轮命中反驳意图 → 不调 Letta
     //    (杜绝第二次拦截话术), 直接 canned 降温回复 + 冷静卡。与守护卡同一开关:
     //    guard-off 时客户端不会渲染守护卡 → afterGuardCard 恒 false, 此处再挡一道。
-    if (greenPref !== 'off') {
-      const { buildCooldownTurn, buildCooldownSseStream } = await import('./parts/cooldown-turn');
-      const cooldownTurn = buildCooldownTurn({ userContent, locale, afterGuardCard: afterGuardCard === true });
-      if (cooldownTurn) {
-        logger.info('[Chat API] Pushback detected, returning cooldown turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildCooldownSseStream(cooldownTurn), {
-              headers: { ...SSE_HEADERS },
-            }),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: cooldownTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            cooldownCard: cooldownTurn.cooldownCard,
-          }),
-        );
-      }
+    // 🔧 b137 拆解第十三刀 (2026-09-29): 块本体下沉 parts/canned/cooldown-block.ts
+    {
+      const { tryCooldownBlock } = await import('./parts/canned/cooldown-block');
+      const cooldownResponse = await tryCooldownBlock({
+        userContent, locale, stream, greenPref, afterGuardCard,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (cooldownResponse) return cooldownResponse;
     }
 
     // 🐘 batch65-a 重复购买预检: 明确问「还要不要再买 / 家里有没有」时,
