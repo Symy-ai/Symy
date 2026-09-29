@@ -1463,14 +1463,14 @@
       "followupSlipped": "Didn't hold",
       "body": {
         "electronics": "Skip buying new electronics for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here.",
-        "clothing": "Skip buying new clothes for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here.",
+        "clothing": "Skip buying new clothes or shoes for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here.",
         "beauty": "Skip buying new beauty products for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here.",
         "home": "Skip buying new home stuff for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here.",
         "food": "Skip takeaway treats for the next 24 hours — come back tomorrow and tell me how it felt. No pressure, I'll be here."
       },
       "itemName": {
         "electronics": "24h micro challenge: no new electronics",
-        "clothing": "24h micro challenge: no new clothes",
+        "clothing": "24h micro challenge: no new clothes or shoes",
         "beauty": "24h micro challenge: no new beauty products",
         "home": "24h micro challenge: no new home items",
         "food": "24h micro challenge: no takeaway treats"
