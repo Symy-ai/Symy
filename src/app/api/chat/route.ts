@@ -10,7 +10,7 @@ import { getUserAgentId } from '@/lib/letta-agent-manager';
 import { logAIBehavior } from '@/lib/ai-audit';
 import { fireAndForgetSafely } from '@/lib/admin-audit';
 // 🔧 P1-4 fix: Guest 模式限流 — 允许未登录用户体验 1-2 次 AI 对话
-import { checkGuestLimit, getClientIP } from '@/lib/guest-rate-limiter';
+// （第19刀: 限流门本体已下沉 parts/guest-gate.ts，此处仅留 parts 装配 imports）
 // C4 拆分：纯函数移到 ./parts 子目录
 // 🔧 Architecture refactor: compensation 已彻底移除
 // AI 通过 MCP Server (symy.ai/api/mcp) 调用工具是唯一写入 buddy_state 的路径
@@ -42,6 +42,9 @@ import { wrapStreamWithAudit } from './parts/stream-audit';
 import { processLettaResponse } from './parts/letta-response';
 import { checkChatRateLimit } from './parts/rate-guard';
 import { checkDailyChatLimit } from './parts/daily-limit-guard';
+// 拆相位第19刀: guest 限流门 + 用户消息提取下沉 parts/（纯机械搬移）
+import { checkGuestChatLimit } from './parts/guest-gate';
+import { extractUserMessage } from './parts/user-message-extract';
 // 🌐 batch72-a 全网搜索等待话术: symy_search fallback 命中 (货架 <2 卡 + websearch
 //    标记) 时, tool_result 后紧跟 canned 等待话术, 结果卡仍走既有 cards 管道出卡
 import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
@@ -94,37 +97,15 @@ async function handleChatRequest(req: NextRequest) {
     : undefined;
 
   // === 优先: Letta Agent 模式 ===
-  // 🔧 P1-4 fix: Guest 模式 — 未登录用户可体验有限次数 AI 对话
-  //   旧代码: 未认证用户直接返回 401，新用户无法体验核心功能
-  //   新代码: 未认证用户在 Guest 限制内（每 IP 每天 2 次）可体验 AI 对话，
-  //          超过限制返回 401 引导注册
-  //   注意: 已登录用户 hasAuth=true，不受此 Guest 限流影响（直接跳过）
+  // 🔧 P1-4 fix: Guest 模式 — 未登录用户可体验有限次数 AI 对话（第19刀拆出
+  //    parts/guest-gate.ts；已登录用户 hasAuth=true 直接跳过）
   if (isLettaConfigured()) {
-    if (!hasAuth) {
-      // 🔧 P1-4 fix: Guest 模式限流检查
-      //   内存限流在 serverless 多实例下每个实例独立计数，这是 MVP 可接受的已知限制。
-      //   后续可迁移到 Redis 或 Supabase 表实现跨实例共享计数。
-      const clientIP = getClientIP(req);
-      const guestCheck = checkGuestLimit(clientIP);
-      if (!guestCheck.allowed) {
-        return Response.json(
-          {
-            error: 'Guest limit reached. Sign up to continue chatting with Symy and save your conversations.',
-            guestLimitReached: true,
-            limit: guestCheck.limit,
-          },
-          { status: 401 },
-        );
-      }
-      // Guest 模式: 使用共享 Agent ID（LETTA_AGENT_ID），不创建 per-user agent
-      logger.info(`[Chat API] Guest mode: IP=${clientIP}, remaining=${guestCheck.remaining}/${guestCheck.limit}`);
-    }
-    const lastUserMsg = safeMessages.filter((m: { role: string }) => m.role === 'user').pop();
-    const userContent = lastUserMsg?.content || safeMessages[safeMessages.length - 1]?.content || '';
-
-    if (!userContent.trim()) {
-      return Response.json({ error: 'Message content cannot be empty' }, { status: 400 });
-    }
+    const guestGateResponse = checkGuestChatLimit(req, hasAuth);
+    if (guestGateResponse) return guestGateResponse;
+    // 第19刀拆出 parts/user-message-extract.ts（最后一条 user 消息提取 + 空内容 400）
+    const extractedMessage = extractUserMessage(safeMessages);
+    if (!extractedMessage.ok) return extractedMessage.response;
+    const userContent = extractedMessage.userContent;
 
     // 🧺 batch25-b: shopping-facts 提取 — 确定性模式匹配 (零 LLM), 只吃 role='user'
     //    纯文本 (userContent 即最后一条 user 消息, assistant/tool 载荷天然进不来)。

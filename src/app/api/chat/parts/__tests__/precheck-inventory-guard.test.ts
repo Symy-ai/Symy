@@ -91,6 +91,8 @@ const FROZEN_PARTS_MODULES = [
   'green-alt-retro-turn.ts',
   'green-commitment-context.ts',
   'green-knowledge-context.ts',
+  // 🔧 拆相位第19刀 (2026-09-29): guest 限流门 + 用户消息提取自 route.ts 拆出
+  'guest-gate.ts',
   'guard-pulse-context.ts',
   'guard-pulse-detector.ts',
   'guard-pulse-turn.ts',
@@ -123,6 +125,7 @@ const FROZEN_PARTS_MODULES = [
   'stream-audit.ts',
   'types.ts',
   'user-history-context.ts',
+  'user-message-extract.ts',
   'websearch-wait-stream.ts',
 ];
 
