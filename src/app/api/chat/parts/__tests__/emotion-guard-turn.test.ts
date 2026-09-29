@@ -101,7 +101,11 @@ describe('路由链序锁 — 情绪守护块在数据问答之后、通用购�
     expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
     expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
     expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
-    expect(source.indexOf('buildFollowUpTurn') /* 🔧b137随动:59-c未下沉,锚其build */).toBeLessThan(emotionIdx);
+    // 🔧批4任务0修复: buildFollowUpTurn 自 b137 十四刀已不在 route — 原锚 indexOf=-1 恒真(vacuous)。
+    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。
+    const followUpIdx = source.indexOf('tryFollowUpBlock');
+    expect(followUpIdx).toBeGreaterThan(-1);
+    expect(followUpIdx).toBeLessThan(emotionIdx);
   });
 
   it('emotion 块早于 loadLettaTurnContext 调用点 (BNPL/green/reuse/micro 通用购买预检之前)', () => {

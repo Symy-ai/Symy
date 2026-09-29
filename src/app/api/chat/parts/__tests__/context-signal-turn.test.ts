@@ -416,7 +416,11 @@ describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用�
     expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
-    expect(source.indexOf('buildFollowUpTurn') /* 🔧b137随动:59-c未下沉,锚其build */).toBeLessThan(idx);
+    // 🔧批4任务0修复: buildFollowUpTurn 自 b137 十四刀已不在 route — 原锚 indexOf=-1 恒真(vacuous)。
+    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。
+    const followUpIdx = source.indexOf('tryFollowUpBlock');
+    expect(followUpIdx).toBeGreaterThan(-1);
+    expect(followUpIdx).toBeLessThan(idx);
   });
 
   it('弱信号块早于 loadLettaTurnContext 调用点 (不吞通用购买预检)', () => {
