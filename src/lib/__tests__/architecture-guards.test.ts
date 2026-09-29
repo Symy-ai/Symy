@@ -474,10 +474,15 @@ describe('Architecture Guards: Security hardening (Round 69)', () => {
   });
 
   it('lettaAPI has timeout + error classification (Finding 5)', () => {
-    const source = readSrcFile('lib/letta-mcp-manager.ts');
+    // 🔧 架构批1 F1 (09-29): lettaAPI 唯一实现收敛到 letta-http.ts (mcp-manager 为 re-export 兼容层)
+    const source = readSrcFile('lib/letta-http.ts');
     expect(source).toContain('AbortSignal.timeout');
     expect(source).toContain('LettaAPIError');
     expect(source).toContain('latencyMs');
+    // 兼容层不许长出第二份实现
+    const reexport = readSrcFile('lib/letta-mcp-manager.ts');
+    expect(reexport).toContain("from '@/lib/letta-http'");
+    expect(reexport).not.toContain('AbortSignal.timeout');
   });
 
   it('useBuddyTimers does not have unused state parameter (Finding 12)', () => {

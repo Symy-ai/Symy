@@ -6,17 +6,24 @@ import 'server-only'; // 🔧 ARCH fix Round 73: server-only — prevents client
  * 🔧 ARCH fix (Round 47): 提取自 letta-agent-manager.ts (879行)
  *    包含: getOrCreateSharedMCPServer, getMCPTools
  *    这些是纯 Letta API 调用, 不依赖 Supabase 或用户认证。
+ *
+ * 🔧 架构批1 F1 (09-29): lettaAPI / LettaAPIError / getLettaClient 唯一实现已收敛到
+ *    src/lib/letta-http.ts (消 15s/30s 双实现 + client 单例化)。本文件保留 re-export,
+ *    既有 `from '@/lib/letta-mcp-manager'` 调用方 (letta-blocks / letta-agent-pool /
+ *    letta-agent-manager / letta-facts-sync / admin actions / 相关测试) 零改动。
  */
 
-import Letta from '@letta-ai/letta-client';
 import { logger } from '@/lib/logger';
 import { warnMissingEnvOnce } from '@/lib/env-consumers';
+import { lettaAPI, LettaAPIError, getLettaClient } from '@/lib/letta-http';
+
+// Re-export — 共享层实现见 letta-http.ts (兼容层, 见顶部注释)
+export { lettaAPI, LettaAPIError, getLettaClient };
 
 // ============================================================
 // Environment
 // ============================================================
 
-const LETTA_API_KEY = process.env.LETTA_API_KEY || '';
 const MCP_API_SECRET = process.env.MCP_API_SECRET || '';
 // 🔧 Round 133 fix: MCP_SERVER_URL 优先级:
 //   1. NEXT_PUBLIC_APP_URL (用户配置)
@@ -32,70 +39,6 @@ function getMcpServerUrl(): string {
   }
   return MCP_SERVER_URL;
 }
-const LETTA_API_BASE = 'https://api.letta.com/v1';
-
-/** Letta REST API通用请求 — 🔧 架构优化 Round 69 (Finding 5): 添加超时 + 错误分类 */
-const LETTA_API_TIMEOUT_MS = 15_000; // 15s — 比 Vercel maxDuration 短, 留时间错误处理
-
-export class LettaAPIError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly body: string,
-    public readonly path: string,
-  ) {
-    super(`Letta API ${status} on ${path}: ${body.substring(0, 200)}`);
-    this.name = 'LettaAPIError';
-  }
-}
-
-export async function lettaAPI(path: string, options?: RequestInit) {
-  const startTime = Date.now();
-  try {
-    const response = await fetch(`${LETTA_API_BASE}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LETTA_API_KEY}`,
-        ...options?.headers,
-      },
-      signal: AbortSignal.timeout(LETTA_API_TIMEOUT_MS),
-    });
-
-    const latencyMs = Date.now() - startTime;
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => 'unreadable');
-      // 🔧 分类错误: 401/403 = 配置错误, 429 = 限流, 5xx = 服务故障
-      if (response.status === 401 || response.status === 403) {
-        logger.error(`[Letta API] Auth error ${response.status} on ${path} (${latencyMs}ms):`, body.substring(0, 200));
-      } else if (response.status === 429) {
-        logger.warn(`[Letta API] Rate limited on ${path} (${latencyMs}ms). Retry-After:`, response.headers.get('Retry-After'));
-      } else if (response.status >= 500) {
-        logger.error(`[Letta API] Server error ${response.status} on ${path} (${latencyMs}ms):`, body.substring(0, 200));
-      } else {
-        logger.warn(`[Letta API] ${response.status} on ${path} (${latencyMs}ms):`, body.substring(0, 200));
-      }
-      throw new LettaAPIError(response.status, body, path);
-    }
-
-    return response;
-  } catch (err) {
-    if (err instanceof LettaAPIError) throw err;
-    // Network error, timeout, DNS, etc.
-    const latencyMs = Date.now() - startTime;
-    logger.error(`[Letta API] Network error on ${path} (${latencyMs}ms):`, err instanceof Error ? err.message : String(err));
-    throw err;
-  }
-}
-
-/** Create a Letta client instance */
-export function getLettaClient(): Letta {
-  return new Letta({
-    apiKey: LETTA_API_KEY,
-    environment: 'cloud',
-  });
-}
-
 /**
  * 获取或创建共享 MCP Server
  * 所有用户 Agent 共用同一个 MCP Server 端点（/api/mcp/server）

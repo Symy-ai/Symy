@@ -15,6 +15,7 @@ import Letta from '@letta-ai/letta-client';
 import { verifyAdminAuth, type AdminAuthResult } from '@/lib/admin-auth';
 import { logUnauthorizedAdminAttempt } from '@/lib/admin-audit';
 import { logger } from '@/lib/logger';
+import { lettaAPI as lettaAPIHttp, getLettaClient, LETTA_API_TIMEOUT_MS } from '@/lib/letta-http';
 import type { ZodType } from 'zod';
 
 // ── Environment constants ──────────────────────────────────────────
@@ -30,16 +31,15 @@ export function getMcpServerUrl(): string {
   }
   return MCP_SERVER_URL;
 }
-export const LETTA_API_BASE = 'https://api.letta.com/v1';
 
 // ── Shared helpers ─────────────────────────────────────────────────
 
-/** Create a Letta client instance */
+/**
+ * Create a Letta client instance.
+ * 🔧 架构批1 F1 (09-29): 唯一实现在 letta-http.ts (模块级单例缓存) — 旧版每请求 new Letta。
+ */
 export function getClient(): Letta {
-  return new Letta({
-    apiKey: LETTA_API_KEY,
-    environment: 'cloud',
-  });
+  return getLettaClient();
 }
 
 // 🔧 ARCH fix (Round 12 AUDIT-1 M-1): lettaUnsafe helper 已移除
@@ -48,25 +48,22 @@ export function getClient(): Letta {
 //    根因修复: 所有 actions 直接用 ctx.client.agents.* / ctx.client.blocks.* 等 typed API
 //    若 SDK 类型不完整, 应在该 action 内部用局部 `as` cast, 而非全局 escape hatch
 
-/** Letta REST API通用请求 */
-  // eslint-disable-next-line require-await -- async for API consistency
+/**
+ * Letta REST API通用请求 (admin 契约: 30s 超时 + 非 ok 不 throw, 返回裸 Response)
+ *
+ * 🔧 架构批1 F1 (09-29): 实现收敛到 letta-http.ts。此处保留 admin 侧既有契约 —
+ *   14 个 action 调用方自查 `resp.ok` / `.status` 并返回结构化错误, 直接换成
+ *   throw 契约会炸掉它们的错误分支, 故用 throwOnError:false 包装 (行为不变:
+ *   2026-07-15 加的 30s timeout 保留, 错误分类日志为 net 新增)。
+ *   mcp-manager 侧调用方走默认 throw 契约 (15s)。
+ */
+// eslint-disable-next-line require-await -- async for API consistency (契约: 返回 Promise<Response>)
 export async function lettaAPI(path: string, options?: RequestInit) {
-  // 🔧 2026-07-15 (ARCH-4 #15 修复): 加 30s timeout — 旧代码无 timeout, Letta 挂起时永久阻塞
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30_000);
-  try {
-    return await fetch(`${LETTA_API_BASE}${path}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${LETTA_API_KEY}`,
-        ...options?.headers,
-      },
-      signal: options?.signal || controller.signal,
-    });
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  return lettaAPIHttp(path, {
+    ...options,
+    timeoutMs: 2 * LETTA_API_TIMEOUT_MS, // 30s — admin 面操作比用户面更宽容
+    throwOnError: false,
+  });
 }
 
 // ── Admin context ──────────────────────────────────────────────────
