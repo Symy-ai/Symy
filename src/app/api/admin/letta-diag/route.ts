@@ -94,12 +94,22 @@ export async function GET(request: NextRequest) {
         signal: AbortSignal.timeout(15000),
       });
       // 🔧 防御: 非 2xx 或非 JSON 时降级为空表 (走 POST 创建路径)
-      let blocks: { label?: string }[] = [];
+      // 🔧 真相: agent 存在但 blocks 可能为空/或 list 端点在该 Letta 版本 404。
+      //   权威源 = GET /agents/{id} 的 memory.blocks 数组 (06cf4d6 探测确认)
+      let hasPersona = false;
       if (blocksRes.ok) {
         const text = await blocksRes.text();
-        try { blocks = JSON.parse(text) as { label?: string }[]; } catch { blocks = []; }
+        try { hasPersona = (JSON.parse(text) as { label?: string }[]).some((b) => b.label === 'persona'); } catch { hasPersona = false; }
+      } else {
+        const agentRes = await fetch(`https://api.letta.com/v1/agents/${agentId}`, {
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          signal: AbortSignal.timeout(15000),
+        });
+        if (agentRes.ok) {
+          const agentObj = await agentRes.json() as { memory?: { blocks?: { label?: string }[] } };
+          hasPersona = (agentObj.memory?.blocks ?? []).some((b) => b.label === 'persona');
+        }
       }
-      const hasPersona = blocks.some((b) => b.label === 'persona');
       const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
       let upsertRes: Response;
       if (hasPersona) {
