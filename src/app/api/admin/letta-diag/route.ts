@@ -57,8 +57,12 @@ export async function GET(request: NextRequest) {
       const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
-      const blocksJson = await blocksRes.json() as { label?: string }[];
-      const blocks = Array.isArray(blocksJson) ? blocksJson : [];
+      // 🔧 防御: 非 2xx 或非 JSON 时降级为空表 (走 POST 创建路径)
+      let blocks: { label?: string }[] = [];
+      if (blocksRes.ok) {
+        const text = await blocksRes.text();
+        try { blocks = JSON.parse(text) as { label?: string }[]; } catch { blocks = []; }
+      }
       const hasPersona = blocks.some((b) => b.label === 'persona');
       const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
       let upsertRes: Response;
