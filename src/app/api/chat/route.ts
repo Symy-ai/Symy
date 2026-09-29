@@ -387,27 +387,14 @@ async function handleChatRequest(req: NextRequest) {
     //    泛泛安利, 直接 canned 迎接回复 + 对比裁决卡 (三行裁决 + 选 A/B chips,
     //    点选后才落 health_events)。放在求问/反驳/承诺之后: 四流意图互斥
     //    (detector 内排除更强意图)。
+    // 🔧 b137 拆解第十刀 (2026-09-29): 块本体下沉 parts/canned/compare-block.ts
     {
-      const { buildCompareTurn, buildCompareSseStream } = await import('./parts/compare-turn');
-      const compareTurn = buildCompareTurn({ userContent, locale });
-      if (compareTurn) {
-        logger.info('[Chat API] Compare intent detected, returning compare turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildCompareSseStream(compareTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: compareTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            compareCard: compareTurn.compareCard,
-          }),
-        );
-      }
+      const { tryCompareBlock } = await import('./parts/canned/compare-block');
+      const compareResponse = await tryCompareBlock({
+        userContent, locale, stream,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (compareResponse) return compareResponse;
     }
 
     // 🐘 batch57-a 清单分诊: 购物清单批量消息 ("周末要买这些：A、B、C、D") →
