@@ -1,13 +1,12 @@
 export const dynamic = 'force-dynamic';
 
-import { isLettaConfigured, streamToAgent } from '@/lib/letta';
+import { isLettaConfigured } from '@/lib/letta';
 import { createAuthenticatedClient } from '@/lib/supabase-api';
 import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
-import { sendSSEData, closeSSE, SSE_HEADERS } from '@/lib/sse';
+import { SSE_HEADERS } from '@/lib/sse';
 
 import { getUserAgentId } from '@/lib/letta-agent-manager';
-import { logAIBehavior } from '@/lib/ai-audit';
 import { fireAndForgetSafely } from '@/lib/admin-audit';
 // 🔧 P1-4 fix: Guest 模式限流 — 允许未登录用户体验 1-2 次 AI 对话
 // （第19刀: 限流门本体已下沉 parts/guest-gate.ts，此处仅留 parts 装配 imports）
@@ -19,7 +18,6 @@ import { fireAndForgetSafely } from '@/lib/admin-audit';
 // Letta + GLM-5.2 是唯一路径，~250 行 callLLMWithTools + tool calling 循环已删除
 // （第23刀: SSE 包装栈 import 全部随搬移落 parts/sse-pipeline.ts）
 import { type ChallengeContext } from './parts/types';
-import { captureLLMGeneration } from '@/lib/posthog-server';
 // 🧺 batch25-b (shopping-facts 提取管道): 用户消息 → 确定性提取购物事实 → 落库 →
 //    每轮 context 注入摘要。提取 fire-and-forget 绝不进响应关键路径; 加载单索引
 //    查询 best-effort, 表缺失/失败静默降级 (migration 140 未跑是常态不是事故)。
@@ -29,7 +27,6 @@ import { createAdminClient } from '@/lib/supabase-admin';
 // batch26-c 拆分: 上下文装载 + prompt 组装移至 parts/letta-turn-context.ts（纯机械搬移）
 import { loadLettaTurnContext } from './parts/letta-turn-context';
 import { validateChatRequest } from './parts/chat-validation';
-import { processLettaResponse } from './parts/letta-response';
 import { checkChatRateLimit } from './parts/rate-guard';
 import { checkDailyChatLimit } from './parts/daily-limit-guard';
 // 拆相位第19刀: guest 限流门 + 用户消息提取下沉 parts/（纯机械搬移）
@@ -39,8 +36,9 @@ import { extractUserMessage } from './parts/user-message-extract';
 import { lettaUnavailableResponse } from './parts/letta-unavailable';
 // 拆相位第22刀: no-agent 503 出口下沉 parts/（纯机械搬移, 退款分文案 + 双通道）
 import { buildAgentUnavailableResponse } from './parts/agent-unavailable-response';
-// 拆相位第23刀: SSE 包装栈下沉 parts/（纯函数, 字节序核心）
-import { buildSsePipeline } from './parts/sse-pipeline';
+// 拆相位第23刀: SSE 包装栈下沉 parts/sse-pipeline.ts（纯函数, 字节序核心; 第24刀起由 letta-dispatch 消费）
+// 拆相位第24刀: Letta 分发整段 (流式/非流式/审计/错误分类/退款/SSE错误流) 下沉 parts/letta-dispatch.ts（纯机械搬移, 收官刀）
+import { dispatchLettaTurn } from './parts/letta-dispatch';
 // ============================================================
 // LLM 配置已移至 src/lib/llm-client.ts（统一调用层）
 // ============================================================
@@ -448,164 +446,31 @@ async function handleChatRequest(req: NextRequest) {
     // 🔧 架构优化 Round 58: 移除死循环 (Finding 7) — agentIds 只有 1 个元素, for...of 是遗留代码
     const targetAgentId = userAgentId;
 
-    let lettaStreamSucceeded = false;
-    let streamRefundSucceeded = false; // 🔧 Round 120: hoisted to outer scope for use in error message
-    try {
-      // 🚀 流式模式：前端请求 stream=true 时，使用 SSE 让用户更早看到首 token
-      if (stream) {
-        const innerStream = await streamToAgent(userContentWithStage, impulseContext, userId || undefined, targetAgentId);
-        // 🔧 拆相位第23刀 (2026-09-30): SSE 包装栈 (audit→websearch→reuse→green→
-        //    knowledge→footprint→micro, 字节序核心) 拆出 parts/sse-pipeline.ts
-        //    纯函数 (纯机械搬移, "谁后包装谁更靠前" 层序逐一保留)。
-        const sseBody = buildSsePipeline({
-          innerStream, userContent, userId, locale,
-          impulseContext, validChallengeContext, targetAgentId,
-          greenAltCard, reuseHint, microChallenge, greenKnowledge, altFootprintCard,
-        });
-        lettaStreamSucceeded = true;
-
-        // 🔧 ARCH fix (Round 3 SSE H3): 用 mergeCookiesOnResponse 把刷新的 auth cookie 写回。
-        //    旧代码直接返回 new Response(monitoredStream), 刷新的 cookie 丢失 → 长 SSE 后 401。
-        // 🔁 复用优先: reuse_hint 预注入事件包在审计 wrapper 外层 — 事件落在 SSE 字节流最前,
-        //    审计 wrapper (内层) 只认 token 事件不受影响; Letta 原生事件顺序不变。
-        //    合流 (batch24-a): reuse 先包装、green 后包装 (谁后包装谁更靠前) →
-        //    双命中时字节序 green_alt → reuse_hint → Letta 原生事件, 与卡片渲染顺序一致。
-        const sseResponse = new Response(sseBody, {
-          headers: { ...SSE_HEADERS },
-        });
-        return mergeCookiesOnResponse(sseResponse);
-      }
-
-      // 非流式模式（fallback / 旧版前端兼容）
-      const testResult = await processLettaResponse(userContentWithStage, impulseContext, userId || undefined, targetAgentId, validChallengeContext);
-
-      // 📋 AI 行为审计（道用四·减法 + 六·公开）— 异步写入，不阻塞响应
-      // 🔧 ARCH fix (Round 22 BUG-R22-C1): 用 fireAndForgetSafely 防 Vercel kill 丢失审计日志
-      if (userId) {
-        const isChallenge = !!validChallengeContext;
-        const auditAction = isChallenge ? 'challenge_judge' : 'tool_call';
-        fireAndForgetSafely(
-          logAIBehavior({
-            userId,
-            action: auditAction,
-            userInput: userContent,
-            aiOutput: testResult.reply,
-            toolCalls: testResult.toolCalls?.map((tc) => ({
-              name: tc.name,
-              arguments: tc.args,
-              result: tc.result,
-              success: !!tc.result,
-            })),
-            context: {
-              impulseContext,
-              challengeContext: validChallengeContext,
-              reasoning: testResult.reasoning,
-              cultivationStage: lettaCultivationStage,
-              ragContexts: lettaUserHistory ? lettaUserHistory.length : 0,
-            },
-            aiPath: 'letta',
-            agentId: targetAgentId,
-          }),
-        );
-      }
-
-      // PostHog GenAI: capture LLM generation (non-stream)
-      fireAndForgetSafely(
-        captureLLMGeneration({
-          distinctId: userId || 'guest',
-          input: String(userContent).substring(0, 2000),
-          output: String(testResult.reply).substring(0, 2000),
-          model: 'letta-glm-5.2',
-          latencyMs: Math.max(0, Date.now() - requestStartTime),
-          properties: {
-            $ai_trace_id: targetAgentId,
-            mode: 'non-stream',
-            hasChallenge: !!validChallengeContext,
-          },
-        }),
-      );
-
-      return Response.json({
-        reply: testResult.reply,
-        reasoning: testResult.reasoning,
-        toolCalls: testResult.toolCalls,
-        // 🌱 绿色替代卡片 (未命中为 null → 前端不渲染)
-        greenAlt: greenAltCard ?? undefined,
-        // 🔁 复用优先: 非流式 fallback 也带 reuseHint 字段 (未命中/守卫关闭时缺省)
-        ...(reuseHint ? { reuseHint } : {}),
-        // 🐞 batch46-b: 非流式 fallback 也带 microChallenge 字段 (未命中/守卫关闭时缺省)
-        ...(microChallenge ? { microChallenge } : {}),
-        // 📖 batch47-a: 非流式 fallback 也带 greenKnowledge 字段 (未命中/守卫关闭时缺省)
-        ...(greenKnowledge.card ? { greenKnowledge: greenKnowledge.card } : {}),
-        // 🐘 batch55-c: 非流式 fallback 也带 altFootprint 字段 (未命中/样本不足时缺省)
-        ...(altFootprintCard ? { altFootprint: altFootprintCard } : {}),
-      });
-    } catch (lettaError: unknown) {
-      // 🔧 架构优化 Round 69 (Finding 10): 错误分类 — 区分配置错误/限流/服务故障
-      const errMsg = lettaError instanceof Error ? lettaError.message : String(lettaError);
-      const errorStatus = (lettaError as { status?: number }).status;
-      if (errorStatus === 401 || errorStatus === 403) {
-        logger.error(`[Chat API] Letta auth error (${errorStatus}):`, errMsg);
-      } else if (errorStatus === 429) {
-        logger.warn(`[Chat API] Letta rate limited:`, errMsg);
-      } else if (errorStatus && errorStatus >= 500) {
-        logger.error(`[Chat API] Letta server error (${errorStatus}):`, errMsg);
-      } else {
-        logger.warn(`[Chat API] Letta agent failed:`, errMsg);
-      }
-
-      // 🔧 Round 115 P0 fix: AI 失败时退还 See it 额度 (与 no-agent 路径一致)
-      //    challenge create 已经 increment 了 daily_see_it_count, AI 失败时必须 decrement
-      // 🔧 Round 120 audit fix (AUDIT-2 P0 #3): 用 refundChallengeQuota helper, 根据结果决定文案
-      if (userId && validChallengeContext) {
-        const { refundChallengeQuota } = await import('./parts/refund-challenge-quota');
-        const refundResult = await refundChallengeQuota(userId);
-        streamRefundSucceeded = refundResult.refunded;
-        if (!streamRefundSucceeded) {
-          logger.error('[Chat API] Refund FAILED (stream fail):', userId, refundResult.error);
-        }
-      }
-
-      // PostHog GenAI: capture LLM error (non-stream)
-      fireAndForgetSafely(
-        captureLLMGeneration({
-          distinctId: userId || 'guest',
-          input: String(userContent).substring(0, 2000),
-          output: '',
-          model: 'letta-glm-5.2',
-          latencyMs: Math.max(0, Date.now() - requestStartTime),
-          isError: true,
-          errorMessage: errMsg,
-          properties: {
-            $ai_trace_id: targetAgentId,
-            mode: 'non-stream-error',
-          },
-        }),
-      );
-    }
-
-    // 🔧 BUG-188 fix: 流式请求所有 Letta Agent 失败时，返回 SSE 错误而非 JSON
-    if (stream && !lettaStreamSucceeded) {
-      // 🔧 Round 120 audit fix: 退款失败时显示不同文案 (不再撒谎 "refunded")
-      const streamErrMsg = validChallengeContext ? (streamRefundSucceeded ? 'AI service temporarily unavailable. Your See-it was refunded — please try again.' : 'AI service temporarily unavailable. Please try again. (If your See-it quota was consumed, please contact support.)') : 'AI service temporarily unavailable. Please try again.';
-      const errorStream = new ReadableStream({
-        start(ctrl) {
-          sendSSEData(ctrl, { type: 'error', content: streamErrMsg });
-          sendSSEData(ctrl, '[DONE]');
-          closeSSE(ctrl);
-        },
-      });
-      // 🔧 ARCH fix (Round 23 H4 — SSE fallback 缺 mergeCookiesOnResponse, token 刷新丢失):
-      //    根因修复: 所有 Response 都用 mergeCookiesOnResponse 包裹。
-      return mergeCookiesOnResponse(
-        new Response(errorStream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-          },
-        }),
-      );
-    }
+    // 🔧 拆相位第24刀 (2026-09-30, 收官刀): Letta 分发整段 (流式 SSE / 非流式 JSON /
+    //    审计落库 / 401/403/429/5xx 错误分类 / catch 退款 / SSE 错误流) 自本段拆出
+    //    parts/letta-dispatch.ts (纯机械搬移)。lettaStreamSucceeded / streamRefundSucceeded
+    //    两个跨 try/catch 可变状态已内部化, 不再暴露在 route 顶层。
+    //    返回 null 的唯一情形: 非流式 catch → 下方 P6 兜底 (与搬移前隐式跌出语义一致)。
+    const dispatchResponse = await dispatchLettaTurn({
+      userContent,
+      userContentWithStage,
+      userId,
+      locale,
+      stream,
+      impulseContext,
+      validChallengeContext,
+      targetAgentId,
+      requestStartTime,
+      mergeCookiesOnResponse,
+      lettaCultivationStage,
+      lettaUserHistory,
+      greenAltCard,
+      reuseHint,
+      microChallenge,
+      greenKnowledge,
+      altFootprintCard,
+    });
+    if (dispatchResponse) return dispatchResponse;
   }
 
   // 🔧 Architecture refactor: LLM Gateway / ZAI SDK fallback 路径已移除

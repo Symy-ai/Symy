@@ -38,23 +38,42 @@ function blockAnchor(name: string): number {
 }
 
 describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () => {
-  it('validateChatRequest → createAuthenticatedClient → checkRateLimit → isLettaConfigured → loadLettaTurnContext → streamToAgent → processLettaResponse', () => {
+  it('validateChatRequest → createAuthenticatedClient → checkRateLimit → isLettaConfigured → loadLettaTurnContext → dispatchLettaTurn', () => {
+    // 🔧 拆相位第24刀随动: streamToAgent/processLettaResponse 调用点已随分发段
+    // 迁入 parts/letta-dispatch.ts (本 describe 内锚读 route.ts), route 侧锁
+    // dispatchLettaTurn 唯一调用点; 两个 letta 调用锚迁至下方 parts 源文本测试。
     const validate = anchor('await validateChatRequest(');
     const auth = anchor('await createAuthenticatedClient(');
     const hourlyRateLimit = anchor('await checkChatRateLimit(');
     const lettaGate = anchor('isLettaConfigured()');
     const loadContext = anchor('await loadLettaTurnContext({');
-    const stream = anchor('await streamToAgent(');
-    const nonStream = anchor('await processLettaResponse(');
+    const dispatch = anchor('await dispatchLettaTurn({');
 
-    // P0 < P1 < P2 门 < P3 < P5 (流式与非流式互斥分支, 两者都在 P3/P4 之后)
+    // P0 < P1 < P2 门 < P3 < P5 分发调用
     expect(validate).toBeGreaterThan(-1);
     expect(auth).toBeGreaterThan(validate);
     expect(hourlyRateLimit).toBeGreaterThan(auth);
     expect(lettaGate).toBeGreaterThan(hourlyRateLimit);
     expect(loadContext).toBeGreaterThan(lettaGate);
-    expect(stream).toBeGreaterThan(loadContext);
-    expect(nonStream).toBeGreaterThan(loadContext);
+    expect(dispatch).toBeGreaterThan(loadContext);
+  });
+
+  it('P5 分发体内: streamToAgent/processLettaResponse 均在 dispatch 之内 (锚迁 parts/letta-dispatch.ts)', () => {
+    // 🔧 拆相位第24刀随动: 两个 Letta 调用点随分发段迁入 parts/letta-dispatch.ts,
+    // 锁其在新家的源文本 (流式 streamToAgent 先于非流式 processLettaResponse,
+    // 与拆分前 route 内 if(stream) 分支序一致)。
+    const partSource = readFileSync(new URL('../letta-dispatch.ts', import.meta.url), 'utf-8');
+    const partAnchor = (pattern: string) => {
+      const count = partSource.split(pattern).length - 1;
+      expect(count, `letta-dispatch 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+      return partSource.indexOf(pattern);
+    };
+    const stream = partAnchor('await streamToAgent(');
+    const nonStream = partAnchor('await processLettaResponse(');
+    const buildPipeline = partAnchor('buildSsePipeline({');
+    expect(stream).toBeGreaterThan(-1);
+    expect(nonStream).toBeGreaterThan(stream);
+    expect(buildPipeline).toBeGreaterThan(stream);
   });
 
   it('free-tier 日限 (第 2 次 checkRateLimit) 也在 isLettaConfigured 门之前', () => {
@@ -66,9 +85,11 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
   it('P4 getUserAgentId 在 P3 装载之后、P5 分发之前', () => {
     const loadContext = anchor('await loadLettaTurnContext({');
     const getUserAgent = anchor('await getUserAgentId(');
-    const stream = anchor('await streamToAgent(');
+    // 🔧 拆相位第24刀随动: streamToAgent 已迁 parts/letta-dispatch.ts,
+    // route 侧 P5 分界锚 = dispatchLettaTurn 调用点
+    const dispatch = anchor('await dispatchLettaTurn({');
     expect(getUserAgent).toBeGreaterThan(loadContext);
-    expect(getUserAgent).toBeLessThan(stream);
+    expect(getUserAgent).toBeLessThan(dispatch);
   });
 
   it('P2 facts fire-and-forget 在第一个 canned 块 (retro-answer) 之前', () => {
@@ -145,11 +166,14 @@ describe('route-structure-lock — P5 SSE 包装栈层序 (字节序红线)', ()
   });
 
   it('SSE 包装栈整体在 streamToAgent 之后 (先有 innerStream 再包装)', () => {
-    // 🔧b137随动 (刀23): 包装锚已迁 sse-pipeline.ts, 此处锁 route 侧接线序 —
+    // 🔧b137随动 (刀23): 包装锚已迁 sse-pipeline.ts, 此处锁 dispatch 侧接线序 —
     // streamToAgent 产出 innerStream 在前, buildSsePipeline 消费在后
-    const stream = anchor('await streamToAgent(');
-    const pipeline = anchor('buildSsePipeline({');
-    expect(pipeline).toBeGreaterThan(stream);
+    // 🔧 拆相位第24刀随动: 两调用点均已迁 parts/letta-dispatch.ts, 接线序在新家锁定
+    const partSource = readFileSync(new URL('../letta-dispatch.ts', import.meta.url), 'utf-8');
+    const count = (pattern: string) => partSource.split(pattern).length - 1;
+    expect(count('await streamToAgent('), 'letta-dispatch 应含且仅含 1 次 streamToAgent 调用').toBe(1);
+    expect(count('buildSsePipeline({'), 'letta-dispatch 应含且仅含 1 次 buildSsePipeline 调用').toBe(1);
+    expect(partSource.indexOf('buildSsePipeline({')).toBeGreaterThan(partSource.indexOf('await streamToAgent('));
   });
 });
 

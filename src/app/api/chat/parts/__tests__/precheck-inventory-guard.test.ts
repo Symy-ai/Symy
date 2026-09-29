@@ -106,6 +106,8 @@ const FROZEN_PARTS_MODULES = [
   'impulse-time-query-detector.ts',
   'impulse-time-query-turn.ts',
   'index.ts',
+  // 🔧 拆相位第24刀 (2026-09-30, 收官刀): Letta 分发整段自 route.ts 拆出
+  'letta-dispatch.ts',
   'letta-response.ts',
   'letta-turn-context.ts',
   // 🔧 拆相位第20刀 (2026-09-29): isLettaConfigured 门外兜底出口自 route.ts 拆出
