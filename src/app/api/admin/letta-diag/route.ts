@@ -52,30 +52,31 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'profile or letta_agent_id not found' }, { status: 404 });
       }
       const agentId = profile.letta_agent_id;
-      // 列 blocks 找 persona label → PUT value (Letta v1 blocks by-agent upsert)
-      const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/blocks`, {
+      // Letta v1 端点: /agents/{id}/memory-blocks (list) + PATCH by label —
+      //   与 letta-agent-tools.ts upsertToolRulesBlock 同款先例 (09-28 验证过)
+      const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
-      const blocksJson = await blocksRes.json() as { id?: string; label?: string }[];
+      const blocksJson = await blocksRes.json() as { label?: string }[];
       const blocks = Array.isArray(blocksJson) ? blocksJson : [];
-      const personaBlock = blocks.find((b) => b.label === 'persona');
+      const hasPersona = blocks.some((b) => b.label === 'persona');
       const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
       let upsertRes: Response;
-      if (personaBlock?.id) {
-        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/blocks/${personaBlock.id}`, {
-          method: 'PUT',
+      if (hasPersona) {
+        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks/persona`, {
+          method: 'PATCH',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: SYMY_PERSONA_BLOCK, limit: 5000 }),
+          body: JSON.stringify({ value: SYMY_PERSONA_BLOCK }),
         });
       } else {
-        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/blocks`, {
+        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ label: 'persona', value: SYMY_PERSONA_BLOCK, limit: 5000 }),
         });
       }
       return NextResponse.json({
-        agentId, personaBlockId: personaBlock?.id ?? 'created',
+        agentId, personaExisted: hasPersona,
         status: upsertRes.status, ok: upsertRes.ok,
         personaLength: SYMY_PERSONA_BLOCK.length,
       });
