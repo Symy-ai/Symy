@@ -10,6 +10,7 @@
  * 文案红线: 陪伴句式 ("我们聊到/你上次在考虑"), 不用 "你又想买X" 羞辱句式。
  */
 
+import { memo } from 'react';
 import { useI18n } from '@/i18n/provider';
 import type { ChatRecapTopic } from '@/lib/chat-recap-topic';
 
@@ -20,7 +21,7 @@ export interface ChatRecapProps {
   onDismiss: () => void;
 }
 
-export function ChatRecap({ topic, onContinue, onDismiss }: ChatRecapProps) {
+function ChatRecapInner({ topic, onContinue, onDismiss }: ChatRecapProps) {
   const { t, locale } = useI18n();
   const summary = locale === 'en' ? topic.summaryEn : topic.summaryZh;
   const continuePrompt = locale === 'en' ? topic.continuePromptEn : topic.continuePromptZh;
@@ -49,3 +50,9 @@ export function ChatRecap({ topic, onContinue, onDismiss }: ChatRecapProps) {
     </div>
   );
 }
+
+/**
+ * 🔧 b138批D (2026-09-29): memo 包裹 — props 全为原始值+稳定回调 (聚合层 useMemo
+ * 供给 + chat-tab 直传), 父级无关 state 变动不再触发本条重渲。
+ */
+export const ChatRecap = memo(ChatRecapInner);
