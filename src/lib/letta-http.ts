@@ -66,7 +66,9 @@ export async function lettaAPI(path: string, options?: LettaAPIOptions) {
     const latencyMs = Date.now() - startTime;
 
     if (!response.ok) {
-      const body = await response.text().catch(() => 'unreadable');
+      // 🔧 arch 审 R1 修复: clone 后再读 — 原 Response body 保持未消费,
+      //    throwOnError:false 时调用方仍可自由 .text() (admin action 旧契约)
+      const body = await response.clone().text().catch(() => 'unreadable');
       // 🔧 分类错误: 401/403 = 配置错误, 429 = 限流, 5xx = 服务故障
       if (response.status === 401 || response.status === 403) {
         logger.error(`[Letta API] Auth error ${response.status} on ${path} (${latencyMs}ms):`, body.substring(0, 200));
