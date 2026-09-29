@@ -379,41 +379,14 @@ async function handleChatRequest(req: NextRequest) {
     //    不带完整问句形态, 但 "上个月省了多少" 这类完整问句 detector 内排除
     //    (FULL_QUERY 让路) — 无上文 (dataQueryContext 缺失/形状不全) 也回落
     //    普通检测链, 绝不拿空窗口算数。
+    // 🔧 b137 拆解第十四刀 (2026-09-29): 块本体下沉 parts/canned/follow-up-block.ts
     {
-      const { detectFollowUpQuery, resolveFollowUpContext } = await import('./parts/follow-up-query');
-      const followUpIntent = detectFollowUpQuery(userContent);
-      const resolved = followUpIntent ? resolveFollowUpContext(dataQueryContext ?? null, followUpIntent) : null;
-      if (resolved) {
-        const { buildFollowUpTurn, buildFollowUpSseStream } = await import('./parts/follow-up-turn');
-        const { loadSavingsQueryEvents } = await import('./parts/savings-query-context');
-        const { getUserHourlyRate } = await import('@/lib/user-hourly-rate');
-        const [events, hourlyRate] = await Promise.all([
-          loadSavingsQueryEvents({
-            userId,
-            store: (supabase ?? undefined) as unknown as import('./parts/savings-query-context').SavingsQueryStore | undefined,
-          }),
-          userId ? getUserHourlyRate(userId).catch(() => 25) : Promise.resolve(25),
-        ]);
-        const followUpTurn = buildFollowUpTurn({ resolved, locale, events, now: new Date(), hourlyRate });
-        logger.info('[Chat API] Follow-up query detected, returning follow-up turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildFollowUpSseStream(followUpTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: followUpTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            ...(followUpTurn.savingsQueryCard ? { savingsQueryCard: followUpTurn.savingsQueryCard } : {}),
-            ...(followUpTurn.categoryQueryCard ? { categoryQueryCard: followUpTurn.categoryQueryCard } : {}),
-            ...(followUpTurn.impulseTimeCard ? { impulseTimeCard: followUpTurn.impulseTimeCard } : {}),
-          }),
-        );
-      }
+      const { tryFollowUpBlock } = await import('./parts/canned/follow-up-block');
+      const followUpResponse = await tryFollowUpBlock({
+        userContent, locale, stream, userId, supabase, dataQueryContext,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (followUpResponse) return followUpResponse;
     }
 
     // 🐘 batch58-c 分类问句 ("这个月奶茶拦截了几次") — 57-c 问账的维度细化:
