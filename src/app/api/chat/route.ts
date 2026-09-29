@@ -197,57 +197,17 @@ async function handleChatRequest(req: NextRequest) {
     //    自由文本回答经让位 gate (新购买/紧急/数据问句) 判定: 未让位 → 证据
     //    落账 + 注入 Letta 收束; 让位 → 静默落回普通链路 (会话态客户端已消费,
     //    不再追问 — 温和结束)。收束文案零金额零碳数值。
+    // 🔧 b137 拆解第十六刀 (2026-09-29): 块本体下沉 parts/canned/green-alt-retro-answer-block.ts
+    //    (双通道返回: response 短路 / answerContext 透传 letta-turn-context)
     let greenAltRetroAnswerContext: import('./parts/green-alt-retro-context').GreenAltRetroAnswerPrompt | undefined;
-    if (greenAltRetroAnswer) {
-      const { entryId, optionId } = greenAltRetroAnswer;
-      if (optionId) {
-        const { buildGreenAltRetroClosingTurn, buildGreenAltRetroClosingSseStream } = await import('./parts/green-alt-retro-turn');
-        const closingTurn = buildGreenAltRetroClosingTurn({ entryId, optionId, locale });
-        if (closingTurn) {
-          if (userId && supabase) {
-            const { recordGreenAltRetroEvent } = await import('./parts/green-alt-retro-persist');
-            fireAndForgetSafely(
-              recordGreenAltRetroEvent({
-                userId,
-                store: supabase as unknown as import('./parts/green-alt-retro-persist').GreenAltRetroPersistStore,
-                entryId,
-                reason: optionId,
-              }),
-            );
-          }
-          logger.info('[Chat API] Green-alt retro answer (option), returning closing turn');
-          if (stream) {
-            return mergeCookiesOnResponse(
-              new Response(buildGreenAltRetroClosingSseStream(closingTurn), { headers: { ...SSE_HEADERS } }),
-            );
-          }
-          return mergeCookies(
-            NextResponse.json({ reply: closingTurn.reply, reasoning: undefined, toolCalls: undefined }),
-          );
-        }
-      } else {
-        const { shouldDeferGreenAltRetro } = await import('./parts/green-alt-retro-gate');
-        if (!shouldDeferGreenAltRetro(userContent, locale)) {
-          // 自由文本回答: 只存定性词与原话 (freeform), 回复回落 Letta 但必须注入结构化复盘证据
-          const { sanitizeGreenAltRetroNote } = await import('@/lib/green-alt-retro');
-          const note = sanitizeGreenAltRetroNote(userContent);
-          if (userId && supabase) {
-            const { recordGreenAltRetroEvent } = await import('./parts/green-alt-retro-persist');
-            fireAndForgetSafely(
-              recordGreenAltRetroEvent({
-                userId,
-                store: supabase as unknown as import('./parts/green-alt-retro-persist').GreenAltRetroPersistStore,
-                entryId,
-                reason: 'freeform',
-                note,
-              }),
-            );
-          }
-          const { buildGreenAltRetroAnswerPrompt } = await import('./parts/green-alt-retro-context');
-          greenAltRetroAnswerContext = buildGreenAltRetroAnswerPrompt({ entryId, note, locale });
-        }
-        // 让位 (新购买/紧急/数据问句): 不当回答也不追问, 普通链路接管
-      }
+    {
+      const { runGreenAltRetroAnswerBlock } = await import('./parts/canned/green-alt-retro-answer-block');
+      const retroAnswerResult = await runGreenAltRetroAnswerBlock({
+        userContent, locale, stream, userId, supabase, greenAltRetroAnswer, fireAndForgetSafely,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (retroAnswerResult.response) return retroAnswerResult.response;
+      greenAltRetroAnswerContext = retroAnswerResult.answerContext;
     }
 
     // 🌱 batch68-a 复盘追问轮: 上一轮采纳了绿色替代 (客户端会话态 pending 一次性

@@ -130,7 +130,7 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
 
   it('回答块先于追问块, 追问块先于 reflection canned (采纳后下一轮即问, 收束不被截胡)', () => {
-    const answerIdx = source.indexOf('buildGreenAltRetroClosingTurn');
+    const answerIdx = source.indexOf('runGreenAltRetroAnswerBlock'); /* 🔧b137随动: 回答块下沉 */
     const askIdx = source.indexOf('tryGreenAltRetroAskBlock'); /* 🔧b137随动: 追问块下沉 */
     const reflectionIdx = source.indexOf('tryReflectionBlock'); /* 🔧b137随动: 反思块下沉 */
     expect(answerIdx).toBeGreaterThan(-1);
@@ -142,14 +142,12 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
     const callIdx = source.indexOf('await loadLettaTurnContext({');
     expect(callIdx).toBeGreaterThan(-1);
     expect(callIdx).toBeGreaterThan(source.indexOf('tryGreenAltRetroAskBlock')); /* 🔧b137随动 */
-    expect(callIdx).toBeGreaterThan(source.indexOf('buildGreenAltRetroClosingTurn'));
+    expect(callIdx).toBeGreaterThan(source.indexOf('runGreenAltRetroAnswerBlock')); /* 🔧b137随动 */
   });
 
   it('回答块与追问块都经过让位 gate (新购买/紧急/数据问句不触发)', () => {
-    const answerBlock = source.slice(
-      source.indexOf('batch68-a 绿色采纳后复盘 — 回答轮'),
-      source.indexOf('batch68-a 复盘追问轮'),
-    );
+    // 🔧 b137随动: 回答块已下沉 — 块内断言改读块文件源
+    const answerBlock = readFileSync(new URL('../canned/green-alt-retro-answer-block.ts', import.meta.url), 'utf8');
     // 🔧 b137随动: 追问块已下沉 — 块内断言改读块文件源
     const askBlock = readFileSync(new URL('../canned/green-alt-retro-ask-block.ts', import.meta.url), 'utf8');
     expect(answerBlock).toMatch(/shouldDeferGreenAltRetro/);
