@@ -39,6 +39,13 @@ export async function GET(request: NextRequest) {
     if (!/^agent-[a-z0-9-]+$/i.test(probeBlocks)) {
       return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
     }
+    const agentsRes = await fetch(`https://api.letta.com/v1/agents/${probeBlocks}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    const agentObj = agentsRes.ok ? (await agentsRes.json() as Record<string, unknown>) : null;
+    const blockKeys = agentObj ? Object.keys(agentObj).filter(k => /block|memory/i.test(k)) : [];
+    const agentBlocks = agentObj ? (blockKeys.map(k => [k, JSON.stringify(agentObj[k]).slice(0, 220)])) : [];
     const candidates = [
       `/agents/${probeBlocks}/blocks`,
       `/agents/${probeBlocks}/memory-blocks`,
@@ -58,7 +65,7 @@ export async function GET(request: NextRequest) {
         results.push({ path, status: -1, head: err instanceof Error ? err.message : String(err) });
       }
     }
-    return NextResponse.json({ results });
+    return NextResponse.json({ results, agentBlockKeys: Object.fromEntries(agentBlocks) });
   }
 
   // 🔧 09-29: GET ?updatePersonaUser=<uuid> — 按用户把 agent persona block 热更到最新 SSOT
