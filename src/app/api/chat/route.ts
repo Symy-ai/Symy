@@ -346,26 +346,18 @@ async function handleChatRequest(req: NextRequest) {
       if (savingsQueryResponse) return savingsQueryResponse;
     }
 
+    // 🔧 b137 拆解第21刀 (2026-09-30): shopping-clarify 三态块自本段拆出
+    //    parts/canned/shopping-clarify-block.ts (纯机械搬移, 链序不变)。
+    //    三态: response 短路 / null+suppressGuardCards 旗标 / null 直通。
     let suppressGuardCards = false;
-    try {
-      const { buildShoppingClarifyTurn, buildShoppingClarifySseStream } = await import('./parts/shopping-clarify-turn');
-      const { classifyShoppingIntent } = await import('@/lib/shopping-intent-clarify');
-      const clarification = buildShoppingClarifyTurn({ userContent, locale, askedSubjects: askedShoppingSubjects });
-      const intent = clarification ? undefined : classifyShoppingIntent({ message: userContent, locale, askedSubjects: askedShoppingSubjects });
-      suppressGuardCards = intent?.confidence === 'not_purchase';
-      if (clarification) {
-        if (stream) {
-          return mergeCookiesOnResponse(new Response(buildShoppingClarifySseStream(clarification), { headers: { ...SSE_HEADERS } }));
-        }
-        return mergeCookies(NextResponse.json({
-          reply: clarification.reply,
-          reasoning: undefined,
-          toolCalls: undefined,
-          shoppingClarifyCard: clarification.shoppingClarifyCard,
-        }));
-      }
-    } catch {
-      suppressGuardCards = false;
+    {
+      const { tryShoppingClarifyBlock } = await import('./parts/canned/shopping-clarify-block');
+      const clarifyResult = await tryShoppingClarifyBlock({
+        userContent, locale, stream, askedSubjects: askedShoppingSubjects,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      suppressGuardCards = clarifyResult.suppressGuardCards;
+      if (clarifyResult.response) return clarifyResult.response;
     }
 
     // 🐘 batch60-c 情绪守护: 带着情绪提起购买 ("今天好累，想买点东西哄自己")

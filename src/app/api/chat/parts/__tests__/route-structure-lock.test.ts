@@ -8,7 +8,7 @@
  * 锚点设计 (与既有 6 个 source-order 测试同模式, readFileSync + indexOf):
  * - 相位锚 = 调用点精确文本 (含 await 与开括号), 每锚在本文件断言 count=1
  *   (防"锚文本因搬移消失 → indexOf=-1 → 比较恒真"的空转假绿, 方案 §6 风险 3)
- * - canned 块锚 = await tryXxxBlock( 调用点; 17 块链序逐一锁定
+ * - canned 块锚 = await tryXxxBlock( 调用点; 18 块链序逐一锁定 (刀 21 起 clarify 三态块入列)
  * - 行号会随拆分漂移, 本文件只锁相对顺序不锁行号 (方案基于 03d66a6,
  *   本文件基于 8c163fb 之后的实际内容, 相位与方案 §1 相位表一致)
  *
@@ -79,7 +79,7 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
   });
 });
 
-describe('route-structure-lock — 17 canned 块链序 (b137 全量块, 调用序=链序)', () => {
+describe('route-structure-lock — 18 canned 块链序 (b137 全量块, 调用序=链序)', () => {
   it('块调用顺序与 route 现链一致 (source-order 集中锚)', () => {
     const order = [
       'runGreenAltRetroAnswerBlock', // batch68-a 采纳后复盘回答
@@ -97,19 +97,20 @@ describe('route-structure-lock — 17 canned 块链序 (b137 全量块, 调用�
       'tryImpulseForecastBlock',     // batch62-c 冲动风险预报
       'tryGuardPulseBlock',          // batch68-c 守护脉搏
       'trySavingsQueryBlock',        // batch57-c 问账
-      'tryEmotionGuardBlock',        // batch60-c 情绪守护 (clarify 之后)
+      'tryShoppingClarifyBlock',     // 三态块: clarify 短路 / not_purchase 旗标 / null 直通
+      'tryEmotionGuardBlock',        // batch60-c 情绪守护 (clarify 之后, 消费旗标)
       'tryContextSignalBlock',       // batch61-b 购物场景弱信号
     ].map(blockAnchor);
 
     for (let i = 1; i < order.length; i++) {
-      expect(order[i], `canned 块 #${i} (${i === 15 ? 'emotion-guard' : 'block'}) 必须在前一块之后`).toBeGreaterThan(order[i - 1]);
+      expect(order[i], `canned 块 #${i} (${i === 16 ? 'emotion-guard' : 'block'}) 必须在前一块之后`).toBeGreaterThan(order[i - 1]);
     }
   });
 
-  it('shopping-clarify 内联段在 emotion-guard 之前 (suppressGuardCards 消费方在后)', () => {
-    // 方案批 2 (刀 21): clarify 三态块须在 emotion-guard 之前 — 现内联段的
-    // classifyShoppingIntent 锚即未来 tryShoppingClarifyBlock 的链序位置
-    const clarify = anchor('classifyShoppingIntent({');
+  it('shopping-clarify 三态块在 emotion-guard 之前 (suppressGuardCards 消费方在后)', () => {
+    // 方案批 2 (刀 21): clarify 三态块须在 emotion-guard 之前 — 🔧b137随动:
+    // 内联段已拆出, classifyShoppingIntent 锚改块调用点 (调用顺序=链序)
+    const clarify = blockAnchor('tryShoppingClarifyBlock');
     const emotion = blockAnchor('tryEmotionGuardBlock');
     expect(clarify).toBeLessThan(emotion);
   });
