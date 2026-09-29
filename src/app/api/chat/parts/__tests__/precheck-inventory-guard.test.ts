@@ -106,6 +106,8 @@ const FROZEN_PARTS_MODULES = [
   'index.ts',
   'letta-response.ts',
   'letta-turn-context.ts',
+  // 🔧 拆相位第20刀 (2026-09-29): isLettaConfigured 门外兜底出口自 route.ts 拆出
+  'letta-unavailable.ts',
   'list-triage-detector.ts',
   'list-triage-turn.ts',
   'micro-challenge-detector.ts',

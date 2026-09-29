@@ -149,10 +149,18 @@ describe('route-structure-lock — 平台层不可动 (Vercel 语义)', () => {
     expect(source).toContain('export async function POST(');
   });
 
-  it('P6 出口兜底: 未登录 401 在前、503 在后 (isLettaConfigured 门外的两个 return)', () => {
-    // 锚 P6 段两个 return 的完整调用文本 (错误字符串本身在 P5 错误分支先出现)
-    const authRequired = anchor("return mergeCookies(NextResponse.json({ error: 'Authentication required");
-    const unavailable = anchor("return mergeCookies(NextResponse.json({ error: 'AI service temporarily unavailable");
+  it('P6 出口兜底: 未登录 401 在前、503 在后 (第20刀拆出 parts/letta-unavailable.ts)', () => {
+    // 锚随动 (刀20): P6 两个 return 本体已下沉 parts/letta-unavailable.ts,
+    // route 侧锚 = 唯一调用点; 401→503 顺序锁移到 parts 文件内部 (顺序断言不动)
+    const lettaUnavailable = anchor('return lettaUnavailableResponse(');
+    const gate = anchor('isLettaConfigured()');
+    expect(lettaUnavailable).toBeGreaterThan(gate);
+
+    const partSource = readFileSync(new URL('../letta-unavailable.ts', import.meta.url), 'utf-8');
+    const authRequired = partSource.indexOf("error: 'Authentication required");
+    const unavailable = partSource.indexOf("error: 'AI service temporarily unavailable");
+    expect(authRequired, 'parts/letta-unavailable.ts 应含 401 Authentication required 文案').toBeGreaterThan(-1);
+    expect(unavailable, 'parts/letta-unavailable.ts 应含 503 AI service unavailable 文案').toBeGreaterThan(-1);
     expect(unavailable).toBeGreaterThan(authRequired);
   });
 });

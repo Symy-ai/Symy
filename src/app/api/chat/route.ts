@@ -45,6 +45,8 @@ import { checkDailyChatLimit } from './parts/daily-limit-guard';
 // 拆相位第19刀: guest 限流门 + 用户消息提取下沉 parts/（纯机械搬移）
 import { checkGuestChatLimit } from './parts/guest-gate';
 import { extractUserMessage } from './parts/user-message-extract';
+// 拆相位第20刀: isLettaConfigured 门外兜底出口下沉 parts/（纯机械搬移）
+import { lettaUnavailableResponse } from './parts/letta-unavailable';
 // 🌐 batch72-a 全网搜索等待话术: symy_search fallback 命中 (货架 <2 卡 + websearch
 //    标记) 时, tool_result 后紧跟 canned 等待话术, 结果卡仍走既有 cards 管道出卡
 import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
@@ -659,11 +661,8 @@ async function handleChatRequest(req: NextRequest) {
   // 🔧 Architecture refactor: LLM Gateway / ZAI SDK fallback 路径已移除
   // 新架构下 Letta + GLM-5.2 是唯一路径。如果 Letta 整体不可用，返回 503 让前端提示用户重试。
   // 之前的 callLLMWithTools + 二次 LLM 调用 + tool calling 循环（~250 行）已删除。
-  if (!hasAuth) {
-    return mergeCookies(NextResponse.json({ error: 'Authentication required. Please sign in to chat with Symy.' }, { status: 401 }));
-  }
-
-  return mergeCookies(NextResponse.json({ error: 'AI service temporarily unavailable. Please try again.' }, { status: 503 }));
+  // 第20刀拆出 parts/letta-unavailable.ts（hasAuth 两态: 未登录 401 / 已登录 503）
+  return lettaUnavailableResponse(hasAuth, mergeCookies);
 }
 
 // Vercel platform-level timeout
