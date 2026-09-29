@@ -56,14 +56,21 @@ describe('detectGuardPulseQuery — 负例 (不误触发/让路)', () => {
 });
 
 describe('source-order 锁 — 脉搏块不抢既有路由', () => {
-  const routeSource = readFileSync(new URL('../../route.ts', import.meta.url), 'utf8');
+  // 🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts — route 块锚改读链文件,
+  // count=1 纪律随动升级 (原裸 indexOf 无防空转)
+  const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf8');
+  const chainAnchor = (pattern: string) => {
+    const count = chainSource.split(pattern).length - 1;
+    expect(count, `canned-chain 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+    return chainSource.indexOf(pattern);
+  };
 
   it('脉搏块在 62-c 预报之后、57-c 问账之前、60-c 情绪守护之前', () => {
-    const forecast = routeSource.indexOf("tryImpulseForecastBlock"); // 🔧 b137随动: 62-c下沉锚点
-    const guardPulse = routeSource.indexOf("tryGuardPulseBlock") /* 🔧b137随动 */;
+    const forecast = chainAnchor("await tryImpulseForecastBlock("); // 🔧 b137随动: 62-c下沉锚点
+    const guardPulse = chainAnchor("await tryGuardPulseBlock(") /* 🔧b137随动 */ /* 🔧第25刀: 迁链文件 */;
     // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
-    const savings = routeSource.indexOf("trySavingsQueryBlock");
-    const emotion = routeSource.indexOf("tryEmotionGuardBlock");
+    const savings = chainAnchor("await trySavingsQueryBlock(");
+    const emotion = chainAnchor("await tryEmotionGuardBlock(");
     expect(forecast).toBeGreaterThan(-1);
     expect(guardPulse).toBeGreaterThan(forecast);
     expect(savings).toBeGreaterThan(guardPulse);

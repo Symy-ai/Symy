@@ -9,6 +9,9 @@
  * - 相位锚 = 调用点精确文本 (含 await 与开括号), 每锚在本文件断言 count=1
  *   (防"锚文本因搬移消失 → indexOf=-1 → 比较恒真"的空转假绿, 方案 §6 风险 3)
  * - canned 块锚 = await tryXxxBlock( 调用点; 18 块链序逐一锁定 (刀 21 起 clarify 三态块入列)
+ *   🔧 拆相位第25刀随动 (批4方案B): 18 块链整段搬移 parts/canned-chain.ts, 块锚
+ *   改读链文件源文本 (调用顺序=链序语义等价, 刀 20 letta-unavailable 先例);
+ *   route 侧新增链单锚 `await runCannedBlockChain(` (count=1)。
  * - 行号会随拆分漂移, 本文件只锁相对顺序不锁行号 (方案基于 03d66a6,
  *   本文件基于 8c163fb 之后的实际内容, 相位与方案 §1 相位表一致)
  *
@@ -24,6 +27,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
+/** 🔧 第25刀随动: 18 块 canned 链已搬 parts/canned-chain.ts — 块锚改读链文件源文本 */
+const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf-8');
 
 /** 相位锚必须恰好出现 1 次 (调用点唯一), 否则锚已空转 */
 function anchor(pattern: string): number {
@@ -32,9 +37,12 @@ function anchor(pattern: string): number {
   return source.indexOf(pattern);
 }
 
-/** canned 块调用锚 — `await tryXxx(` 或 `await runXxx(` 形式, 恰好 1 次调用 */
+/** canned 块调用锚 — `await tryXxx(` 或 `await runXxx(` 形式, 链文件内恰好 1 次调用 */
 function blockAnchor(name: string): number {
-  return anchor(`await ${name}(`);
+  const pattern = `await ${name}(`;
+  const count = chainSource.split(pattern).length - 1;
+  expect(count, `canned 块锚 ${JSON.stringify(pattern)} 应在 canned-chain.ts 内恰好出现 1 次 (实际 ${count}) — 搬移后锚点未随动或文本漂移`).toBe(1);
+  return chainSource.indexOf(pattern);
 }
 
 describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () => {
@@ -92,16 +100,31 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
     expect(getUserAgent).toBeLessThan(dispatch);
   });
 
-  it('P2 facts fire-and-forget 在第一个 canned 块 (retro-answer) 之前', () => {
-    // 方案 §6 风险 5: facts 提取时序敏感, 留在链头 — 锁其在 17 块链首之前
+  it('P2 facts fire-and-forget 在 canned 链调用之前 (原锁链首, 第25刀后锁链单锚)', () => {
+    // 方案 §6 风险 5: facts 提取时序敏感, 留在链头 — 第25刀后 18 块链在
+    // parts/canned-chain.ts, route 侧锁 facts 在 runCannedBlockChain 调用之前
+    // (链内首块 retro-answer 仍在 facts 之后, 链文件序不变)
     const facts = anchor('extractAndSaveFacts({');
-    const firstBlock = blockAnchor('runGreenAltRetroAnswerBlock');
-    expect(facts).toBeLessThan(firstBlock);
+    const chain = anchor('await runCannedBlockChain({');
+    expect(facts).toBeLessThan(chain);
+  });
+
+  it('P3 装载在 canned 链之后: lettaGate < chain < loadContext', () => {
+    // 🔧 拆相位第25刀随动: 18 块链搬 parts/canned-chain.ts, route 侧以链单锚
+    // 参与 7 相位序 (letta 门内: 链 → loadLettaTurnContext → getUserAgentId → dispatch)
+    const lettaGate = anchor('isLettaConfigured()');
+    const chain = anchor('await runCannedBlockChain({');
+    const loadContext = anchor('await loadLettaTurnContext({');
+    expect(lettaGate).toBeGreaterThan(-1);
+    expect(chain).toBeGreaterThan(lettaGate);
+    expect(loadContext).toBeGreaterThan(chain);
   });
 });
 
 describe('route-structure-lock — 18 canned 块链序 (b137 全量块, 调用序=链序)', () => {
-  it('块调用顺序与 route 现链一致 (source-order 集中锚)', () => {
+  it('块调用顺序与 canned-chain.ts 现链一致 (source-order 集中锚)', () => {
+    // 🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts (批4方案B),
+    // 集中锚改读链文件源文本 — 调用顺序=链序, 语义等价 (count=1 纪律保持)
     const order = [
       'runGreenAltRetroAnswerBlock', // batch68-a 采纳后复盘回答
       'tryGreenAltRetroAskBlock',    // batch68-a 复盘追问
@@ -131,9 +154,30 @@ describe('route-structure-lock — 18 canned 块链序 (b137 全量块, 调用�
   it('shopping-clarify 三态块在 emotion-guard 之前 (suppressGuardCards 消费方在后)', () => {
     // 方案批 2 (刀 21): clarify 三态块须在 emotion-guard 之前 — 🔧b137随动:
     // 内联段已拆出, classifyShoppingIntent 锚改块调用点 (调用顺序=链序)
+    // 🔧 第25刀随动: 两块均已迁 parts/canned-chain.ts, blockAnchor 读链文件源文本
     const clarify = blockAnchor('tryShoppingClarifyBlock');
     const emotion = blockAnchor('tryEmotionGuardBlock');
     expect(clarify).toBeLessThan(emotion);
+  });
+
+  it('懒加载机器锁: 链文件内 await import("./canned/ 恰好 18 次 (外层懒加载不可改静态)', () => {
+    // 方案 §1.4/§3.4: 外层 await import 逐块保留 — 短路请求不加载后续块模块。
+    // 后人"顺手"改成静态 import 会破坏短路省加载语义, 此锁防退化。
+    const count = chainSource.split("await import('./canned/").length - 1;
+    expect(count, 'canned-chain.ts 应含且仅含 18 处 await import("./canned/*") 外层懒加载').toBe(18);
+  });
+
+  it('缝序机器锁: suppressGuardCards let 初始化在 clarify 块之前、emotion/context-signal 消费在后', () => {
+    // 方案 §1.2 缝1: let suppressGuardCards = false (块16 前) → 块16 写 → 块17/18 读。
+    // let 声明原位保留在链文件 — 锁初始化点 < clarify 调用 < 两个消费方调用。
+    const init = chainSource.indexOf('let suppressGuardCards = false');
+    const clarify = blockAnchor('tryShoppingClarifyBlock');
+    const emotion = blockAnchor('tryEmotionGuardBlock');
+    const contextSignal = blockAnchor('tryContextSignalBlock');
+    expect(init, '链文件应含 let suppressGuardCards = false 初始化 (缝1 原位保留)').toBeGreaterThan(-1);
+    expect(init).toBeLessThan(clarify);
+    expect(clarify).toBeLessThan(emotion);
+    expect(emotion).toBeLessThan(contextSignal);
   });
 });
 

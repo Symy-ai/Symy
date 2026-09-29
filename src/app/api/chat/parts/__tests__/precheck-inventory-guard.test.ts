@@ -69,6 +69,8 @@ const FROZEN_PARTS_MODULES = [
   // 🔧 拆相位第22刀 (2026-09-30): no-agent 503 出口自 route.ts 拆出
   'agent-unavailable-response.ts',
   'alt-adoption-context.ts',
+  // 🔧 拆相位第25刀 (2026-09-30, 批4方案B): 18 块 canned 短路块链自 route.ts 拆出
+  'canned-chain.ts',
   'category-query-detector.ts',
   'category-query-turn.ts',
   'chat-validation.ts',

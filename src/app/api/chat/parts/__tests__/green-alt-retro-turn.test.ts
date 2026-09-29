@@ -123,26 +123,37 @@ describe('i18n — zh/en 全量文案齐全 (无 defaultValue 兜底)', () => {
 });
 
 // ============================================================
-// route.ts source-order 链序锁 — 回答块/追问块在链首
+// canned-chain.ts source-order 链序锁 — 回答块/追问块在链首
+// (🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts, 块锚改读链文件)
 // ============================================================
 
 describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order)', () => {
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
+  const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf-8');
+  /** 块锚读链文件; count 防空转 (任务0 纪律, 第25刀随动升级) */
+  const chainAnchor = (pattern: string) => {
+    const count = chainSource.split(pattern).length - 1;
+    expect(count, `canned-chain 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+    return chainSource.indexOf(pattern);
+  };
 
   it('回答块先于追问块, 追问块先于 reflection canned (采纳后下一轮即问, 收束不被截胡)', () => {
-    const answerIdx = source.indexOf('runGreenAltRetroAnswerBlock'); /* 🔧b137随动: 回答块下沉 */
-    const askIdx = source.indexOf('tryGreenAltRetroAskBlock'); /* 🔧b137随动: 追问块下沉 */
-    const reflectionIdx = source.indexOf('tryReflectionBlock'); /* 🔧b137随动: 反思块下沉 */
+    const answerIdx = chainAnchor('await runGreenAltRetroAnswerBlock('); /* 🔧b137随动: 回答块下沉 */ /* 🔧第25刀: 迁链文件 */
+    const askIdx = chainAnchor('await tryGreenAltRetroAskBlock('); /* 🔧b137随动: 追问块下沉 */ /* 🔧第25刀: 迁链文件 */
+    const reflectionIdx = chainAnchor('await tryReflectionBlock('); /* 🔧b137随动: 反思块下沉 */ /* 🔧第25刀: 迁链文件 */
     expect(answerIdx).toBeGreaterThan(-1);
     expect(askIdx).toBeGreaterThan(answerIdx);
     expect(reflectionIdx).toBeGreaterThan(askIdx);
   });
 
   it('复盘两块都早于 loadLettaTurnContext (自由文本回答回落 Letta 在后)', () => {
+    // 🔧 第25刀随动: 块已迁链文件 — "链整体早于 loadContext" 不变量重构为
+    // route 侧 chain 单锚 < loadContext 锚 (链内块序由上一条锁覆盖)
+    const chainIdx = source.indexOf('await runCannedBlockChain({');
     const callIdx = source.indexOf('await loadLettaTurnContext({');
+    expect(chainIdx).toBeGreaterThan(-1);
     expect(callIdx).toBeGreaterThan(-1);
-    expect(callIdx).toBeGreaterThan(source.indexOf('tryGreenAltRetroAskBlock')); /* 🔧b137随动 */
-    expect(callIdx).toBeGreaterThan(source.indexOf('runGreenAltRetroAnswerBlock')); /* 🔧b137随动 */
+    expect(callIdx).toBeGreaterThan(chainIdx);
   });
 
   it('回答块与追问块都经过让位 gate (新购买/紧急/数据问句不触发)', () => {

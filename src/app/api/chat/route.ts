@@ -39,6 +39,9 @@ import { buildAgentUnavailableResponse } from './parts/agent-unavailable-respons
 // 拆相位第23刀: SSE 包装栈下沉 parts/sse-pipeline.ts（纯函数, 字节序核心; 第24刀起由 letta-dispatch 消费）
 // 拆相位第24刀: Letta 分发整段 (流式/非流式/审计/错误分类/退款/SSE错误流) 下沉 parts/letta-dispatch.ts（纯机械搬移, 收官刀）
 import { dispatchLettaTurn } from './parts/letta-dispatch';
+// 拆相位第25刀 (批4方案B): 18 块 canned 短路块链 (原 route.ts:116-383) 整段搬移
+// parts/canned-chain.ts（纯机械搬移, 懒加载双层结构与链序位级不变）
+import { runCannedBlockChain } from './parts/canned-chain';
 // ============================================================
 // LLM 配置已移至 src/lib/llm-client.ts（统一调用层）
 // ============================================================
@@ -113,274 +116,21 @@ async function handleChatRequest(req: NextRequest) {
       );
     }
 
-    // 🌱 batch68-a 绿色采纳后复盘 — 回答轮: 排在一切 detector 之前。选项点击
-    //    ("手头已有" 一类短句) 是明确回答, 不得被既有购买/问账 detector 截胡;
-    //    自由文本回答经让位 gate (新购买/紧急/数据问句) 判定: 未让位 → 证据
-    //    落账 + 注入 Letta 收束; 让位 → 静默落回普通链路 (会话态客户端已消费,
-    //    不再追问 — 温和结束)。收束文案零金额零碳数值。
-    // 🔧 b137 拆解第十六刀 (2026-09-29): 块本体下沉 parts/canned/green-alt-retro-answer-block.ts
-    //    (双通道返回: response 短路 / answerContext 透传 letta-turn-context)
-    let greenAltRetroAnswerContext: import('./parts/green-alt-retro-context').GreenAltRetroAnswerPrompt | undefined;
-    {
-      const { runGreenAltRetroAnswerBlock } = await import('./parts/canned/green-alt-retro-answer-block');
-      const retroAnswerResult = await runGreenAltRetroAnswerBlock({
-        userContent, locale, stream, userId, supabase, greenAltRetroAnswer, fireAndForgetSafely,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (retroAnswerResult.response) return retroAnswerResult.response;
-      greenAltRetroAnswerContext = retroAnswerResult.answerContext;
-    }
-
-    // 🌱 batch68-a 复盘追问轮: 上一轮采纳了绿色替代 (客户端会话态 pending 一次性
-    //    上行) 且本轮不是新购买/紧急求助/数据问句/绿色替代再请求 → canned 承认 +
-    //    追问一次 (4 个非羞辱选项卡 + 自由文本提示)。greenPref 'off' 整体静默;
-    //    让位时 pending 客户端已消费, 不顺延 — 每条采纳只追问一次。链序红线:
-    //    本块在回答块之后、reflection canned 之前, 由 source-order 测试锁定。
-    // 🔧 b137 拆解第十五刀 (2026-09-29): 块本体下沉 parts/canned/green-alt-retro-ask-block.ts
-    {
-      const { tryGreenAltRetroAskBlock } = await import('./parts/canned/green-alt-retro-ask-block');
-      const retroAskResponse = await tryGreenAltRetroAskBlock({
-        userContent, locale, stream, greenAltRetroPending, greenPref,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (retroAskResponse) return retroAskResponse;
-    }
-
-    // 🔧 P0-1 fix (2026-07-20): 反思问题检测 — 直接返回 canned reply, 不调 Letta AI
-    //   根因: 用户点击反思引导组件的问题后, 消息发给 Letta AI, 但 AI 的 persona
-    //   (mirror, 不问探究性问题) 与反思问题冲突, 导致 AI 60s 无响应.
-    //   修复: 检测到反思问题时, 直接返回 canned reply (引导用户自己回答).
-    // 🔧 b137 拆解第十二刀 (2026-09-29): 块本体下沉 parts/canned/reflection-block.ts
-    {
-      const { tryReflectionBlock } = await import('./parts/canned/reflection-block');
-      const reflectionResponse = await tryReflectionBlock({
-        userContent, locale, stream,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (reflectionResponse) return reflectionResponse;
-    }
-
-    // 🐘 batch48-b 反驳降温: 上一轮发过守护卡 + 本轮命中反驳意图 → 不调 Letta
-    //    (杜绝第二次拦截话术), 直接 canned 降温回复 + 冷静卡。与守护卡同一开关:
-    //    guard-off 时客户端不会渲染守护卡 → afterGuardCard 恒 false, 此处再挡一道。
-    // 🔧 b137 拆解第十三刀 (2026-09-29): 块本体下沉 parts/canned/cooldown-block.ts
-    {
-      const { tryCooldownBlock } = await import('./parts/canned/cooldown-block');
-      const cooldownResponse = await tryCooldownBlock({
-        userContent, locale, stream, greenPref, afterGuardCard,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (cooldownResponse) return cooldownResponse;
-    }
-
-    // 🐘 batch65-a 重复购买预检: 明确问「还要不要再买 / 家里有没有」时,
-    //    先给决策卡再谈浏览比较; 比通用买前求问更具体, 因此先判。
-    // 🔧 b137 拆解第七刀 (2026-09-29): 块本体下沉 parts/canned/duplicate-purchase-block.ts
-    {
-      const { tryDuplicatePurchaseBlock } = await import('./parts/canned/duplicate-purchase-block');
-      const duplicateResponse = await tryDuplicatePurchaseBlock({
-        userContent, locale, stream,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (duplicateResponse) return duplicateResponse;
-    }
-
-
-    // 🐘 batch50-a 买前三问: 用户主动求问 ("该买 X 吗") → 不调 Letta 泛泛建议,
-    //    直接 canned 迎接回复 + 三问决策卡 (用户自己的问题, 守护开关不挡 —
-    //    与 48-b 反驳降温的被动拦截不同)。放在反驳降温之后: 两流意图互斥。
-    // 🔧 b137 拆解第八刀 (2026-09-29): 块本体下沉 parts/canned/prepurchase-block.ts
-    {
-      const { tryPrepurchaseBlock } = await import('./parts/canned/prepurchase-block');
-      const prepurchaseResponse = await tryPrepurchaseBlock({
-        userContent, locale, stream,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (prepurchaseResponse) return prepurchaseResponse;
-    }
-
-    // 🐘 batch53-a 绿色承诺: 用户主动口头承诺 ("这个月不买X") → 不调 Letta 泛泛
-    //    鼓励, 直接 canned 迎接回复 + 承诺登记卡 (确认后才落 health_events)。
-    //    放在求问/反驳之后: 三流意图互斥 (detector 内排除)。
-    // 🔧 b137 拆解第九刀 (2026-09-29): 块本体下沉 parts/canned/commitment-block.ts
-    {
-      const { tryCommitmentBlock } = await import('./parts/canned/commitment-block');
-      const commitmentResponse = await tryCommitmentBlock({
-        userContent, locale, stream,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (commitmentResponse) return commitmentResponse;
-    }
-
-    // 🐘 batch56-a 对比裁决: 用户二选一求问 ("买A还是B / A vs B") → 不调 Letta
-    //    泛泛安利, 直接 canned 迎接回复 + 对比裁决卡 (三行裁决 + 选 A/B chips,
-    //    点选后才落 health_events)。放在求问/反驳/承诺之后: 四流意图互斥
-    //    (detector 内排除更强意图)。
-    // 🔧 b137 拆解第十刀 (2026-09-29): 块本体下沉 parts/canned/compare-block.ts
-    {
-      const { tryCompareBlock } = await import('./parts/canned/compare-block');
-      const compareResponse = await tryCompareBlock({
-        userContent, locale, stream,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (compareResponse) return compareResponse;
-    }
-
-    // 🐘 batch57-a 清单分诊: 购物清单批量消息 ("周末要买这些：A、B、C、D") →
-    //    不调 Letta 泛泛安利, 直接 canned 迎接回复 + 清单分诊卡 (逐条三态 +
-    //    就买/看替代/再想想 chips, 点选后才落 health_events)。放在反驳/求问/
-    //    承诺/对比之后: 五流意图互斥 (detector 内排除更强意图)。
-    // 🔧 b137 拆解第十一刀 (2026-09-29): 块本体下沉 parts/canned/list-triage-block.ts
-    {
-      const { tryListTriageBlock } = await import('./parts/canned/list-triage-block');
-      const listTriageResponse = await tryListTriageBlock({
-        userContent, locale, stream, guardScope,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (listTriageResponse) return listTriageResponse;
-    }
-
-    // 🐘 batch59-c 追问跟随: 数据问答之后的短追问 ("那上个月呢" / "那外卖呢")
-    //    → 用客户端上行的最近数据问答卡元数据 (内存级会话态) 重算, 数字全部
-    //    复用 57-c/58-c 聚合。排在 58-c 分类/时段与 57-c 月度检测之前: 短追问
-    //    不带完整问句形态, 但 "上个月省了多少" 这类完整问句 detector 内排除
-    //    (FULL_QUERY 让路) — 无上文 (dataQueryContext 缺失/形状不全) 也回落
-    //    普通检测链, 绝不拿空窗口算数。
-    // 🔧 b137 拆解第十四刀 (2026-09-29): 块本体下沉 parts/canned/follow-up-block.ts
-    {
-      const { tryFollowUpBlock } = await import('./parts/canned/follow-up-block');
-      const followUpResponse = await tryFollowUpBlock({
-        userContent, locale, stream, userId, supabase, dataQueryContext,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (followUpResponse) return followUpResponse;
-    }
-
-    // 🐘 batch58-c 分类问句 ("这个月奶茶拦截了几次") — 57-c 问账的维度细化:
-    //    品类词归一到五类之一才命中, 否则回落下方 57-c 月度总答。canned
-    //    分类对账卡 (拦截/替代/复用计数, resolveGuardCategory 同口径), 零金额。
-    // 🔧 b137 拆解第三刀 (2026-09-29): 块本体下沉 parts/canned/category-query-block.ts
-    {
-      const { tryCategoryQueryBlock } = await import('./parts/canned/category-query-block');
-      const categoryQueryResponse = await tryCategoryQueryBlock({
-        userContent, locale, stream, userId, supabase,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (categoryQueryResponse) return categoryQueryResponse;
-    }
-
-    // 🐘 batch58-c 时段问句 ("我晚上冲动买的多吗") — 复用 48-c
-    //    aggregateImpulseWindows 的分桶统计 (次数/天数 only), canned 回复,
-    //    零金额零碳数值, 非羞辱框架 (看见规律不是认罪)。
-    // 🔧 b137 拆解第二刀 (2026-09-29): 块本体下沉 parts/canned/impulse-time-block.ts
-    {
-      const { tryImpulseTimeQueryBlock } = await import('./parts/canned/impulse-time-block');
-      const impulseTimeResponse = await tryImpulseTimeQueryBlock({
-        userContent, locale, stream, userId, supabase,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (impulseTimeResponse) return impulseTimeResponse;
-    }
-
-    // 🐘 batch62-c 未来 7 天冲动风险预报: 用户往前问 ("下周容易冲动吗 /
-    //    这几天什么时候危险 / next week risk") → 不调 Letta, canned 回复 +
-    //    预报卡 (forecastImpulseRisk 近 8 周同星期几规律, 次数/天数/时段 only,
-    //    提前准备框架, 不承诺预测准确率)。同一块接住预报卡后的单日追问
-    //    ("那周六呢"): 客户端上行的 dataQueryContext kind='forecast' 为资格
-    //    标记, 星期词由 detectForecastDayFollowUp 归一。放在 58-c 时段问句
-    //    之后、57-c 问账之前: 回顾型统计问句在 detector 内让路, 完整数据
-    //    问答仍走既有链路不抢路由 (source-order 测试锁定)。
-    // 🔧 b137 拆解第四刀 (2026-09-29): 块本体下沉 parts/canned/impulse-forecast-block.ts
-    {
-      const { tryImpulseForecastBlock } = await import('./parts/canned/impulse-forecast-block');
-      const forecastResponse = await tryImpulseForecastBlock({
-        userContent, locale, stream, userId, supabase, dataQueryContext,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (forecastResponse) return forecastResponse;
-    }
-
-    // 🐘 batch68-c 按小时守护脉搏: 用户问自己的小时级节奏 ("我什么时候最容易
-    //    冲动 / my weakest shopping hour") → 不调 Letta, canned 回复 + 脉搏卡
-    //    (aggregateGuardPulse 近 28 天 0-23 小时聚合, 只读 health_events +
-    //    profiles.timezone, 零 DDL)。只显示小时/次数/天数, 无金额无碳数值,
-    //    看见节奏不是认罪。放在 62-c 预报之后、57-c 问账之前: 前瞻词让回
-    //    预报、四桶时段词让回 58-c、品类词让回分类问句 (detector 内让路 +
-    //    source-order 测试锁定)。
-    // 🔧 b137 拆解第五刀 (2026-09-29): 块本体下沉 parts/canned/guard-pulse-block.ts
-    {
-      const { tryGuardPulseBlock } = await import('./parts/canned/guard-pulse-block');
-      const guardPulseResponse = await tryGuardPulseBlock({
-        userContent, locale, stream, userId, supabase,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (guardPulseResponse) return guardPulseResponse;
-    }
-
-    // 🐘 batch57-c 问账: 用户直接问账 ("这个月省了多少 / 上周守护了几次")
-    //    → 不调 Letta (它看不到聚合数字, 只能含糊或编造金额), 直接 canned
-    //    对账回复 + 问账卡 (数字全部来自既有聚合 lib, 绝不经手 Letta)。
-    //    放在购物类 detector 之后: 问账是提问不是购物意图, 互斥由 detector
-    //    内排除 + 链序双保险。
-    // 🔧 b137 拆解第一刀 (2026-09-29): 块本体下沉 parts/canned/savings-query-block.ts
-    //    (纯机械搬移, 返回 null=未命中继续链路 — 链序不变, source-order 测试锁定)
-    {
-      const { trySavingsQueryBlock } = await import('./parts/canned/savings-query-block');
-      const savingsQueryResponse = await trySavingsQueryBlock({
-        userContent, locale, stream, userId, supabase,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (savingsQueryResponse) return savingsQueryResponse;
-    }
-
-    // 🔧 b137 拆解第21刀 (2026-09-30): shopping-clarify 三态块自本段拆出
-    //    parts/canned/shopping-clarify-block.ts (纯机械搬移, 链序不变)。
-    //    三态: response 短路 / null+suppressGuardCards 旗标 / null 直通。
-    let suppressGuardCards = false;
-    {
-      const { tryShoppingClarifyBlock } = await import('./parts/canned/shopping-clarify-block');
-      const clarifyResult = await tryShoppingClarifyBlock({
-        userContent, locale, stream, askedSubjects: askedShoppingSubjects,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      suppressGuardCards = clarifyResult.suppressGuardCards;
-      if (clarifyResult.response) return clarifyResult.response;
-    }
-
-    // 🐘 batch60-c 情绪守护: 带着情绪提起购买 ("今天好累，想买点东西哄自己")
-    //    → 不当普通购买挑战, canned 共情回复 + 三选项守护卡 (花钱安慰/免费安抚/
-    //    先等 10 分钟, 选择权在用户)。排位红线: 数据问答 (59-c/58-c/57-c) 在前
-    //    优先; 通用购买预检 (BNPL/green/reuse/micro, loadLettaTurnContext 内)
-    //    在后 — BNPL/绿色品类/问答形态由 detector 内让路, 链序由 source-order
-    //    测试锁定; 高风险语义 detector 内排除, 自然降级通用聊天。
-    // 🔧 b137 拆解第六刀 (2026-09-29): 块本体下沉 parts/canned/emotion-guard-block.ts
-    {
-      const { tryEmotionGuardBlock } = await import('./parts/canned/emotion-guard-block');
-      const emotionGuardResponse = await tryEmotionGuardBlock({
-        userContent, locale, stream, guardIntensity, greenPref, suppressGuardCards,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (emotionGuardResponse) return emotionGuardResponse;
-    }
-
-    // 🐘 batch61-b 购物场景弱信号: 生活语言里的消费决策 ("想奖励自己 / 最后三单 /
-    //    快坏了"), 无标准购物关键词时既有强 detector 全部漏接 → 弱信号词表命中后
-    //    按语义路由到既有能力 (情绪→60-c 情绪卡 / 促销→48-b 冷静卡 / 耗损→50-a
-    //    三问 + 绿色替代), canned 短路不调 Letta。排位红线: 60-c 情绪守护等强
-    //    detector 在前优先, loadLettaTurnContext (BNPL/green/reuse/micro 通用购买
-    //    预检) 在后 — 数据问句/明确购物意图/纯闲聊在 detector 层让路, 链序由
-    //    source-order 测试锁定。已纠正的信号词条 (会话级) 本轮不参与匹配;
-    //    greenPref 'off' 视为拒绝守护, 整体静默。
-    // 🔧 b137 拆解第十七刀 (2026-09-29): 块本体下沉 parts/canned/context-signal-block.ts
-    {
-      const { tryContextSignalBlock } = await import('./parts/canned/context-signal-block');
-      const contextSignalResponse = await tryContextSignalBlock({
-        userContent, locale, stream, userId, greenPref, suppressGuardCards,
-        dismissedContextSignals, guardIntensity, factsStore,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
-      });
-      if (contextSignalResponse) return contextSignalResponse;
-    }
+    // 🔧 拆相位第25刀 (2026-09-30, 批4方案B): 18 块 canned 短路块链 (原 route.ts:116-383,
+    //    268 行样板) 整段纯机械搬移 parts/canned-chain.ts — 调用样板原文照搬, 懒加载
+    //    双层结构与链序位级不变 (structure-lock 18 数组锁 + 懒加载 count===18 机器锁)。
+    //    两缝随链结果返回: suppressGuardCards (clarify→下游守护卡) 与
+    //    greenAltRetroAnswerContext (复盘回答→letta-turn-context prompt 注入)。
+    //    链序总纲与两缝建模详见 parts/canned-chain.ts 头注释。
+    const chainResult = await runCannedBlockChain({
+      userContent, locale, stream, userId, supabase,
+      greenAltRetroAnswer, fireAndForgetSafely, greenAltRetroPending, greenPref,
+      afterGuardCard, guardScope, dataQueryContext, askedShoppingSubjects,
+      guardIntensity, dismissedContextSignals, factsStore,
+      mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+    });
+    if (chainResult.response) return chainResult.response;
+    const { suppressGuardCards, answerContext: greenAltRetroAnswerContext } = chainResult;
 
     // batch26-c 拆分: 上下文装载（修身阶段/时薪/buddy 统计/RAG/挑战历史）+ BNPL/symy cart/green/reuse
     // 预检 + userContentWithStage 组装 → parts/letta-turn-context.ts（纯机械搬移，内部

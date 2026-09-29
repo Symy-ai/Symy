@@ -148,13 +148,21 @@ describe('resolveFollowUpContext — 上文解析', () => {
 });
 
 describe('路由顺序 — 追问检测在 57-c/58-c 检测之前 (源码链序锁)', () => {
-  it('route.ts 中 follow-up 块先于 category/impulse/savings 检测', () => {
-    const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
-    const followUpIdx = source.indexOf('tryFollowUpBlock'); /* 🔧b137随动: 59-c下沉锚点改块调用 */
-    const categoryIdx = source.indexOf('tryCategoryQueryBlock'); // 🔧 b137随动: 58-c分类下沉锚点改块调用
-    const impulseIdx = source.indexOf('tryImpulseTimeQueryBlock'); // 🔧 b137随动: 58-c下沉锚点改块调用
+  // 🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts — 块锚改读链文件,
+  // count=1 纪律随动升级 (原裸 indexOf 无防空转)
+  const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf-8');
+  const chainAnchor = (pattern: string) => {
+    const count = chainSource.split(pattern).length - 1;
+    expect(count, `canned-chain 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+    return chainSource.indexOf(pattern);
+  };
+
+  it('canned-chain.ts 中 follow-up 块先于 category/impulse/savings 检测', () => {
+    const followUpIdx = chainAnchor('await tryFollowUpBlock('); /* 🔧b137随动: 59-c下沉锚点改块调用 */ /* 🔧第25刀: 迁链文件 */
+    const categoryIdx = chainAnchor('await tryCategoryQueryBlock('); // 🔧 b137随动: 58-c分类下沉锚点改块调用
+    const impulseIdx = chainAnchor('await tryImpulseTimeQueryBlock('); // 🔧 b137随动: 58-c下沉锚点改块调用
     // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
-    const savingsIdx = source.indexOf('trySavingsQueryBlock');
+    const savingsIdx = chainAnchor('await trySavingsQueryBlock(');
     expect(followUpIdx).toBeGreaterThan(-1);
     expect(categoryIdx).toBeGreaterThan(followUpIdx);
     expect(impulseIdx).toBeGreaterThan(followUpIdx);

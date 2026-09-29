@@ -94,26 +94,37 @@ describe('emotionGuardSseEvent / buildEmotionGuardSseStream', () => {
 
 describe('路由链序锁 — 情绪守护块在数据问答之后、通用购买预检之前 (source-order)', () => {
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
+  // 🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts — 块锚改读链文件,
+  // count=1 纪律随动 (任务0 已立防再空转, 第25刀保持)
+  const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf-8');
+  const chainAnchor = (pattern: string) => {
+    const count = chainSource.split(pattern).length - 1;
+    expect(count, `canned-chain 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+    return chainSource.indexOf(pattern);
+  };
 
   it('emotion 块晚于 57-c/58-c 数据问答检测 (更高优先级规则先答)', () => {
-    const emotionIdx = source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */;
+    const emotionIdx = chainAnchor('await tryEmotionGuardBlock(') /* 🔧b137随动 */ /* 🔧第25刀: 迁链文件 */;
     expect(emotionIdx).toBeGreaterThan(-1);
-    expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
-    expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
-    expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(chainAnchor('await trySavingsQueryBlock(') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(chainAnchor('await tryCategoryQueryBlock(') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
+    expect(chainAnchor('await tryImpulseTimeQueryBlock(') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
     // 🔧批4任务0修复: buildFollowUpTurn 自 b137 十四刀已不在 route — 原锚 indexOf=-1 恒真(vacuous)。
-    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。
-    const followUpIdx = source.indexOf('tryFollowUpBlock');
+    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。(第25刀: 随链迁 canned-chain.ts)
+    const followUpIdx = chainAnchor('await tryFollowUpBlock(');
     expect(followUpIdx).toBeGreaterThan(-1);
     expect(followUpIdx).toBeLessThan(emotionIdx);
   });
 
   it('emotion 块早于 loadLettaTurnContext 调用点 (BNPL/green/reuse/micro 通用购买预检之前)', () => {
-    const emotionIdx = source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */;
+    // 🔧 第25刀随动: emotion 块已迁链文件 — "链整体早于 loadContext" 不变量重构为
+    // route 侧 chain 单锚 < loadContext 锚 (链内 emotion 块序由上一条锁覆盖)
+    const chainIdx = source.indexOf('await runCannedBlockChain({');
     // 顶部 import 语句不算 — 只认 loadLettaTurnContext 的实际调用点
     const callIdx = source.indexOf('await loadLettaTurnContext({');
+    expect(chainIdx).toBeGreaterThan(-1);
     expect(callIdx).toBeGreaterThan(-1);
-    expect(callIdx).toBeGreaterThan(emotionIdx);
+    expect(callIdx).toBeGreaterThan(chainIdx);
   });
 
   it('emotion 块自带三选项卡, 复用既有 SSE canned 流模式 (卡片事件 + canned reply)', () => {

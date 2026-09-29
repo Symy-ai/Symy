@@ -403,31 +403,43 @@ describe('contextSignalSseEvent / buildContextSignalSseStream', () => {
 });
 
 // ============================================================
-// route.ts source-order 链序锁 — 强 detector 之后、自由回复 (Letta) 之前
+// canned-chain.ts source-order 链序锁 — 强 detector 之后、自由回复 (Letta) 之前
+// (🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts, 块锚改读链文件)
 // ============================================================
 
 describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用购买预检之前 (source-order)', () => {
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
+  // 🔧 拆相位第25刀随动: 18 块链整段搬 parts/canned-chain.ts — 块锚改读链文件,
+  // count=1 纪律随动 (任务0 已立防再空转, 第25刀保持)
+  const chainSource = readFileSync(new URL('../canned-chain.ts', import.meta.url), 'utf-8');
+  const chainAnchor = (pattern: string) => {
+    const count = chainSource.split(pattern).length - 1;
+    expect(count, `canned-chain 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+    return chainSource.indexOf(pattern);
+  };
 
   it('弱信号块晚于 60-c 情绪守护与全部数据问答检测 (更强意图先答)', () => {
-    const idx = source.indexOf('tryContextSignalBlock'); /* 🔧b137随动: 61-b下沉 */
+    const idx = chainAnchor('await tryContextSignalBlock(') /* 🔧b137随动: 61-b下沉 */ /* 🔧第25刀: 迁链文件 */;
     expect(idx).toBeGreaterThan(-1);
-    expect(source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */).toBeLessThan(idx);
-    expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
-    expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
-    expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(chainAnchor('await tryEmotionGuardBlock(') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(chainAnchor('await trySavingsQueryBlock(') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(chainAnchor('await tryCategoryQueryBlock(') /* 🔧b137随动 */).toBeLessThan(idx);
+    expect(chainAnchor('await tryImpulseTimeQueryBlock(') /* 🔧b137随动 */).toBeLessThan(idx);
     // 🔧批4任务0修复: buildFollowUpTurn 自 b137 十四刀已不在 route — 原锚 indexOf=-1 恒真(vacuous)。
-    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。
-    const followUpIdx = source.indexOf('tryFollowUpBlock');
+    //    改锚 tryFollowUpBlock 调用点 + count 防再空转。(第25刀: 随链迁 canned-chain.ts)
+    const followUpIdx = chainAnchor('await tryFollowUpBlock(');
     expect(followUpIdx).toBeGreaterThan(-1);
     expect(followUpIdx).toBeLessThan(idx);
   });
 
   it('弱信号块早于 loadLettaTurnContext 调用点 (不吞通用购买预检)', () => {
-    const idx = source.indexOf('tryContextSignalBlock'); /* 🔧b137随动: 61-b下沉 */
+    // 🔧 第25刀随动: 弱信号块已迁链文件 — "链整体早于 loadContext" 不变量重构为
+    // route 侧 chain 单锚 < loadContext 锚 (链内弱信号块序由上一条锁覆盖)
+    const chainIdx = source.indexOf('await runCannedBlockChain({');
     const callIdx = source.indexOf('await loadLettaTurnContext({');
+    expect(chainIdx).toBeGreaterThan(-1);
     expect(callIdx).toBeGreaterThan(-1);
-    expect(callIdx).toBeGreaterThan(idx);
+    expect(callIdx).toBeGreaterThan(chainIdx);
   });
 
   it('greenPref off 整体静默 (拒绝守护的会话不触发)', () => {
