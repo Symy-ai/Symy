@@ -33,6 +33,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?probeWrite=<agentId> — 试 POST/PATCH 写路径真实响应 (只读站外值不落库)
+  const probeWrite = request.nextUrl.searchParams.get('probeWrite');
+  if (probeWrite) {
+    if (!/^agent-[a-z0-9-]+$/i.test(probeWrite)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    const attempts: Array<{ what: string; status: number; head: string }> = [];
+    // ① POST memory-blocks 标准形状
+    for (const [what, url, method, body] of [
+      ['POST memory-blocks (label)', `https://api.letta.com/v1/agents/${probeWrite}/memory-blocks`, 'POST', JSON.stringify({ label: 'probe_temp', value: 'probe', limit: 1000 })],
+      ['POST blocks (label)', `https://api.letta.com/v1/agents/${probeWrite}/blocks`, 'POST', JSON.stringify({ label: 'probe_temp', value: 'probe', limit: 1000 })],
+      ['PATCH memory-blocks (name)', `https://api.letta.com/v1/agents/${probeWrite}/memory-blocks`, 'PATCH', JSON.stringify({ name: 'probe_temp', value: 'probe' })],
+      ['PATCH memory by name', `https://api.letta.com/v1/agents/${probeWrite}/memory`, 'PATCH', JSON.stringify({ probe_temp: 'probe' })],
+    ] as Array<[string, string, string, string]>) {
+      try {
+        const res = await fetch(url, { method, headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(15000) });
+        const text = await res.text();
+        attempts.push({ what, status: res.status, head: text.replace(/\s+/g, ' ').slice(0, 200) });
+      } catch (err) {
+        attempts.push({ what, status: -1, head: err instanceof Error ? err.message : String(err) });
+      }
+    }
+    return NextResponse.json({ attempts });
+  }
+
   // 🔧 09-29: GET ?probeBlocks=<agentId> — 探测 Letta blocks 端点真身 (status+body前缀)
   const probeBlocks = request.nextUrl.searchParams.get('probeBlocks');
   if (probeBlocks) {
