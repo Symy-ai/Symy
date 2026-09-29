@@ -28,6 +28,18 @@ const stripLocale = (pathname: string) =>
 
 // Next.js 16 renamed middleware → proxy (Edge Runtime → Node.js)
 export async function proxy(request: NextRequest) {
+  // 🔧 09-29 修复: /{locale}/api/* (如 /zh/api/health) 之前穿透 next-intl 落进
+  //    [locale]/[...slug] 兜底页返回 200 HTML — 监控/外链若配了带 locale 的
+  //    API 路径会拿到假绿。统一 308 到无前缀 /api/* (真实 API 路由)。
+  const apiWithLocale = request.nextUrl.pathname.match(
+    /^\/(en|zh)\/(api\/.*)$/,
+  );
+  if (apiWithLocale) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${apiWithLocale[2]}`;
+    return NextResponse.redirect(url, 308);
+  }
+
   // Step 1: Run next-intl for localized routes (adds /en, /zh prefix).
   // Non-localized routes (/admin, /butterfly-demo, /api) skip next-intl entirely.
   let intlResponse: NextResponse | undefined;
