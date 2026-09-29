@@ -346,25 +346,14 @@ async function handleChatRequest(req: NextRequest) {
 
     // 🐘 batch65-a 重复购买预检: 明确问「还要不要再买 / 家里有没有」时,
     //    先给决策卡再谈浏览比较; 比通用买前求问更具体, 因此先判。
+    // 🔧 b137 拆解第七刀 (2026-09-29): 块本体下沉 parts/canned/duplicate-purchase-block.ts
     {
-      const { buildDuplicatePurchaseTurn, buildDuplicatePurchaseSseStream } = await import('./parts/duplicate-purchase-turn');
-      const duplicateTurn = buildDuplicatePurchaseTurn({ userContent, locale });
-      if (duplicateTurn) {
-        logger.info('[Chat API] Duplicate-purchase precheck detected');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildDuplicatePurchaseSseStream(duplicateTurn), { headers: { ...SSE_HEADERS } }),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: duplicateTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            duplicatePrecheckCard: duplicateTurn.duplicatePrecheckCard,
-          }),
-        );
-      }
+      const { tryDuplicatePurchaseBlock } = await import('./parts/canned/duplicate-purchase-block');
+      const duplicateResponse = await tryDuplicatePurchaseBlock({
+        userContent, locale, stream,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (duplicateResponse) return duplicateResponse;
     }
 
 
