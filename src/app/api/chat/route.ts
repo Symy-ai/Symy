@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { isLettaConfigured, streamToAgent } from '@/lib/letta';
 import { createAuthenticatedClient } from '@/lib/supabase-api';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { sendSSEData, closeSSE, SSE_HEADERS } from '@/lib/sse';
 
@@ -47,6 +47,8 @@ import { checkGuestChatLimit } from './parts/guest-gate';
 import { extractUserMessage } from './parts/user-message-extract';
 // 拆相位第20刀: isLettaConfigured 门外兜底出口下沉 parts/（纯机械搬移）
 import { lettaUnavailableResponse } from './parts/letta-unavailable';
+// 拆相位第22刀: no-agent 503 出口下沉 parts/（纯机械搬移, 退款分文案 + 双通道）
+import { buildAgentUnavailableResponse } from './parts/agent-unavailable-response';
 // 🌐 batch72-a 全网搜索等待话术: symy_search fallback 命中 (货架 <2 卡 + websearch
 //    标记) 时, tool_result 后紧跟 canned 等待话术, 结果卡仍走既有 cards 管道出卡
 import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
@@ -448,31 +450,12 @@ async function handleChatRequest(req: NextRequest) {
     //    旧代码: userAgentId 为 null 时 fallback 到全局 LETTA_AGENT_ID → 跨用户记忆污染
     //    现在: userAgentId 为 null 时返回 503, 提示用户"AI 正在初始化, 请稍后重试"
     //    (auth-provider.tsx 的 ensureAgentForUser 会在登录后自动创建 per-user agent)
+    // 🔧 拆相位第22刀 (2026-09-30): no-agent 503 出口 (退款分文案 + 双通道)
+    //    自本段拆出 parts/agent-unavailable-response.ts (纯机械搬移)。
     if (!userAgentId) {
-      logger.error('[Chat API] No per-user agent available for user:', userId);
-
-      // 🔧 Round 112 P0-1b fix: AI 失败时退还 See it 额度
-      //    challenge create 已经 increment 了 daily_see_it_count, AI 失败时必须 decrement
-      //    否则用户额度被无效消耗 (5 left → 4 left → 3 left, 但没得到服务)
-      // 🔧 Round 120 audit fix (AUDIT-2 P0 #3 + AUDIT-1 refactor #3):
-      //    旧代码 catch + warn + 仍告诉用户 "refunded" → 退款失败时用户被欺骗
-      //    新代码: 调用 refundChallengeQuota helper, 根据结果决定文案
-      let refundSucceeded = false;
-      if (userId && validChallengeContext) {
-        const { refundChallengeQuota } = await import('./parts/refund-challenge-quota');
-        const refundResult = await refundChallengeQuota(userId);
-        refundSucceeded = refundResult.refunded;
-        if (!refundSucceeded) {
-          logger.error('[Chat API] Refund FAILED for user (AI unavailable):', userId, refundResult.error);
-        }
-      }
-
-      // 🔧 Round 120 audit fix: 退款失败时显示不同文案 (不再撒谎 "refunded")
-      const refundMsg = validChallengeContext ? (refundSucceeded ? 'AI is still initializing. Your See-it was refunded — please try again in a moment.' : 'AI is still initializing. Please try again in a moment. (If your See-it quota was consumed, please contact support.)') : 'AI is still initializing. Please try again in a moment.';
-      if (stream) {
-        return mergeCookiesOnResponse(new Response(`data: ${JSON.stringify({ type: 'error', content: refundMsg })}\n\n`, { headers: { ...SSE_HEADERS } }));
-      }
-      return mergeCookies(NextResponse.json({ error: refundMsg }, { status: 503 }));
+      return buildAgentUnavailableResponse({
+        userId, validChallengeContext, stream, mergeCookies, mergeCookiesOnResponse,
+      });
     }
 
     // 🔧 架构优化 Round 58: 移除死循环 (Finding 7) — agentIds 只有 1 个元素, for...of 是遗留代码

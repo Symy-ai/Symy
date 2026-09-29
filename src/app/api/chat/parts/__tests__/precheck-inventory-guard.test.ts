@@ -66,6 +66,8 @@ const FROZEN_INVENTORY: ReadonlyArray<{
 
 /** parts/ 目录完整模块基线（含 turn / context / SSE 包装 / 基础设施，非仅 detector） */
 const FROZEN_PARTS_MODULES = [
+  // 🔧 拆相位第22刀 (2026-09-30): no-agent 503 出口自 route.ts 拆出
+  'agent-unavailable-response.ts',
   'alt-adoption-context.ts',
   'category-query-detector.ts',
   'category-query-turn.ts',
