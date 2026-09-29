@@ -18,7 +18,6 @@
 import type { ReactNode, Ref } from 'react';
 import { Award, CalendarCheck, Flag, Flame, Medal, ShieldCheck, Trophy, Users, type LucideIcon } from 'lucide-react';
 import type { InterceptMedalData } from '@/types/intercept-medal';
-import { formatFreedomTime } from '@/lib/freedom-time';
 import type { BadgeDef } from '@/components/buddy/constants';
 import type { GuardianChallenge } from '@/components/buddy/challenge-definitions';
 import { InterceptCard } from './intercept-card';
@@ -30,6 +29,12 @@ import { WeeklyCard, type WeeklyCardData } from './weekly-card';
 import { DreamCard } from './dream-card';
 import { GuardianStatsCard } from './guardian-stats-card';
 import { InviteShareCard } from './invite-card';
+
+
+// 🔧 架构批1 F4 (09-29): 格式化 helpers 唯一实现在 share-format.ts (消 8 卡反向 import 环) —
+// 此处 re-export 保持既有 `from './card-templates'` 引用方兼容 (share-modal / daily-green-report / 测试)
+export { formatHoursNumber, formatShareHoursLabel, MILESTONE_THRESHOLDS, getMilestoneState } from './share-format';
+export type { MilestoneState } from './share-format';
 
 // 'dream' 预留: dream-achievement-overlay 已传 initialTemplate="dream" (梦想卡模板未建,
 // getShareTemplate 会兜底回 SHARE_TEMPLATES[0]), 先纳入类型避免编译错误 — File Split Wave 1
@@ -228,48 +233,4 @@ export const SHARE_TEMPLATES: ShareTemplate[] = [
 
 export function getShareTemplate(id: ShareTemplateId): ShareTemplate {
   return SHARE_TEMPLATES.find((tp) => tp.id === id) ?? SHARE_TEMPLATES[0];
-}
-
-/**
- * 赢回小时展示数字 — 统计格子等纯数字槽位用 (≥10 取整, <10 保留 1 位, 不夸大)。
- * 0/负数/NaN 与亚小时 (<0.1h, 免出「0.0 小时」) 返回空串, 由调用方走兜底文案。
- */
-export function formatHoursNumber(hours: number): string {
-  if (!Number.isFinite(hours) || hours <= 0 || hours < 0.1) return '';
-  return hours >= 10 ? String(Math.round(hours)) : hours.toFixed(1);
-}
-
-/**
- * 晒卡赢回时间完整标签 (数字+单位) — 英雄行/分享文案槽位用。
- * 亚小时出「N 分钟」, 取整方向与 app 内 formatFreedomTime 同向 (round),
- * 同一笔拦截两个面数字一致 (QA 冒烟边界观察 #4/#5)。
- * <0.1h 与 0/负/NaN 同语义返回空串, 由调用方走「一次绿色的选择」兜底文案。
- */
-export function formatShareHoursLabel(hours: number, locale: string): string {
-  if (!Number.isFinite(hours) || hours <= 0 || hours < 0.1) return '';
-  return formatFreedomTime(hours, locale);
-}
-
-/** 里程碑解锁阈值 — 拦截次数达到即解锁 (现有数据推导, 零 DDL) */
-export const MILESTONE_THRESHOLDS = [10, 50, 100] as const;
-
-export interface MilestoneState {
-  count: number;
-  /** count ≥ 首个阈值 (10) — 第 N 次守护进入可庆祝态 */
-  unlocked: boolean;
-  /** 下一个未达成阈值; 全部达成时 null */
-  next: number | null;
-  /** 距下一阈值还差几次 (next 为 null 时 0) */
-  remaining: number;
-}
-
-export function getMilestoneState(count: number): MilestoneState {
-  const safeCount = Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
-  const next = MILESTONE_THRESHOLDS.find((m) => m > safeCount) ?? null;
-  return {
-    count: safeCount,
-    unlocked: safeCount >= MILESTONE_THRESHOLDS[0],
-    next,
-    remaining: next ? next - safeCount : 0,
-  };
 }

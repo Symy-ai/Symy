@@ -16,7 +16,7 @@ import { logger } from '@/lib/logger';
 import { symyEvents } from '@/lib/posthog';
 import { getHealthFromVitality } from '@/lib/buddy-defaults';
 import type { BuddyState } from './buddy-state-helpers';
-import { BUDDY_STATE_KEY } from './use-buddy-state-rq';
+import { BUDDY_STATE_KEY } from './buddy-state-key';
 
 interface PushMutation {
   mutate: (state: BuddyState) => void;

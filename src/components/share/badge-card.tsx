@@ -18,7 +18,7 @@ import type { Ref } from 'react';
 import { Award } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import type { BadgeDef, BadgeGroup } from '@/components/buddy/constants';
-import { formatShareHoursLabel } from './card-templates';
+import { formatShareHoursLabel } from './share-format';
 
 export interface BadgeCardProps {
   /** 勋章定义 (buddy/constants 只读引用, 不改动 BadgeDef) */

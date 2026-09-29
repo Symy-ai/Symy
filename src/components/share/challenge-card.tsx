@@ -21,7 +21,7 @@ import { Flag } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import type { GuardianChallenge } from '@/components/buddy/challenge-definitions';
 import { BADGE_INFO } from '@/components/buddy/constants';
-import { formatShareHoursLabel } from './card-templates';
+import { formatShareHoursLabel } from './share-format';
 
 export interface ChallengeCardProps {
   /** 挑战定义 — challenge 域 SSOT 只读引用 (禁改; 字段映射在 share 域内做) */

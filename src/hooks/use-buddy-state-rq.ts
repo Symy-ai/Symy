@@ -65,7 +65,10 @@ interface BuddyStatePutResponse {
 // Query key
 // ============================================================
 
-export const BUDDY_STATE_KEY = ['buddy-state'] as const;
+// 🔧 架构批1 F3 (09-29): 常量下沉 buddy-state-key.ts (消 use-buddy-actions 运行时环) —
+// 此处 re-export 保持既有 `from './use-buddy-state-rq'` 引用方兼容
+export { BUDDY_STATE_KEY } from './buddy-state-key';
+import { BUDDY_STATE_KEY } from './buddy-state-key';
 
 // Fallback when query hasn't loaded yet (prevents null access in components)
 const DEMO_BUDDY_STATE_FALLBACK: BuddyState = {

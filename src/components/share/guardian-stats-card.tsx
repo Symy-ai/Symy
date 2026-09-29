@@ -20,7 +20,7 @@
 import type { Ref } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
-import { formatHoursNumber } from './card-templates';
+import { formatHoursNumber } from './share-format';
 
 export interface GuardianStatsCardProps {
   /** 等阶快照 — name 已由调用方按 profile.guardRank.* 解析, 纯荣誉字段无金额 */

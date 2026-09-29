@@ -3,7 +3,7 @@
 import type { Ref } from 'react';
 import { CalendarDays, Flame, ShieldCheck, Sprout } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
-import { formatShareHoursLabel } from './card-templates';
+import { formatShareHoursLabel } from './share-format';
 
 export interface WeeklyCardData {
   guardDays: number;

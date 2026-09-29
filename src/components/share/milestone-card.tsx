@@ -14,7 +14,7 @@
 import type { Ref } from 'react';
 import { Trophy } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
-import { formatShareHoursLabel, getMilestoneState } from './card-templates';
+import { formatShareHoursLabel, getMilestoneState } from './share-format';
 
 export interface MilestoneCardProps {
   /** 赢回的时间 (小时) — 分享卡主角, 面子 */
