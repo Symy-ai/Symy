@@ -283,39 +283,14 @@ async function handleChatRequest(req: NextRequest) {
     //   根因: 用户点击反思引导组件的问题后, 消息发给 Letta AI, 但 AI 的 persona
     //   (mirror, 不问探究性问题) 与反思问题冲突, 导致 AI 60s 无响应.
     //   修复: 检测到反思问题时, 直接返回 canned reply (引导用户自己回答).
-    const { isReflectionQuestion, getReflectionCannedReply } = await import('./parts/reflection-detector');
-    if (isReflectionQuestion(userContent)) {
-      const cannedReply = getReflectionCannedReply(locale);
-      logger.info('[Chat API] Reflection question detected, returning canned reply');
-
-      if (stream) {
-        // 流式模式: 通过 SSE 返回 canned reply
-        const encoder = new TextEncoder();
-        const cannedStream = new ReadableStream<Uint8Array>({
-          start(controller) {
-            // 分块发送 (模拟 typing 效果)
-            const chunks = cannedReply.match(/.{1,15}/g) || [cannedReply];
-            chunks.forEach((chunk) => {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'token', content: chunk })}\n\n`));
-            });
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`));
-            controller.close();
-          },
-        });
-        return mergeCookiesOnResponse(
-          new Response(cannedStream, {
-            headers: { ...SSE_HEADERS },
-          }),
-        );
-      }
-      // 非流式模式
-      return mergeCookies(
-        NextResponse.json({
-          reply: cannedReply,
-          reasoning: undefined,
-          toolCalls: undefined,
-        }),
-      );
+    // 🔧 b137 拆解第十二刀 (2026-09-29): 块本体下沉 parts/canned/reflection-block.ts
+    {
+      const { tryReflectionBlock } = await import('./parts/canned/reflection-block');
+      const reflectionResponse = await tryReflectionBlock({
+        userContent, locale, stream,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (reflectionResponse) return reflectionResponse;
     }
 
     // 🐘 batch48-b 反驳降温: 上一轮发过守护卡 + 本轮命中反驳意图 → 不调 Letta

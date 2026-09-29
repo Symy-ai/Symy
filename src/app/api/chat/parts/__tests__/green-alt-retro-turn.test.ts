@@ -132,7 +132,7 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
   it('回答块先于追问块, 追问块先于 reflection canned (采纳后下一轮即问, 收束不被截胡)', () => {
     const answerIdx = source.indexOf('buildGreenAltRetroClosingTurn');
     const askIdx = source.indexOf('buildGreenAltRetroAskTurn');
-    const reflectionIdx = source.indexOf('isReflectionQuestion');
+    const reflectionIdx = source.indexOf('tryReflectionBlock'); /* 🔧b137随动: 反思块下沉 */
     expect(answerIdx).toBeGreaterThan(-1);
     expect(askIdx).toBeGreaterThan(answerIdx);
     expect(reflectionIdx).toBeGreaterThan(askIdx);
