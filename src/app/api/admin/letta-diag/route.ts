@@ -76,6 +76,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ attempts, blockId });
   }
 
+  // 🔧 09-29: GET ?listBlocks=<agentId> — 轻量列出 agent blocks (label+limit, 不截断)
+  const listBlocks = request.nextUrl.searchParams.get('listBlocks');
+  if (listBlocks) {
+    if (!/^agent-[a-z0-9-]+$/i.test(listBlocks)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    try {
+      const { listAgentBlocks } = await import('@/lib/letta-blocks');
+      const blocks = await listAgentBlocks(listBlocks);
+      return NextResponse.json({
+        count: blocks.length,
+        blocks: blocks.map((b) => ({ label: b.label, limit: b.limit, valueHead: (b.value ?? '').slice(0, 60) })),
+      });
+    } catch (err) {
+      // safe to ignore: diag route — error returned to caller as explicit 500 JSON
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) }, { status: 500 });
+    }
+  }
+
   // 🔧 09-29: GET ?probeV1=<agentId> — Letta v1 全局 blocks 架构探测 (POST /v1/blocks + attach/detach)
   const probeV1 = request.nextUrl.searchParams.get('probeV1');
   if (probeV1) {
