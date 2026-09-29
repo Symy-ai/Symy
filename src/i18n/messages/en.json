@@ -2694,7 +2694,10 @@
     "challenge": {
       "tiktok": "7-day no TikTok Shop",
       "livestream": "7-day no livestream buys",
-      "budget50": "7-day no $50+ induced buys"
+      "budget50": "7-day no $50+ induced buys",
+      "tiktokDesc": "Seven days, nothing from TikTok Shop recommendations — cut the scroll, cut the waste.",
+      "livestreamDesc": "Seven days, nothing from any livestream — no hype, no boxes.",
+      "budget50Desc": "Seven days, no non-essential buys over $50 — wants wait, waste shrinks."
     },
     "heroStats": "Guardian stats",
     "hoursTogether": "Won back together: {hours}",

@@ -2694,7 +2694,10 @@
     "challenge": {
       "tiktok": "7天不买TikTok推荐",
       "livestream": "7天不买直播间商品",
-      "budget50": "7天不买超过$50的非必需品"
+      "budget50": "7天不买超过$50的非必需品",
+      "tiktokDesc": "7 天不买 TikTok Shop 推荐的商品 —— 少刷少买，少几个包裹。",
+      "livestreamDesc": "7 天不在直播间买东西 —— 少一分上头，少一个快递。",
+      "budget50Desc": "7 天不买超过 $50 的非必需品 —— 想要的等一等，浪费少一点。"
     },
     "heroStats": "守护者统计",
     "hoursTogether": "共同赢回 {hours}",
