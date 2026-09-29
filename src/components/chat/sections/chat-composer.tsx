@@ -25,7 +25,11 @@ interface ChatComposerProps {
  * === Input + Quick Replies ===
  * (原为 chat-tab.tsx 内联 JSX — File Split Wave 1 纯搬运, 行为零变化)
  */
-export function ChatComposer({ input, inputRef, isComposingRef, isDemo, isLoading, isLoadingHistory, buddyState, activeChallenge, gradientClass, messagesCount, healthEvents = [], hasHadInterceptInSession = false, setInput, onSend }: ChatComposerProps) {
+// 🔧 b138批D R2 (2026-09-29): 默认值常量提升到模块级 — 内联 []/false 在 props 默认参数
+//    位置每次渲染生成新引用, 未来 React.memo 比较永不相等 (b138 §4步4 前置)
+const EMPTY_HEALTH_EVENTS: HealthEvent[] = [];
+
+export function ChatComposer({ input, inputRef, isComposingRef, isDemo, isLoading, isLoadingHistory, buddyState, activeChallenge, gradientClass, messagesCount, healthEvents = EMPTY_HEALTH_EVENTS, hasHadInterceptInSession = false, setInput, onSend }: ChatComposerProps) {
   return (
     <ChatInput
       input={input}

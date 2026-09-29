@@ -561,7 +561,7 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
         onLoadMore={loadMoreMessages}
         onDeleteMessage={deleteMessage}
         userAvatarUrl={user?.user_metadata?.avatar_url as string | undefined}
-        onSendMessage={(content) => sendMessage(content)}
+        onSendMessage={sendMessage} // 🔧 b138批D: 零参转发直传 (引用稳定, memo友好)
       />
 
       {/* === Input + Quick Replies === */}
