@@ -15,7 +15,7 @@ const nextConfig = {
   //   回退原因: next build 的 TS check 步骤在 4GB 环境下 OOM (TypeScript checker 内存消耗大)
   //   折中方案: 保持 ignoreBuildErrors=true (build 不卡 TS), 但:
   //     1. pre-commit hook 已运行 tsc --noEmit (本地拦截)
-  //     2. CI workflow 应加 tsc --noEmit 步骤 (TODO)
+  //     2. CI workflow 已有 tsc --noEmit 步骤 (ci-checks.yml, 2026-09 确认)
   //   这样 build 能成功部署, TS 错误仍被 pre-commit + CI 拦截
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
@@ -29,12 +29,6 @@ const nextConfig = {
       {
         protocol: 'https' as const,
         hostname: '*.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-      // Supabase Storage direct URL (fcgpxrujhnqramggupjm)
-      {
-        protocol: 'https' as const,
-        hostname: 'fcgpxrujhnqramggupjm.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
     ],
