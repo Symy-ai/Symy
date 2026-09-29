@@ -33,6 +33,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?probeEndpoints=1 — 拉 Letta OpenAPI spec 列出真实 blocks 写端点 (找可用写路径)
+  const probeEndpoints = request.nextUrl.searchParams.get('probeEndpoints');
+  if (probeEndpoints) {
+    try {
+      const res = await fetch('https://api.letta.com/openapi.json', {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(20000),
+      });
+      if (!res.ok) {
+        return NextResponse.json({ error: 'openapi fetch failed', status: res.status, head: (await res.text()).slice(0, 200) });
+      }
+      const spec = await res.json() as { paths?: Record<string, Record<string, unknown>> };
+      const hits: Array<{ path: string; methods: string[]; bodyRef?: string }> = [];
+      for (const [path, methods] of Object.entries(spec.paths ?? {})) {
+        if (!/block|memory/i.test(path)) continue;
+        const ms: string[] = [];
+        let bodyRef: string | undefined;
+        for (const [m, op] of Object.entries(methods)) {
+          if (!['get','post','patch','put','delete'].includes(m)) continue;
+          ms.push(m.toUpperCase());
+          const rb = (op as Record<string, unknown>)?.requestBody as Record<string, unknown> | undefined;
+          const content = rb?.content as Record<string, { schema?: { $ref?: string } | undefined }> | undefined;
+          const ref = content?.['application/json']?.schema?.$ref;
+          if (ref && !bodyRef) bodyRef = ref.split('/').pop();
+        }
+        if (ms.length) hits.push({ path, methods: ms, bodyRef });
+      }
+      return NextResponse.json({ count: hits.length, endpoints: hits });
+    } catch (err) {
+      // safe to ignore: diag route — error surfaced to caller as JSON response, no state to recover
+      return NextResponse.json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+
   // 🔧 09-29: GET ?probeWrite=<agentId> — 试 POST/PATCH 写路径真实响应 (只读站外值不落库)
   const probeWrite = request.nextUrl.searchParams.get('probeWrite');
   if (probeWrite) {
