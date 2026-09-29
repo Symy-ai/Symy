@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       const agentId = profile.letta_agent_id;
       // Letta v1 端点: /agents/{id}/memory-blocks (list) + PATCH by label —
       //   与 letta-agent-tools.ts upsertToolRulesBlock 同款先例 (09-28 验证过)
-      const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
+      const blocksRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks`, {
         headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         signal: AbortSignal.timeout(15000),
       });
@@ -68,13 +68,13 @@ export async function GET(request: NextRequest) {
       const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
       let upsertRes: Response;
       if (hasPersona) {
-        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks/persona`, {
+        upsertRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks/persona`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ value: SYMY_PERSONA_BLOCK }),
         });
       } else {
-        upsertRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
+        upsertRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ label: 'persona', value: SYMY_PERSONA_BLOCK, limit: 5000 }),
