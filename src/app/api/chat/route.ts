@@ -25,7 +25,6 @@ import { captureLLMGeneration } from '@/lib/posthog-server';
 //    查询 best-effort, 表缺失/失败静默降级 (migration 140 未跑是常态不是事故)。
 //    (加载半程 loadFactsForContext 随 batch26-c 拆分落 parts/letta-turn-context.ts)
 import { extractAndSaveFacts, type ShoppingFactsPipelineStore } from '@/lib/shopping-facts-pipeline';
-import type { EvidenceStore } from './parts/context-trust-evidence';
 import { createAdminClient } from '@/lib/supabase-admin';
 // 🌱 绿色替代拦截→推荐: 发 Letta 前关键词预检, 命中给前端 green_alt 卡片标记 (Letta prompt 不动)
 import { withGreenAltEvent } from './parts/green-alt-detect';
@@ -458,65 +457,15 @@ async function handleChatRequest(req: NextRequest) {
     //    预检) 在后 — 数据问句/明确购物意图/纯闲聊在 detector 层让路, 链序由
     //    source-order 测试锁定。已纠正的信号词条 (会话级) 本轮不参与匹配;
     //    greenPref 'off' 视为拒绝守护, 整体静默。
-    if (greenPref !== 'off' && !suppressGuardCards) {
-      const { buildContextSignalTurn, buildContextSignalSseStream } = await import('./parts/context-signal-turn');
-      let trustFacts;
-      let trustHistory;
-      let trustCorrection;
-      if (userId && factsStore) {
-        const [{ loadShoppingFacts }, { loadContextTrustEvidence }] = await Promise.all([
-          import('@/lib/shopping-facts'),
-          import('./parts/context-trust-evidence'),
-        ]);
-        const [loaded, evidence] = await Promise.all([
-          loadShoppingFacts(userId, factsStore),
-          loadContextTrustEvidence(userId, factsStore as unknown as EvidenceStore).catch(() => ({ history: [], correction: null })),
-        ]);
-        trustFacts = loaded.facts.slice(0, 3);
-        trustHistory = evidence.history;
-        trustCorrection = evidence.correction;
-      }
-      const contextSignalTurn = buildContextSignalTurn({
-        userContent,
-        locale,
-        guardIntensity,
-        greenPref,
-        dismissedEntryIds: dismissedContextSignals,
-        facts: trustFacts,
-        history: trustHistory,
-        correction: trustCorrection,
+    // 🔧 b137 拆解第十七刀 (2026-09-29): 块本体下沉 parts/canned/context-signal-block.ts
+    {
+      const { tryContextSignalBlock } = await import('./parts/canned/context-signal-block');
+      const contextSignalResponse = await tryContextSignalBlock({
+        userContent, locale, stream, userId, greenPref, suppressGuardCards,
+        dismissedContextSignals, guardIntensity, factsStore,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
       });
-      if (contextSignalTurn) {
-        const dismissed = dismissedContextSignals ?? [];
-        const correctedTrustSignals = new Set(
-          trustCorrection?.topic
-            ? [...dismissed, trustCorrection.topic]
-            : dismissed,
-        );
-        if (contextSignalTurn.contextSignal.words.every((word) => correctedTrustSignals.has(word.id))) {
-          contextSignalTurn.contextTrust = undefined;
-        }
-        logger.info('[Chat API] Shopping context signal detected, returning context signal turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildContextSignalSseStream(contextSignalTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: contextSignalTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            contextSignal: contextSignalTurn.contextSignal,
-            contextTrust: contextSignalTurn.contextTrust,
-            ...(contextSignalTurn.emotionGuardCard ? { emotionGuardCard: contextSignalTurn.emotionGuardCard } : {}),
-            ...(contextSignalTurn.cooldownCard ? { cooldownCard: contextSignalTurn.cooldownCard } : {}),
-            ...(contextSignalTurn.prepurchaseCard ? { prepurchaseCard: contextSignalTurn.prepurchaseCard } : {}),
-          }),
-        );
-      }
+      if (contextSignalResponse) return contextSignalResponse;
     }
 
     // batch26-c 拆分: 上下文装载（修身阶段/时薪/buddy 统计/RAG/挑战历史）+ BNPL/symy cart/green/reuse

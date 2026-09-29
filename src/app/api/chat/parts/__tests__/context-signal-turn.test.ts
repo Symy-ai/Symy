@@ -410,7 +410,7 @@ describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用�
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
 
   it('弱信号块晚于 60-c 情绪守护与全部数据问答检测 (更强意图先答)', () => {
-    const idx = source.indexOf('buildContextSignalTurn');
+    const idx = source.indexOf('tryContextSignalBlock'); /* 🔧b137随动: 61-b下沉 */
     expect(idx).toBeGreaterThan(-1);
     expect(source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
@@ -420,15 +420,15 @@ describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用�
   });
 
   it('弱信号块早于 loadLettaTurnContext 调用点 (不吞通用购买预检)', () => {
-    const idx = source.indexOf('buildContextSignalTurn');
+    const idx = source.indexOf('tryContextSignalBlock'); /* 🔧b137随动: 61-b下沉 */
     const callIdx = source.indexOf('await loadLettaTurnContext({');
     expect(callIdx).toBeGreaterThan(-1);
     expect(callIdx).toBeGreaterThan(idx);
   });
 
   it('greenPref off 整体静默 (拒绝守护的会话不触发)', () => {
-    const blockStart = source.indexOf('batch61-b 购物场景弱信号');
-    const block = source.slice(blockStart, source.indexOf('await loadLettaTurnContext({'));
-    expect(block).toMatch(/greenPref !== 'off'/);
+    // 🔧 b137随动: 61-b 块已下沉 — 改读块文件源 (guard-clause 等价)
+    const blockSource = readFileSync(new URL('../canned/context-signal-block.ts', import.meta.url), 'utf8');
+    expect(blockSource).toMatch(/greenPref === 'off'/);
   });
 });
