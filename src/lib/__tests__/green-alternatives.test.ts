@@ -147,7 +147,7 @@ describe("green-alternatives 触发", () => {
     expect(result?.id).toBe(id);
   });
 
-  it("覆盖全部 123 个品类 (wear 4 + home 4 + beauty 5 + electronics 5 + food 5 + apparel 5 + household 5 + subscription 5 + travel 6 + parenting 5 + sports 5 + gifting 6 + furniture 6 + pets 6 + garden 10 + office 10 + digital-content 6 + health-care 5 + repair-care 6 + celebration 8 + pet-first-care 6)", () => {
+  it("覆盖全部 124 个品类 (wear 4 + home 4 + beauty 5 + electronics 6 + food 5 + apparel 5 + household 5 + subscription 5 + travel 6 + parenting 5 + sports 5 + gifting 6 + furniture 6 + pets 6 + garden 10 + office 10 + digital-content 6 + health-care 5 + repair-care 6 + celebration 8 + pet-first-care 6)", () => {
     expect(GREEN_ALTERNATIVES.map((e) => e.id)).toEqual([
       "ivory_bone_carving",
       "tortoiseshell",
@@ -163,6 +163,7 @@ describe("green-alternatives 触发", () => {
       "lipstick_makeup",
       "sheet_mask_pile",
       "repair_first",
+      "phone_case",
       "refurb_gadget",
       "secondhand_audio_tablet",
       "trade_in_upgrade",
@@ -273,7 +274,7 @@ describe("green-alternatives 触发", () => {
       "elder_celebration_together",
       "favor_homemade_local",
     ]);
-    expect(GREEN_ALTERNATIVES).toHaveLength(123);
+    expect(GREEN_ALTERNATIVES).toHaveLength(124);
     expect(new Set(GREEN_ALTERNATIVES.map((entry) => entry.id)).size).toBe(GREEN_ALTERNATIVES.length);
   });
 
@@ -474,6 +475,21 @@ describe("green-alternatives 囤系口语命中 (batch76-a)", () => {
     expect(suggestAlternative("点个名", "zh")).toBeNull();
     // 外卖经裸名词严格命中, 与归一化无关
     expect(suggestAlternative("点个外卖", "zh")?.id).toBe("takeout_meal");
+  });
+});
+
+describe("green-alternatives 子串误伤防护 (phone_case 条目, 2026-09-30)", () => {
+  it("\"手机壳\" 命中 phone_case 而非 refurb_gadget (裸\"手机\"trigger子串误伤修复)", () => {
+    const result = suggestAlternative("我想买个手机壳", "zh");
+    expect(result?.id).toBe("phone_case");
+  });
+  it("\"换手机\" 仍命中 refurb_gadget (收窄后正常路径)", () => {
+    const result = suggestAlternative("我想换手机", "zh");
+    expect(result?.id).toBe("refurb_gadget");
+  });
+  it("\"钢化膜\" 也归 phone_case 话术", () => {
+    const result = suggestAlternative("买个钢化膜", "zh");
+    expect(result?.id).toBe("phone_case");
   });
 });
 

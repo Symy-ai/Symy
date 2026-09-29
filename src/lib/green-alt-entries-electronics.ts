@@ -46,9 +46,40 @@ export const GREEN_ALT_ENTRIES_ELECTRONICS: readonly GreenAlternativeEntry[] = [
     },
   },
   {
+    id: "phone_case",
+    triggers: {
+      zh: ["手机壳", "手机膜", "保护壳", "钢化膜"],
+      en: ["phone case", "screen protector", "phone cover"],
+    },
+    why: {
+      zh: "手机壳的损耗速度远快于手机本身——大部分壳不是因为坏被换，而是看腻了。塑料壳的更换频率是手机寿命的十几倍。",
+      en: "Cases wear out far faster than the phones they protect — most get swapped from boredom, not breakage, at many times the phone's own replacement rate.",
+    },
+    options: {
+      zh: ["现在这个壳再用一阵", "买素色经典款（不那么容易看腻）", "二手平台淘成色好的原装壳"],
+      en: ["Keep the current case a while longer", "A plain classic color that resists boredom", "Secondhand OEM cases in good shape"],
+    },
+    reuseChannel: {
+      zh: "闲鱼上有大量几乎全新的原装壳流通，价格通常是新的两三折。",
+      en: "Secondhand marketplaces carry barely-used OEM cases at a fraction of retail.",
+    },
+    alternative: {
+      zh: "壳的核心功能是防摔，不是装饰。一个 boring 但结实的壳用三年，比三个好看的壳各用一年更省。",
+      en: "A case's job is drop protection, not decoration. One boring-but-tough case for three years beats three pretty ones for one year each.",
+    },
+    reuse: {
+      zh: "换壳的冲动往往在手机还很好用的时候出现——那大概率是想要新鲜感，不是需要新壳。",
+      en: "The urge to re-case usually hits while the phone still works great — that's novelty talking, not need.",
+    },
+    savingsHint: {
+      zh: "消费前先看看家里已有的同类物品，也许能满足当下的使用需求。",
+      en: "Before buying, check if you already have something similar at home that fits the need.",
+    },
+  },
+  {
     id: "refurb_gadget",
     triggers: {
-      zh: ["笔记本电脑", "笔记本", "新手机", "手机"],
+      zh: ["笔记本电脑", "笔记本", "新手机", "换手机", "买手机"],
       en: ["laptop", "macbook", "iphone", "new phone"],
     },
     why: {
