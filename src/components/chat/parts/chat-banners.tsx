@@ -11,7 +11,7 @@
  * 纯展示 + 回调组件, 无 state.
  */
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { formatPlatformName } from '@/lib/utils';
 // 🔧 ARCH fix (Round 57 REVIEW-A-3): 用共享 getChallengeTypeI18nKey 替代内联阈值
@@ -39,7 +39,7 @@ export interface ChatBannersProps {
   isLoading?: boolean;
 }
 
-export function ChatBanners({
+function ChatBannersInner({
   activeChallenge,
   expiredChallenge,
   impulseContext,
@@ -205,3 +205,10 @@ export function ChatBanners({
     </>
   );
 }
+
+/**
+ * 🔧 b138批D (2026-09-29): memo 包裹 — messages 不入 props (纯 banner 区),
+ * 父级消息流变动不再触发 banner 区重渲; 对象 props (activeChallenge 等) 引用
+ * 变化仍正常更新。
+ */
+export const ChatBanners = memo(ChatBannersInner);

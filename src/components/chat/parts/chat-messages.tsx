@@ -7,7 +7,7 @@
  * 纯展示组件, 接收 messages + loading state + callbacks.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import type { ChatMessage } from '../../chat-bubble';
@@ -49,7 +49,7 @@ export interface ChatMessagesProps {
   onSendMessage?: (content: string) => void;
 }
 
-export function ChatMessages({
+function ChatMessagesInner({
   messages,
   isLoading,
   isLoadingHistory,
@@ -307,3 +307,10 @@ export function ChatMessages({
     </div>
   );
 }
+
+/**
+ * 🔧 b138批D (2026-09-29): memo 包裹 — b138 §3.2 最大性能收益点: 父级无关 state
+ * (buddyState/dailyTasks/insightsVisible/tab 切换) 不再触发 309 行消息列表全量重渲;
+ * messages 引用变化(新消息/流式chunk)仍即时更新。
+ */
+export const ChatMessages = memo(ChatMessagesInner);
