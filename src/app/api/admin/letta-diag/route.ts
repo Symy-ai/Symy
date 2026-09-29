@@ -33,6 +33,47 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?probeSdk=<agentId> — 按 letta-client 1.12.1 SDK 真实路径验证服务端支持度
+  const probeSdk = request.nextUrl.searchParams.get('probeSdk');
+  if (probeSdk) {
+    if (!/^agent-[a-z0-9-]+$/i.test(probeSdk)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    const attempts: Array<{ what: string; status: number; head: string }> = [];
+    const tryCall = async (what: string, url: string, method: string, body?: string) => {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          ...(body ? { body } : {}),
+          signal: AbortSignal.timeout(15000),
+        });
+        const text = await res.text();
+        attempts.push({ what, status: res.status, head: text.replace(/\s+/g, ' ').slice(0, 200) });
+        return { res, text };
+      } catch (err) {
+        attempts.push({ what, status: -1, head: err instanceof Error ? err.message : String(err) });
+        return null;
+      }
+    };
+    // SDK 权威路径 (agents/{id}/core-memory/blocks*)
+    await tryCall('GET core-memory/blocks', `https://api.letta.com/v1/agents/${probeSdk}/core-memory/blocks`, 'GET');
+    await tryCall('GET core-memory/blocks/persona', `https://api.letta.com/v1/agents/${probeSdk}/core-memory/blocks/persona`, 'GET');
+    // 全局创建 block 再按 SDK attach (PATCH)
+    const created = await tryCall('POST /v1/blocks', 'https://api.letta.com/v1/blocks', 'POST',
+      JSON.stringify({ label: 'probe_temp2', value: 'probe', limit: 1000 }));
+    let blockId = '';
+    if (created?.res.ok) {
+      try { blockId = (JSON.parse(created.text) as { id?: string }).id ?? ''; } catch { /* safe to ignore: probe parse */ }
+    }
+    if (blockId) {
+      await tryCall('PATCH attach (SDK path)', `https://api.letta.com/v1/agents/${probeSdk}/core-memory/blocks/attach/${blockId}`, 'PATCH');
+      await tryCall('PATCH detach (SDK path)', `https://api.letta.com/v1/agents/${probeSdk}/core-memory/blocks/detach/${blockId}`, 'PATCH');
+      await tryCall('DELETE /v1/blocks/{id}', `https://api.letta.com/v1/blocks/${blockId}`, 'DELETE');
+    }
+    return NextResponse.json({ attempts, blockId });
+  }
+
   // 🔧 09-29: GET ?probeV1=<agentId> — Letta v1 全局 blocks 架构探测 (POST /v1/blocks + attach/detach)
   const probeV1 = request.nextUrl.searchParams.get('probeV1');
   if (probeV1) {
