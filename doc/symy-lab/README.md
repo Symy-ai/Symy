@@ -87,7 +87,7 @@ Symy Lab 是**使命锁定型 + B 股可上市**组织，类似 OpenAI（capped 
 
 | 想看什么 | 召回触发条件 | 归档位置 |
 |---------|------------|---------|
-| 治理全案（人民共治 8 条 / 决策否决 / 主理人任期罢免 / 接班人机制 / 奋斗者股份） | 月活 ≥ 1 万 | [`_archive/pre-startup/governance-operations.md`](_archive/pre-startup/governance-operations.md) |
+| 治理全案（人民共治 8 条 / 决策否决 / 负责人任期罢免 / 接班人机制 / 奋斗者股份） | 月活 ≥ 1 万 | [`_archive/pre-startup/governance-operations.md`](_archive/pre-startup/governance-operations.md) |
 | 千年治理规则 + 未来规划（技术更新 / 法律迁移 / 接班人养成 / 独立审查院 / AI 共治 / 美国子公司） | 月活 ≥ 10 万 + 独立审查院设立 | [`_archive/pre-startup/governance-millennium.md`](_archive/pre-startup/governance-millennium.md) |
 | 投资人完整条款 + 失效应对 + 法律载体候选对比 | 首轮融资启动 或 A 轮融资 | [`_archive/pre-startup/governance-external.md`](_archive/pre-startup/governance-external.md) |
 
