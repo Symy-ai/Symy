@@ -3,8 +3,8 @@
  *
  * 覆盖源码主干:
  * 1. backfillImpulseEvents   — 查询→批量嵌入→批量写回; 查询失败/embedding 失败/23505 降级逐条/批量硬失败/admin 缺失/空集
- * 2. backfillEmailReceipts   — 同上路径 (逐条插入版) + 23505 幂等跳过 + tokensUsed 只计 inserted
- * 3. backfillChatMessages    — 主干 + content 截断 1000 字符
+ * 2. backfillEmailReceipts   — 批量写回 (🔧 Lane S P3: was 逐条, 统一 impulse 批量路径) + 23505 降级 + 硬失败 + tokensUsed 只计 inserted
+ * 3. backfillChatMessages    — 主干 (批量路径) + content 截断 1000 字符
  * 4. embedSingleRecord       — 永不抛错; 空内容短路; insert 形状 (content 截断+metadata toJson)
  * 5. triggerLazyBackfillIfNeeded — 分布式锁 skip / count 阈值 / 触发回填 / count 失败释放锁 / backfill 短路
  *
@@ -357,7 +357,7 @@ describe('backfillImpulseEvents', () => {
     expect(inserts[3].payload).toMatchObject({ source_id: 'e3' });
 
     expect(res).toMatchObject({ total: 3, embedded: 2, skipped: 1, failed: 0 });
-    expect(res.tokensUsed).toBe(30); // 3 × 10 (tokens 已花, 与插入结果无关)
+    expect(res.tokensUsed).toBe(20); // 🔧 Lane S P3: 只计 inserted (2 × 10; e1 已存在不计)
     expect(mocks.loggerInfo).toHaveBeenCalledWith(
       expect.stringContaining('falling back to per-row insert'),
     );
@@ -391,13 +391,14 @@ describe('backfillImpulseEvents', () => {
 // 2. backfillEmailReceipts
 // ============================================================
 describe('backfillEmailReceipts', () => {
-  it('正常回填: 逐条插入 (非批量), 形状与 tokensUsed 只计 inserted', async () => {
+  it('正常回填: 单次批量 INSERT (数组 payload), 形状与 tokensUsed 只计 inserted', async () => {
     db.tableRows.email_receipts = [RECEIPT_ROW('r1'), RECEIPT_ROW('r2'), RECEIPT_ROW('r3')];
-    // r1 insert 成功, r2 已存在 (23505), r3 成功
+    // 批量 insert 撞 23505 → 降级逐条: r1 已存在, r2 成功, r3 成功
     db.insertResults = [
-      { data: null, error: null },
-      { data: null, error: { code: '23505', message: 'duplicate key' } },
-      { data: null, error: null },
+      { data: null, error: { code: '23505', message: 'duplicate key' } }, // 批量
+      { data: null, error: { code: '23505', message: 'duplicate key' } }, // r1 逐条
+      { data: null, error: null }, // r2 逐条
+      { data: null, error: null }, // r3 逐条
     ];
 
     const res = await backfillEmailReceipts('user-1');
@@ -413,41 +414,43 @@ describe('backfillEmailReceipts', () => {
       'Platform: jd | Item: 机械键盘 | Amount: $399 | Subject: 订单通知 | Snippet: 您购买的机械键盘已发货 | From: no-reply@jd.com',
     );
 
-    // 逐条插入形状
+    // 🔧 Lane S P3: 批量插入形状 — 1 次批量 (3 行数组) + 23505 降级 3 次逐条
     const inserts = userEmbeddingInserts();
-    expect(inserts).toHaveLength(3);
-    expect(inserts[0].payload).toMatchObject({
+    expect(inserts).toHaveLength(4);
+    const rows = inserts[0].payload as unknown as Payload[];
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatchObject({
       user_id: 'user-1',
       source_type: 'email_receipt',
       source_id: 'r1',
       embedding: VEC(0),
     });
-    expect(inserts[0].payload!.content).toBe(texts[0]);
-    expect(inserts[0].payload!.metadata).toMatchObject({
+    expect(rows[0].content).toBe(texts[0]);
+    expect(rows[0].metadata).toMatchObject({
       platform: 'jd',
       item_name: '机械键盘',
       amount: 399,
       received_at: '2026-09-02T00:00:00Z',
     });
+    expect(inserts[1].payload).toMatchObject({ source_id: 'r1' }); // 逐条降级
 
-    // 统计: tokensUsed 只计 inserted (2 × 10), skipped 不计 tokens
+    // 统计: tokensUsed 只计 inserted (2 × 10), skipped/failed 不计
     expect(res).toMatchObject({ total: 3, embedded: 2, skipped: 1, failed: 0 });
     expect(res.tokensUsed).toBe(20);
   });
 
-  it('逐条插入非 23505 失败 → 计 failed + firstError, 不中断后续行', async () => {
+  it('批量插入硬失败 (非 23505) → 本批全部计 failed + firstError, 不降级不重试', async () => {
     db.tableRows.email_receipts = [RECEIPT_ROW('r1'), RECEIPT_ROW('r2')];
-    db.insertResults = [
-      { data: null, error: { code: '57014', message: 'query canceled' } },
-      { data: null, error: null },
-    ];
+    db.defaultInsertResult = { data: null, error: { code: '57014', message: 'query canceled' } };
 
     const res = await backfillEmailReceipts('user-1');
 
-    expect(res).toMatchObject({ total: 2, embedded: 1, skipped: 0, failed: 1 });
+    // 只 1 次批量尝试, 无逐条降级 (批量原子性: 整批成或整批败)
+    expect(userEmbeddingInserts()).toHaveLength(1);
+    expect(res).toMatchObject({ total: 2, embedded: 0, skipped: 0, failed: 2 });
     expect(res.firstError).toContain('57014');
-    expect(userEmbeddingInserts()).toHaveLength(2); // r2 仍被插入
-    expect(mocks.loggerWarn).toHaveBeenCalledWith(expect.stringContaining('Insert failed'));
+    expect(res.tokensUsed).toBe(0); // inserted=0 → tokens=0
+    expect(mocks.loggerWarn).toHaveBeenCalledWith(expect.stringContaining('Batch insert failed'));
   });
 
   it('embedding API 失败: 全部计 failed, 零写回', async () => {
@@ -473,7 +476,7 @@ describe('backfillEmailReceipts', () => {
 // 3. backfillChatMessages
 // ============================================================
 describe('backfillChatMessages', () => {
-  it('正常回填: [role]: content 文本 + 逐条插入', async () => {
+  it('正常回填: [role]: content 文本 + 单次批量 INSERT (数组 payload)', async () => {
     db.tableRows.chat_messages = [MESSAGE_ROW('m1'), MESSAGE_ROW('m2', { role: 'assistant' })];
     mockBatchOk(1);
 
@@ -488,14 +491,16 @@ describe('backfillChatMessages', () => {
     const texts = mocks.generateEmbeddingsBatch.mock.calls[0][0] as string[];
     expect(texts).toEqual(['[user]: 帮我看看这笔消费', '[assistant]: 帮我看看这笔消费']);
 
-    // 插入形状
+    // 🔧 Lane S P3: 批量插入形状 — 单次 insert 数组
     const inserts = userEmbeddingInserts();
-    expect(inserts).toHaveLength(2);
-    expect(inserts[0].payload).toMatchObject({
+    expect(inserts).toHaveLength(1);
+    const rows = inserts[0].payload as unknown as Payload[];
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
       source_type: 'chat_message',
       source_id: 'm1',
     });
-    expect(inserts[0].payload!.metadata).toMatchObject({ role: 'user' });
+    expect(rows[0].metadata).toMatchObject({ role: 'user' });
 
     expect(res).toMatchObject({ total: 2, embedded: 2, skipped: 0, failed: 0, tokensUsed: 20 });
   });
@@ -507,7 +512,9 @@ describe('backfillChatMessages', () => {
 
     const inserts = userEmbeddingInserts();
     expect(inserts).toHaveLength(1);
-    const content = inserts[0].payload!.content as string;
+    const rows = inserts[0].payload as unknown as Payload[];
+    expect(rows).toHaveLength(1);
+    const content = rows[0].content as string;
     expect(content.length).toBe(1003); // slice(0,1000) + '...'
     // slice 作用在 '[user]: 长长长...' 完整文本上: 前 8 字符是前缀, 其后 992 个长
     expect(content.startsWith('[user]: ')).toBe(true);

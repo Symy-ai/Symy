@@ -85,8 +85,17 @@ async function insertEmbedding(
  * 🔧 2026-07-15 (ARCH-4 #18 修复): 批量插入 embeddings
  *    旧代码: 逐条 insertEmbedding → 2000 次顺序 INSERT (60-100s per user)
  *    修复: 一次 .insert(rows[]) 批量插入, DB 一次事务完成
- *    23505 (UNIQUE violation) 在批量模式下会被整体拒绝, 所以用 onConflict DO NOTHING
+ *    23505 (UNIQUE violation) 会整体拒绝批量, 捕获后降级为逐条插入 (已存在行跳过)
+ *
+ * 🔧 2026-09-30 (Lane S P3): 三源统一批量路径
+ *    - receipts / chat_messages 从逐条 insertEmbedding 循环迁到本函数 (与 impulse 同款)
+ *    - INSERT_CHUNK_SIZE 分批: 防御 PostgREST/网关 payload 上限
+ *      (500/批 = impulse 默认 limit, 生产已验证规模; chat_messages limit=1000 → 2 批)
+ *    - 返回 tokensUsed = 成功 inserted 行的 token 消耗 (三源统一"只计 inserted"语义;
+ *      skipped 行的 embedding 是浪费但不在库存口径内重复计量)
  */
+const INSERT_CHUNK_SIZE = 500;
+
 async function insertEmbeddingsBatch(
   rows: Array<{
     user_id: string;
@@ -95,52 +104,67 @@ async function insertEmbeddingsBatch(
     content: string;
     metadata: Record<string, unknown>;
     embedding: number[];
+    tokens: number;
   }>,
-): Promise<{ inserted: number; failed: number; error?: string }> {
-  if (rows.length === 0) return { inserted: 0, failed: 0 };
+): Promise<{ inserted: number; failed: number; tokensUsed: number; error?: string }> {
+  if (rows.length === 0) return { inserted: 0, failed: 0, tokensUsed: 0 };
 
   const { supabase } = createAdminClient();
-  if (!supabase) return { inserted: 0, failed: rows.length, error: 'admin_client_unavailable' };
+  if (!supabase) return { inserted: 0, failed: rows.length, tokensUsed: 0, error: 'admin_client_unavailable' };
 
-  // 截断 content 到 1000 字符 (与单条版本一致)
-  const preparedRows = rows.map(r => ({
-    user_id: r.user_id,
-    source_type: r.source_type,
-    source_id: r.source_id,
-    content: r.content.length > 1000 ? r.content.slice(0, 1000) + '...' : r.content,
-    metadata: toJson(r.metadata),
-    embedding: r.embedding,
-  }));
+  let inserted = 0;
+  let failed = 0;
+  let tokensUsed = 0;
+  let firstError: string | undefined;
 
-  const { error } = await supabase
-    .from('user_embeddings')
-    .insert(preparedRows);
+  for (let i = 0; i < rows.length; i += INSERT_CHUNK_SIZE) {
+    const chunk = rows.slice(i, i + INSERT_CHUNK_SIZE);
 
-  if (error) {
-    // 23505 = unique_violation — 部分行已存在, 退回到逐条插入
-    if (error.code === '23505') {
-      logger.info('[Embed Backfill] Batch insert had duplicates, falling back to per-row insert');
-      let inserted = 0;
-      let failed = 0;
-      for (const row of preparedRows) {
-        const { error: rowErr } = await supabase.from('user_embeddings').insert(row);
-        if (rowErr) {
-          if (rowErr.code === '23505') {
-            // 已存在, 跳过
+    // 截断 content 到 1000 字符 (与单条版本一致)
+    const preparedRows = chunk.map(r => ({
+      user_id: r.user_id,
+      source_type: r.source_type,
+      source_id: r.source_id,
+      content: r.content.length > 1000 ? r.content.slice(0, 1000) + '...' : r.content,
+      metadata: toJson(r.metadata),
+      embedding: r.embedding,
+    }));
+
+    const { error } = await supabase
+      .from('user_embeddings')
+      .insert(preparedRows);
+
+    if (error) {
+      // 23505 = unique_violation — 部分行已存在, 退回到逐条插入
+      if (error.code === '23505') {
+        logger.info('[Embed Backfill] Batch insert had duplicates, falling back to per-row insert');
+        for (let j = 0; j < preparedRows.length; j++) {
+          const { error: rowErr } = await supabase.from('user_embeddings').insert(preparedRows[j]);
+          if (rowErr) {
+            if (rowErr.code === '23505') {
+              // 已存在, 跳过
+            } else {
+              failed++;
+            }
           } else {
-            failed++;
+            inserted++;
+            tokensUsed += chunk[j].tokens;
           }
-        } else {
-          inserted++;
         }
+      } else {
+        // 硬失败: 本批全部计 failed, 不降级不重试 (后续批继续)
+        const errMsg = `${error.code || 'unknown'}: ${error.message}`;
+        logger.warn(`[Embed Backfill] Batch insert failed: ${errMsg}`);
+        failed += chunk.length;
+        if (!firstError) firstError = errMsg;
       }
-      return { inserted, failed };
+    } else {
+      inserted += chunk.length;
+      tokensUsed += chunk.reduce((sum, r) => sum + r.tokens, 0);
     }
-    const errMsg = `${error.code || 'unknown'}: ${error.message}`;
-    logger.warn(`[Embed Backfill] Batch insert failed: ${errMsg}`);
-    return { inserted: 0, failed: rows.length, error: errMsg };
   }
-  return { inserted: rows.length, failed: 0 };
+
+  return { inserted, failed, tokensUsed, error: firstError };
 }
 
 // ============================================================
@@ -219,13 +243,15 @@ export async function backfillImpulseEvents(userId: string, limit: number = 500)
       created_at: event.created_at,
     },
     embedding: embeddings[i].embedding,
+    tokens: embeddings[i].tokens,
   }));
 
   const batchResult = await insertEmbeddingsBatch(batchRows);
   result.embedded += batchResult.inserted;
   result.failed += batchResult.failed;
   result.skipped += eventList.length - batchResult.inserted - batchResult.failed;
-  result.tokensUsed += embeddings.reduce((sum, e) => sum + e.tokens, 0);
+  // 🔧 Lane S P3: tokensUsed 统一计 inserted (原为全量 total, 与另两源不一致; inserted 才是真实库存)
+  result.tokensUsed += batchResult.tokensUsed;
   if (!result.firstError && batchResult.error) {
     result.firstError = batchResult.error;
   }
@@ -286,33 +312,29 @@ export async function backfillEmailReceipts(userId: string, limit: number = 500)
     return result;
   }
 
-  for (let i = 0; i < receiptList.length; i++) {
-    const receipt = receiptList[i];
-    const insertResult = await insertEmbedding(
-      userId,
-      'email_receipt',
-      receipt.id as string,
-      texts[i],
-      {
-        platform: receipt.platform,
-        item_name: receipt.item_name,
-        amount: receipt.amount,
-        received_at: receipt.received_at,
-      },
-      embeddings[i].embedding,
-    );
+  // 🔧 Lane S P3: 三源统一批量插入 (was 逐条 insertEmbedding 循环, 与 impulse 路径不一致)
+  const batchRows = receiptList.map((receipt, i) => ({
+    user_id: userId,
+    source_type: 'email_receipt' as SourceType,
+    source_id: receipt.id as string,
+    content: texts[i],
+    metadata: {
+      platform: receipt.platform,
+      item_name: receipt.item_name,
+      amount: receipt.amount,
+      received_at: receipt.received_at,
+    },
+    embedding: embeddings[i].embedding,
+    tokens: embeddings[i].tokens,
+  }));
 
-    if (insertResult.status === 'inserted') {
-      result.embedded++;
-      result.tokensUsed += embeddings[i].tokens;
-    } else if (insertResult.status === 'exists') {
-      result.skipped++;
-    } else {
-      result.failed++;
-      if (!result.firstError && insertResult.error) {
-        result.firstError = insertResult.error;
-      }
-    }
+  const batchResult = await insertEmbeddingsBatch(batchRows);
+  result.embedded += batchResult.inserted;
+  result.failed += batchResult.failed;
+  result.skipped += receiptList.length - batchResult.inserted - batchResult.failed;
+  result.tokensUsed += batchResult.tokensUsed;
+  if (!result.firstError && batchResult.error) {
+    result.firstError = batchResult.error;
   }
 
   return result;
@@ -367,31 +389,27 @@ export async function backfillChatMessages(userId: string, limit: number = 1000)
     return result;
   }
 
-  for (let i = 0; i < messageList.length; i++) {
-    const msg = messageList[i];
-    const insertResult = await insertEmbedding(
-      userId,
-      'chat_message',
-      msg.id as string,
-      texts[i],
-      {
-        role: msg.role,
-        created_at: msg.created_at,
-      },
-      embeddings[i].embedding,
-    );
+  // 🔧 Lane S P3: 三源统一批量插入 (was 逐条 insertEmbedding 循环, 与 impulse 路径不一致)
+  const batchRows = messageList.map((msg, i) => ({
+    user_id: userId,
+    source_type: 'chat_message' as SourceType,
+    source_id: msg.id as string,
+    content: texts[i],
+    metadata: {
+      role: msg.role,
+      created_at: msg.created_at,
+    },
+    embedding: embeddings[i].embedding,
+    tokens: embeddings[i].tokens,
+  }));
 
-    if (insertResult.status === 'inserted') {
-      result.embedded++;
-      result.tokensUsed += embeddings[i].tokens;
-    } else if (insertResult.status === 'exists') {
-      result.skipped++;
-    } else {
-      result.failed++;
-      if (!result.firstError && insertResult.error) {
-        result.firstError = insertResult.error;
-      }
-    }
+  const batchResult = await insertEmbeddingsBatch(batchRows);
+  result.embedded += batchResult.inserted;
+  result.failed += batchResult.failed;
+  result.skipped += messageList.length - batchResult.inserted - batchResult.failed;
+  result.tokensUsed += batchResult.tokensUsed;
+  if (!result.firstError && batchResult.error) {
+    result.firstError = batchResult.error;
   }
 
   return result;
