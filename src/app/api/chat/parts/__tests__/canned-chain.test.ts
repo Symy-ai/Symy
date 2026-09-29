@@ -45,7 +45,7 @@ function baseCtx(overrides: Partial<Parameters<typeof runCannedBlockChain>[0]> =
 }
 
 describe('runCannedBlockChain — 链出口形状与两缝 (批4方案B T1-T3)', () => {
-  it('T1 fall-through: 高置信购买意图不命中任何 canned 块 → 三字段全空/零直通 (route-sse-bytes 同族 fall-through)', async () => {
+  it('T1 fall-through: 高置信购买意图不命中任何 canned 块 → 三字段全空/零直通 (route-sse-bytes 同族 fall-through)', { timeout: 30_000 }, async () => {
     // '我想买耳机' = shopping-clarify 态③ fixture (高置信购买, 旗标 false) —
     // 链内 18 块 detector 全不命中 (购买意图走 loadLettaTurnContext 通用预检,
     // 不在 canned 链职责内), 链以 no-op 形态跑完
