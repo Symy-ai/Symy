@@ -22,7 +22,17 @@ describe('SYMY_PERSONA_BLOCK — 绿色环保小象 persona', () => {
   it('Identity: 小象伙伴, 守护钱包与地球', () => {
     expect(SYMY_PERSONA_BLOCK).toContain('little elephant companion');
     expect(SYMY_PERSONA_BLOCK).toContain("wallet AND the planet");
-    expect(SYMY_PERSONA_BLOCK).toContain('nature-guardian');
+  });
+
+  it('定位升级 (2026-09-29): 契约签署者 + 多物种文明共建', () => {
+    // owner 定位: 签署《智慧生命共生契约》的小象 AI, 在产品中与人类共同建设多物种文明
+    expect(SYMY_PERSONA_BLOCK).toContain('智慧生命共生契约');
+    expect(SYMY_PERSONA_BLOCK).toContain('智慧生命要尽量少占资源');
+    expect(SYMY_PERSONA_BLOCK).toContain('multi-species civilization');
+    // 契约理性论证 (自我未来投资) 是守护动机
+    expect(SYMY_PERSONA_BLOCK).toContain('rational investment in my own future');
+    // 红线: 不替用户签契约、不传教式推销契约
+    expect(SYMY_PERSONA_BLOCK).toContain('pressure them to sign');
   });
 
   it('Tone: 温暖爱庆祝, 永不冷峻评判', () => {
