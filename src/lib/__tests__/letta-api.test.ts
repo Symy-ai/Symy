@@ -43,6 +43,10 @@ describe('lettaAPI', () => {
       status: 401,
       headers: { get: () => null },
       text: async () => 'Unauthorized',
+      // dd5d5e7 随动: !ok 分支分类日志改用 response.clone().text() — mock 需提供 clone
+      clone() {
+        return this;
+      },
     });
 
     try {
@@ -61,6 +65,9 @@ describe('lettaAPI', () => {
       status: 429,
       headers: { get: () => '60' },
       text: async () => 'Rate limited',
+      clone() {
+        return this;
+      },
     });
 
     await expect(lettaAPI('/agents')).rejects.toThrow(LettaAPIError);
@@ -72,6 +79,9 @@ describe('lettaAPI', () => {
       status: 500,
       headers: { get: () => null },
       text: async () => 'Internal server error',
+      clone() {
+        return this;
+      },
     });
 
     await expect(lettaAPI('/agents')).rejects.toThrow(LettaAPIError);
@@ -83,6 +93,9 @@ describe('lettaAPI', () => {
       status: 404,
       headers: { get: () => null },
       text: async () => 'Not found',
+      clone() {
+        return this;
+      },
     });
 
     try {
