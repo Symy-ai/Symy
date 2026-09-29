@@ -55,7 +55,8 @@ export async function GET(request: NextRequest) {
       // Letta v1 端点: /agents/{id}/memory-blocks (list) + PATCH by label —
       //   与 letta-agent-tools.ts upsertToolRulesBlock 同款先例 (09-28 验证过)
       const blocksRes = await fetch(`${baseUrl.replace(/\/+$/, '')}/v1/agents/${agentId}/memory-blocks`, {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(15000),
       });
       // 🔧 防御: 非 2xx 或非 JSON 时降级为空表 (走 POST 创建路径)
       let blocks: { label?: string }[] = [];
