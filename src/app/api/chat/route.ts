@@ -401,28 +401,14 @@ async function handleChatRequest(req: NextRequest) {
     //    不调 Letta 泛泛安利, 直接 canned 迎接回复 + 清单分诊卡 (逐条三态 +
     //    就买/看替代/再想想 chips, 点选后才落 health_events)。放在反驳/求问/
     //    承诺/对比之后: 五流意图互斥 (detector 内排除更强意图)。
+    // 🔧 b137 拆解第十一刀 (2026-09-29): 块本体下沉 parts/canned/list-triage-block.ts
     {
-      const { buildListTriageTurn, buildListTriageSseStream } = await import('./parts/list-triage-turn');
-      const { defaultGuardScope } = await import('@/lib/guard-scope');
-      const listTriageTurn = buildListTriageTurn({ userContent, locale, guardScope: guardScope ?? defaultGuardScope() });
-      if (listTriageTurn) {
-        logger.info('[Chat API] Shopping list detected, returning list triage turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildListTriageSseStream(listTriageTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: listTriageTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            listTriageCard: listTriageTurn.listTriageCard,
-          }),
-        );
-      }
+      const { tryListTriageBlock } = await import('./parts/canned/list-triage-block');
+      const listTriageResponse = await tryListTriageBlock({
+        userContent, locale, stream, guardScope,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (listTriageResponse) return listTriageResponse;
     }
 
     // 🐘 batch59-c 追问跟随: 数据问答之后的短追问 ("那上个月呢" / "那外卖呢")
