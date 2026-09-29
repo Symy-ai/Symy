@@ -3,9 +3,9 @@ import "server-only";
 import {
   getLettaClient,
   getMCPTools,
-  lettaAPI,
   getOrCreateSharedMCPServer,
 } from "@/lib/letta-mcp-manager";
+import { upsertAgentBlock } from "@/lib/letta-blocks";
 import { getOrCreateHandsMCPServer } from "@/lib/letta-hands-mcp-manager";
 import { logger } from "@/lib/logger";
 
@@ -102,30 +102,7 @@ export async function attachAllSymyTools(
 
 async function upsertToolRulesBlock(agentId: string) {
   try {
-    const response = await lettaAPI(`/agents/${agentId}/memory-blocks`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const blocks = (await response.json()) as Array<{
-      label?: string;
-      value?: string;
-    }>;
-    const existing = blocks.find((block) => block.label === "symy_tool_rules");
-    if (existing?.value?.startsWith(SYMY_TOOL_RULES_VERSION)) return;
-
-    if (existing) {
-      await lettaAPI(`/agents/${agentId}/memory-blocks/symy_tool_rules`, {
-        method: "PATCH",
-        body: JSON.stringify({ value: SYMY_TOOL_RULES_BLOCK }),
-      });
-    } else {
-      await lettaAPI(`/agents/${agentId}/memory-blocks`, {
-        method: "POST",
-        body: JSON.stringify({
-          label: "symy_tool_rules",
-          value: SYMY_TOOL_RULES_BLOCK,
-          limit: 2000,
-        }),
-      });
-    }
+    await upsertAgentBlock(agentId, "symy_tool_rules", SYMY_TOOL_RULES_BLOCK, 2000);
   } catch (error) {
     // safe to ignore: rules are a per-message defense, never transactional state
     logger.warn(

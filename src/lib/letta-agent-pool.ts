@@ -19,6 +19,7 @@ import 'server-only';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
 import { getLettaClient, lettaAPI } from '@/lib/letta-mcp-manager';
+import { listAgentBlocks, upsertAgentBlock } from '@/lib/letta-blocks';
 import { syncAgentSymyTools } from '@/lib/letta-agent-tools';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -185,33 +186,19 @@ export async function assignAgentFromPool(userId: string): Promise<string | null
     // eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for potential SDK calls
     const client = getLettaClient();
     // 更新 human memory block
-    // 🔧 使用 lettaAPI 直接调 REST API (SDK blocks 类型不匹配)
-    const blocksResponse = await lettaAPI(`/agents/${agentId}/memory-blocks`);
-    const blocksData = await blocksResponse.json();
-    const blocks = (blocksData as Array<{ label: string }>) || [];
-    for (const block of blocks) {
-      if (block.label === 'human') {
-        await lettaAPI(`/agents/${agentId}/memory-blocks/${block.label}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            value: `User ID: ${userId}\nAssigned from pool at: ${new Date().toISOString()}`,
-          }),
-        });
-      }
+    // 🔧 使用 letta-blocks 共享层 (v1 端点, 09-29 修复)
+    const blocks = await listAgentBlocks(agentId);
+    const humanBlock = blocks.find((b) => b.label === 'human');
+    if (humanBlock) {
+      await upsertAgentBlock(
+        agentId,
+        'human',
+        `User ID: ${userId}\nAssigned from pool at: ${new Date().toISOString()}`,
+        humanBlock.limit ?? 2000,
+      );
     }
     // 添加/更新 user_id block
-    const hasUserIdBlock = blocks.some((b) => b.label === 'user_id');
-    if (hasUserIdBlock) {
-      await lettaAPI(`/agents/${agentId}/memory-blocks/user_id`, {
-        method: 'PATCH',
-        body: JSON.stringify({ value: userId }),
-      });
-    } else {
-      await lettaAPI(`/agents/${agentId}/memory-blocks`, {
-        method: 'POST',
-        body: JSON.stringify({ label: 'user_id', value: userId, limit: 100 }),
-      });
-    }
+    await upsertAgentBlock(agentId, 'user_id', userId, 100);
   } catch (err) {
     // safe to ignore: memory block update failure doesn't block agent usage
     logger.warn(`[Agent Pool] Failed to update memory blocks for agent ${agentId}:`, err);

@@ -14,12 +14,13 @@
  * 幂等: 全部执行完返回 updated/failed 计数; block 不存在则创建 (老 agent 可能没有)。
  */
 
-import { AdminCtx, NextResponse, logger, lettaAPI, validateActionBody } from './_shared';
+import { AdminCtx, NextResponse, logger, validateActionBody } from './_shared';
 import { z } from 'zod';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { validateAgentId } from '@/lib/letta-agent-validation';
+import { upsertAgentBlock } from '@/lib/letta-blocks';
 import { SYMY_PERSONA_BLOCK } from '@/lib/symy-persona';
 import { SYMY_TOOL_RULES_BLOCK } from '@/lib/letta-agent-tools';
 
@@ -36,24 +37,8 @@ function readSystemPromptFile(): string {
 
 /** upsert 一个 memory block (存在则 PATCH, 不存在则 POST 创建) */
 async function upsertBlock(agentId: string, label: string, value: string, limit: number): Promise<void> {
-  const listResp = await lettaAPI(`/agents/${agentId}/memory-blocks`);
-  if (!listResp.ok) throw new Error(`list blocks HTTP ${listResp.status}`);
-  const blocks = (await listResp.json()) as Array<{ label?: string }>;
-  const exists = blocks.some((b) => b.label === label);
-
-  if (exists) {
-    const patchResp = await lettaAPI(`/agents/${agentId}/memory-blocks/${label}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ value }),
-    });
-    if (!patchResp.ok) throw new Error(`patch ${label} HTTP ${patchResp.status}`);
-  } else {
-    const postResp = await lettaAPI(`/agents/${agentId}/memory-blocks`, {
-      method: 'POST',
-      body: JSON.stringify({ label, value, limit }),
-    });
-    if (!postResp.ok) throw new Error(`create ${label} HTTP ${postResp.status}`);
-  }
+  // 🔧 09-29: 迁移到 letta-blocks 共享层 (v1 端点) — upsert 自带存在检测
+  await upsertAgentBlock(agentId, label, value, limit);
 }
 
 async function updateOneAgent(ctx: AdminCtx, agentId: string, systemPrompt: string, updateSystem: boolean): Promise<void> {

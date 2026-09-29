@@ -24,7 +24,7 @@ import { logger } from '@/lib/logger';
 import { sanitizeLabel } from '@/lib/fencing';
 import { isIdentifierShaped, type ShoppingFact } from '@/lib/shopping-facts';
 import { getUserAgentId } from '@/lib/letta-agent-manager';
-import { lettaAPI, LettaAPIError } from '@/lib/letta-mcp-manager';
+import { listAgentBlocks, upsertAgentBlock } from '@/lib/letta-blocks';
 
 /** core memory block label (照 agent-manager 既有 memory_blocks 结构: { label, value, limit }) */
 export const SHOPPING_FACTS_BLOCK_LABEL = 'shopping_facts';
@@ -88,9 +88,8 @@ export async function getFactsBlockPreview(userId: string): Promise<string | nul
   try {
     const agentId = await getUserAgentId(userId);
     if (!agentId) return null;
-    const response = await lettaAPI(`/agents/${agentId}/core-memory`);
-    const memory = (await response.json()) as { blocks?: Array<{ label?: unknown; value?: unknown }> } | null;
-    const block = memory?.blocks?.find((b) => b?.label === SHOPPING_FACTS_BLOCK_LABEL);
+    const blocks = await listAgentBlocks(agentId);
+    const block = blocks.find((b) => b.label === SHOPPING_FACTS_BLOCK_LABEL);
     return typeof block?.value === 'string' ? block.value : null;
   } catch (err) {
     // safe to ignore: preview 是 best-effort 读侧 — 失败静默 null (调用方按无 block 处理)
@@ -99,22 +98,13 @@ export async function getFactsBlockPreview(userId: string): Promise<string | nul
   }
 }
 
-/** 写 block: 先 PATCH 更新 (稳态一次调用); 404 = 老 agent 没有此块 → POST 首次创建 */
+/** 写 block: 🔧 09-29 迁移到 letta-blocks 共享层 (v1 端点) — upsert 自带存在检测 */
 async function writeFactsBlock(agentId: string, content: string): Promise<void> {
   try {
-    await lettaAPI(`/agents/${agentId}/core-memory/blocks/${SHOPPING_FACTS_BLOCK_LABEL}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ value: content }),
-    });
+    await upsertAgentBlock(agentId, SHOPPING_FACTS_BLOCK_LABEL, content, SHOPPING_FACTS_BLOCK_LIMIT);
   } catch (err) {
-    if (err instanceof LettaAPIError && err.status === 404) {
-      await lettaAPI(`/agents/${agentId}/core-memory/blocks`, {
-        method: 'POST',
-        body: JSON.stringify({ label: SHOPPING_FACTS_BLOCK_LABEL, value: content, limit: SHOPPING_FACTS_BLOCK_LIMIT }),
-      });
-      return;
-    }
-    throw err;
+    // safe to ignore: facts block 是增强层 — 写失败不阻塞主流程, 下次 sync 重试
+    logger.warn('[LettaFactsSync] writeFactsBlock failed:', err instanceof Error ? err.message : String(err));
   }
 }
 

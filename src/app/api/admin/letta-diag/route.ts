@@ -3,6 +3,8 @@
  */
 
 export const dynamic = 'force-dynamic';
+// 🔧 09-29: 走 letta-blocks 共享层调 Letta API (listAgentBlocks/upsertAgentBlock) — 架构守卫要求 maxDuration
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAuth } from '@/lib/admin-auth';
@@ -235,47 +237,16 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'profile or letta_agent_id not found' }, { status: 404 });
       }
       const agentId = profile.letta_agent_id;
-      // Letta v1 端点: /agents/{id}/memory-blocks (list) + PATCH by label —
-      //   与 letta-agent-tools.ts upsertToolRulesBlock 同款先例 (09-28 验证过)
-      const blocksRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks`, {
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-        signal: AbortSignal.timeout(15000),
-      });
-      // 🔧 防御: 非 2xx 或非 JSON 时降级为空表 (走 POST 创建路径)
-      // 🔧 真相: agent 存在但 blocks 可能为空/或 list 端点在该 Letta 版本 404。
-      //   权威源 = GET /agents/{id} 的 memory.blocks 数组 (06cf4d6 探测确认)
-      let hasPersona = false;
-      if (blocksRes.ok) {
-        const text = await blocksRes.text();
-        try { hasPersona = (JSON.parse(text) as { label?: string }[]).some((b) => b.label === 'persona'); } catch { hasPersona = false; }
-      } else {
-        const agentRes = await fetch(`https://api.letta.com/v1/agents/${agentId}`, {
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          signal: AbortSignal.timeout(15000),
-        });
-        if (agentRes.ok) {
-          const agentObj = await agentRes.json() as { memory?: { blocks?: { label?: string }[] } };
-          hasPersona = (agentObj.memory?.blocks ?? []).some((b) => b.label === 'persona');
-        }
-      }
+      // 🔧 09-29 修复: 走 letta-blocks 共享层 — v1 真实端点 /core-memory/blocks
+      //   (旧 /memory-blocks 全 404 是 persona 热更一直失败的根因, probeSdk 71be9d0 实测)
+      const { upsertAgentBlock, listAgentBlocks } = await import('@/lib/letta-blocks');
       const { SYMY_PERSONA_BLOCK } = await import('@/lib/symy-persona');
-      let upsertRes: Response;
-      if (hasPersona) {
-        upsertRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks/persona`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: SYMY_PERSONA_BLOCK }),
-        });
-      } else {
-        upsertRes = await fetch(`https://api.letta.com/v1/agents/${agentId}/memory-blocks`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ label: 'persona', value: SYMY_PERSONA_BLOCK, limit: 5000 }),
-        });
-      }
+      const personaBlocks = await listAgentBlocks(agentId);
+      const hasPersona = personaBlocks.some((b) => b.label === 'persona');
+      const result = await upsertAgentBlock(agentId, 'persona', SYMY_PERSONA_BLOCK, 5000);
       return NextResponse.json({
         agentId, personaExisted: hasPersona,
-        status: upsertRes.status, ok: upsertRes.ok,
+        created: result.created, ok: true,
         personaLength: SYMY_PERSONA_BLOCK.length,
       });
     } catch (err) {
