@@ -360,27 +360,14 @@ async function handleChatRequest(req: NextRequest) {
     // 🐘 batch50-a 买前三问: 用户主动求问 ("该买 X 吗") → 不调 Letta 泛泛建议,
     //    直接 canned 迎接回复 + 三问决策卡 (用户自己的问题, 守护开关不挡 —
     //    与 48-b 反驳降温的被动拦截不同)。放在反驳降温之后: 两流意图互斥。
+    // 🔧 b137 拆解第八刀 (2026-09-29): 块本体下沉 parts/canned/prepurchase-block.ts
     {
-      const { buildPrepurchaseTurn, buildPrepurchaseSseStream } = await import('./parts/prepurchase-turn');
-      const prepurchaseTurn = buildPrepurchaseTurn({ userContent, locale });
-      if (prepurchaseTurn) {
-        logger.info('[Chat API] Pre-purchase question detected, returning three-questions turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildPrepurchaseSseStream(prepurchaseTurn), {
-              headers: { ...SSE_HEADERS },
-            }),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: prepurchaseTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            prepurchaseCard: prepurchaseTurn.prepurchaseCard,
-          }),
-        );
-      }
+      const { tryPrepurchaseBlock } = await import('./parts/canned/prepurchase-block');
+      const prepurchaseResponse = await tryPrepurchaseBlock({
+        userContent, locale, stream,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (prepurchaseResponse) return prepurchaseResponse;
     }
 
     // 🐘 batch53-a 绿色承诺: 用户主动口头承诺 ("这个月不买X") → 不调 Letta 泛泛
