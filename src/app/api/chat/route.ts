@@ -373,27 +373,14 @@ async function handleChatRequest(req: NextRequest) {
     // 🐘 batch53-a 绿色承诺: 用户主动口头承诺 ("这个月不买X") → 不调 Letta 泛泛
     //    鼓励, 直接 canned 迎接回复 + 承诺登记卡 (确认后才落 health_events)。
     //    放在求问/反驳之后: 三流意图互斥 (detector 内排除)。
+    // 🔧 b137 拆解第九刀 (2026-09-29): 块本体下沉 parts/canned/commitment-block.ts
     {
-      const { buildCommitmentTurn, buildCommitmentSseStream } = await import('./parts/commitment-turn');
-      const commitmentTurn = buildCommitmentTurn({ userContent, locale });
-      if (commitmentTurn) {
-        logger.info('[Chat API] Green commitment detected, returning commitment turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildCommitmentSseStream(commitmentTurn), {
-              headers: { ...SSE_HEADERS },
-            }),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: commitmentTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            commitmentCard: commitmentTurn.commitmentCard,
-          }),
-        );
-      }
+      const { tryCommitmentBlock } = await import('./parts/canned/commitment-block');
+      const commitmentResponse = await tryCommitmentBlock({
+        userContent, locale, stream,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (commitmentResponse) return commitmentResponse;
     }
 
     // 🐘 batch56-a 对比裁决: 用户二选一求问 ("买A还是B / A vs B") → 不调 Letta
