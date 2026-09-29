@@ -131,7 +131,7 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
 
   it('回答块先于追问块, 追问块先于 reflection canned (采纳后下一轮即问, 收束不被截胡)', () => {
     const answerIdx = source.indexOf('buildGreenAltRetroClosingTurn');
-    const askIdx = source.indexOf('buildGreenAltRetroAskTurn');
+    const askIdx = source.indexOf('tryGreenAltRetroAskBlock'); /* 🔧b137随动: 追问块下沉 */
     const reflectionIdx = source.indexOf('tryReflectionBlock'); /* 🔧b137随动: 反思块下沉 */
     expect(answerIdx).toBeGreaterThan(-1);
     expect(askIdx).toBeGreaterThan(answerIdx);
@@ -141,7 +141,7 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
   it('复盘两块都早于 loadLettaTurnContext (自由文本回答回落 Letta 在后)', () => {
     const callIdx = source.indexOf('await loadLettaTurnContext({');
     expect(callIdx).toBeGreaterThan(-1);
-    expect(callIdx).toBeGreaterThan(source.indexOf('buildGreenAltRetroAskTurn'));
+    expect(callIdx).toBeGreaterThan(source.indexOf('tryGreenAltRetroAskBlock')); /* 🔧b137随动 */
     expect(callIdx).toBeGreaterThan(source.indexOf('buildGreenAltRetroClosingTurn'));
   });
 
@@ -150,22 +150,19 @@ describe('路由链序锁 — 复盘回答块与追问块在链首 (source-order
       source.indexOf('batch68-a 绿色采纳后复盘 — 回答轮'),
       source.indexOf('batch68-a 复盘追问轮'),
     );
-    const askBlock = source.slice(
-      source.indexOf('batch68-a 复盘追问轮'),
-      source.indexOf('isReflectionQuestion'),
-    );
+    // 🔧 b137随动: 追问块已下沉 — 块内断言改读块文件源
+    const askBlock = readFileSync(new URL('../canned/green-alt-retro-ask-block.ts', import.meta.url), 'utf8');
     expect(answerBlock).toMatch(/shouldDeferGreenAltRetro/);
     expect(answerBlock).not.toMatch(/greenAltRetroPending/);
+    // 🔧 b137随动: 块内改写为 guard-clause 形式 (greenPref === 'off' return null) — 语义等价
     expect(askBlock).toMatch(/shouldDeferGreenAltRetro/);
-    expect(askBlock).toMatch(/greenPref !== 'off'/);
+    expect(askBlock).toMatch(/greenPref === 'off'/);
   });
 
   it('追问块 greenPref off 整体静默 (拒绝守护的会话不追问)', () => {
-    const block = source.slice(
-      source.indexOf('batch68-a 复盘追问轮'),
-      source.indexOf('isReflectionQuestion'),
-    );
-    expect(block.indexOf("greenPref !== 'off'")).toBeGreaterThan(-1);
-    expect(block.indexOf("greenPref !== 'off'")).toBeLessThan(block.indexOf('buildGreenAltRetroAskTurn'));
+    // 🔧 b137随动: 追问块已下沉 — 改读块文件源 (guard 在 build 之前)
+    const block = readFileSync(new URL('../canned/green-alt-retro-ask-block.ts', import.meta.url), 'utf8');
+    expect(block.indexOf("greenPref === 'off'")).toBeGreaterThan(-1);
+    expect(block.indexOf("greenPref === 'off'")).toBeLessThan(block.indexOf('buildGreenAltRetroAskTurn'));
   });
 });

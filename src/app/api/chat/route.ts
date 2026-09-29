@@ -255,28 +255,14 @@ async function handleChatRequest(req: NextRequest) {
     //    追问一次 (4 个非羞辱选项卡 + 自由文本提示)。greenPref 'off' 整体静默;
     //    让位时 pending 客户端已消费, 不顺延 — 每条采纳只追问一次。链序红线:
     //    本块在回答块之后、reflection canned 之前, 由 source-order 测试锁定。
-    if (greenAltRetroPending && greenPref !== 'off') {
-      const { shouldDeferGreenAltRetro } = await import('./parts/green-alt-retro-gate');
-      if (!shouldDeferGreenAltRetro(userContent, locale)) {
-        const { buildGreenAltRetroAskTurn, buildGreenAltRetroAskSseStream } = await import('./parts/green-alt-retro-turn');
-        const askTurn = buildGreenAltRetroAskTurn({ entryId: greenAltRetroPending.entryId, locale });
-        if (askTurn) {
-          logger.info('[Chat API] Green-alt retro ask turn');
-          if (stream) {
-            return mergeCookiesOnResponse(
-              new Response(buildGreenAltRetroAskSseStream(askTurn), { headers: { ...SSE_HEADERS } }),
-            );
-          }
-          return mergeCookies(
-            NextResponse.json({
-              reply: askTurn.reply,
-              reasoning: undefined,
-              toolCalls: undefined,
-              greenAltRetro: askTurn.greenAltRetro,
-            }),
-          );
-        }
-      }
+    // 🔧 b137 拆解第十五刀 (2026-09-29): 块本体下沉 parts/canned/green-alt-retro-ask-block.ts
+    {
+      const { tryGreenAltRetroAskBlock } = await import('./parts/canned/green-alt-retro-ask-block');
+      const retroAskResponse = await tryGreenAltRetroAskBlock({
+        userContent, locale, stream, greenAltRetroPending, greenPref,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (retroAskResponse) return retroAskResponse;
     }
 
     // 🔧 P0-1 fix (2026-07-20): 反思问题检测 — 直接返回 canned reply, 不调 Letta AI
