@@ -41,7 +41,7 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
   it('validateChatRequest → createAuthenticatedClient → checkRateLimit → isLettaConfigured → loadLettaTurnContext → streamToAgent → processLettaResponse', () => {
     const validate = anchor('await validateChatRequest(');
     const auth = anchor('await createAuthenticatedClient(');
-    const hourlyRateLimit = source.indexOf('await checkRateLimit(rateLimitKey');
+    const hourlyRateLimit = anchor('await checkChatRateLimit(');
     const lettaGate = anchor('isLettaConfigured()');
     const loadContext = anchor('await loadLettaTurnContext({');
     const stream = anchor('await streamToAgent(');
@@ -59,8 +59,7 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
 
   it('free-tier 日限 (第 2 次 checkRateLimit) 也在 isLettaConfigured 门之前', () => {
     const lettaGate = anchor('isLettaConfigured()');
-    const dailyRateLimit = source.indexOf('await checkRateLimit(`chat:daily:');
-    expect(dailyRateLimit).toBeGreaterThan(-1);
+    const dailyRateLimit = anchor('await checkDailyChatLimit(');
     expect(dailyRateLimit).toBeLessThan(lettaGate);
   });
 

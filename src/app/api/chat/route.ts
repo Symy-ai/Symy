@@ -9,7 +9,6 @@ import { sendSSEData, closeSSE, SSE_HEADERS } from '@/lib/sse';
 import { getUserAgentId } from '@/lib/letta-agent-manager';
 import { logAIBehavior } from '@/lib/ai-audit';
 import { fireAndForgetSafely } from '@/lib/admin-audit';
-import { checkRateLimit } from '@/lib/distributed-lock';
 // 🔧 P1-4 fix: Guest 模式限流 — 允许未登录用户体验 1-2 次 AI 对话
 import { checkGuestLimit, getClientIP } from '@/lib/guest-rate-limiter';
 // C4 拆分：纯函数移到 ./parts 子目录
@@ -41,6 +40,8 @@ import { loadLettaTurnContext } from './parts/letta-turn-context';
 import { validateChatRequest } from './parts/chat-validation';
 import { wrapStreamWithAudit } from './parts/stream-audit';
 import { processLettaResponse } from './parts/letta-response';
+import { checkChatRateLimit } from './parts/rate-guard';
+import { checkDailyChatLimit } from './parts/daily-limit-guard';
 // 🌐 batch72-a 全网搜索等待话术: symy_search fallback 命中 (货架 <2 卡 + websearch
 //    标记) 时, tool_result 后紧跟 canned 等待话术, 结果卡仍走既有 cards 管道出卡
 import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
@@ -77,59 +78,10 @@ async function handleChatRequest(req: NextRequest) {
   const userId = user?.id;
   const hasAuth = !!(supabase && userId);
 
-  // 🔧 ARCH fix (Round 26 AUDIT-5 HIGH-1): 添加 rate limiting 防 Letta+OpenAI budget drain
-  //    旧代码: 无 rate limit → 已认证用户/bot 可脚本化 spam → 烧 Letta+GLM-5.2 token
-  //    根因修复: 按 userId (已认证) 或 IP (未认证) 限流, 30 次/小时 (正常使用足够)
-  // 🔧 ARCH fix (Round 37 AUDIT-8 MEDIUM-5): 用 x-vercel-forwarded-for 优先 (Vercel 边缘设置, 不可伪造)
-  // 🔧 Round 120 audit fix (AUDIT-1 P1 #5): 旧代码 fallback 'unknown' → 所有 unknown IP 共享一个 bucket
-  //    一个攻击者就能用完所有 anonymous 用户的额度 (DoS)
-  //    修复: unknown IP 一律拒绝 (无 IP 头的请求很可能是恶意/伪造)
-  const clientIp = userId
-    ? null // authenticated users are rate-limited by userId
-    : req.headers.get('x-vercel-forwarded-for')?.split(',').pop()?.trim() || req.headers.get('x-forwarded-for')?.split(',').pop()?.trim() || req.headers.get('x-real-ip');
-  // 🔧 Round 120 audit fix: 未认证 + 无法识别 IP → 拒绝 (防 DoS)
-  if (!userId && !clientIp) {
-    return Response.json({ error: 'Unable to identify client. Please sign in to chat.' }, { status: 401 });
-  }
-  const rateLimitKey = userId ? `chat:user:${userId}` : `chat:ip:${clientIp}`;
-  const { allowed: rateLimitAllowed } = await checkRateLimit(rateLimitKey, 30, 60 * 60 * 1000);
-  if (!rateLimitAllowed) {
-    return Response.json(
-      {
-        error: 'Rate limit exceeded. Maximum 30 messages per hour. Please try again later.',
-      },
-      { status: 429 },
-    );
-  }
-
-  // 🔧 P0 fix (marketing-improvement-suggestions.md #3): Free tier 每日聊天限制 (50 条/天)
-  //    旧代码: 只有 30 条/小时 rate limit, 无每日限制 → 免费用户理论上可无限聊
-  //    新代码: 已登录 free 用户每日最多 50 条, premium 用户无限
-  //    实现: 复用 checkRateLimit (distributed_locks + increment_rate_limit RPC), 无需新 migration
-  const FREE_TIER_DAILY_CHAT_LIMIT = 50;
-  const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
-  if (hasAuth && userId && supabase) {
-    try {
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', userId).maybeSingle();
-      const isPremium = profile?.plan === 'premium';
-      if (!isPremium) {
-        const { allowed: dailyAllowed } = await checkRateLimit(`chat:daily:${userId}`, FREE_TIER_DAILY_CHAT_LIMIT, DAILY_WINDOW_MS);
-        if (!dailyAllowed) {
-          return Response.json(
-            {
-              error: 'Daily chat limit reached. Maximum 50 messages per day. Upgrade to Premium for unlimited chatting, or come back tomorrow.',
-              dailyLimitReached: true,
-              limit: FREE_TIER_DAILY_CHAT_LIMIT,
-            },
-            { status: 429 },
-          );
-        }
-      }
-    } catch (err) {
-      // safe to ignore: daily limit query failure should not block chat (fail-open)
-      logger.warn('[Chat API] Failed to check free tier daily chat limit:', err);
-    }
-  }
+  const rateLimitResponse = await checkChatRateLimit(req, userId);
+  if (rateLimitResponse) return rateLimitResponse;
+  const dailyLimitResponse = await checkDailyChatLimit(hasAuth, userId, supabase);
+  if (dailyLimitResponse) return dailyLimitResponse;
 
   // 🛡️ challengeContext 已被 zod 验证 (含 Number.isFinite)
   // 🔧 ARCH fix (Round 69 BUG-AUDIT-69-7): zod z.number().finite() 已防 NaN
