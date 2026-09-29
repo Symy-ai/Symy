@@ -17,6 +17,7 @@ import { fireAndForgetSafely } from '@/lib/admin-audit';
 // Handler 内置 lock + DB trigger_id dedup 保证幂等性，无需 regex-based 补偿
 // 🔧 Architecture refactor: LLM Gateway/ZAI SDK fallback 路径已移除
 // Letta + GLM-5.2 是唯一路径，~250 行 callLLMWithTools + tool calling 循环已删除
+// （第23刀: SSE 包装栈 import 全部随搬移落 parts/sse-pipeline.ts）
 import { type ChallengeContext } from './parts/types';
 import { captureLLMGeneration } from '@/lib/posthog-server';
 // 🧺 batch25-b (shopping-facts 提取管道): 用户消息 → 确定性提取购物事实 → 落库 →
@@ -25,20 +26,9 @@ import { captureLLMGeneration } from '@/lib/posthog-server';
 //    (加载半程 loadFactsForContext 随 batch26-c 拆分落 parts/letta-turn-context.ts)
 import { extractAndSaveFacts, type ShoppingFactsPipelineStore } from '@/lib/shopping-facts-pipeline';
 import { createAdminClient } from '@/lib/supabase-admin';
-// 🌱 绿色替代拦截→推荐: 发 Letta 前关键词预检, 命中给前端 green_alt 卡片标记 (Letta prompt 不动)
-import { withGreenAltEvent } from './parts/green-alt-detect';
-// 📖 batch47-a 知识问答: 知识型提问 → 词条来源 chip (green_knowledge 事件 / JSON greenKnowledge 字段)
-import { withGreenKnowledgeEvent } from './parts/green-knowledge-context';
-// 🐘 batch55-c 替代足迹: 召回命中时注入 alt_footprint 事件 (足迹卡 payload)
-import { withAltFootprintEvent } from './parts/alt-adoption-context';
-// 🔁 复用优先 (reuse-first): 购物意图预检 → SSE 流最前注入 reuse_hint 卡 / 非流式 JSON reuseHint 字段
-import { prependReuseHintEvent, reuseHintSseEvent } from './parts/reuse-detect';
-// 🐞 batch46-b 微挑战: 购买意图 + 品类 + 频控预检 → SSE 流最前注入 micro_challenge 卡 / JSON microChallenge 字段
-import { microChallengeSseEvent } from './parts/micro-challenge-detector';
 // batch26-c 拆分: 上下文装载 + prompt 组装移至 parts/letta-turn-context.ts（纯机械搬移）
 import { loadLettaTurnContext } from './parts/letta-turn-context';
 import { validateChatRequest } from './parts/chat-validation';
-import { wrapStreamWithAudit } from './parts/stream-audit';
 import { processLettaResponse } from './parts/letta-response';
 import { checkChatRateLimit } from './parts/rate-guard';
 import { checkDailyChatLimit } from './parts/daily-limit-guard';
@@ -49,11 +39,8 @@ import { extractUserMessage } from './parts/user-message-extract';
 import { lettaUnavailableResponse } from './parts/letta-unavailable';
 // 拆相位第22刀: no-agent 503 出口下沉 parts/（纯机械搬移, 退款分文案 + 双通道）
 import { buildAgentUnavailableResponse } from './parts/agent-unavailable-response';
-// 🌐 batch72-a 全网搜索等待话术: symy_search fallback 命中 (货架 <2 卡 + websearch
-//    标记) 时, tool_result 后紧跟 canned 等待话术, 结果卡仍走既有 cards 管道出卡
-import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
-import { withWebSearchWaitEvent } from './parts/websearch-wait-stream';
-
+// 拆相位第23刀: SSE 包装栈下沉 parts/（纯函数, 字节序核心）
+import { buildSsePipeline } from './parts/sse-pipeline';
 // ============================================================
 // LLM 配置已移至 src/lib/llm-client.ts（统一调用层）
 // ============================================================
@@ -467,26 +454,14 @@ async function handleChatRequest(req: NextRequest) {
       // 🚀 流式模式：前端请求 stream=true 时，使用 SSE 让用户更早看到首 token
       if (stream) {
         const innerStream = await streamToAgent(userContentWithStage, impulseContext, userId || undefined, targetAgentId);
-        // 🛡️ V2: Use challenge-aware compensation wrapper
-        const monitoredStream = wrapStreamWithAudit(innerStream, userContent, userId, impulseContext, validChallengeContext, targetAgentId);
-        // 🌐 batch72-a: 包在审计 wrapper 之外 (canned 词不计入 aiOutput)、预注入包装之内。
-        //    fallback 契约未命中时原流直通；i18n key 由构建函数强制存在。
-        //    非流式路径不接 (等待话术是 SSE 流式体验, 非流式保持现状)。
-        const webSearchWaitStream = withWebSearchWaitEvent(monitoredStream, buildWebSearchWaitTurn(userContent, locale));
-        // 🔁 复用优先: reuse_hint 预注入 (guard-off/未命中 → 原流直通, 与 green 侧零包装对称)
-        let sseBody = reuseHint
-          ? prependReuseHintEvent(webSearchWaitStream, reuseHintSseEvent(reuseHint))
-          : webSearchWaitStream;
-        // 🌱 绿色替代命中时在最前面注入 green_alt 事件 (谁后包装谁更靠前 → green_alt 排 reuse_hint 前)
-        sseBody = withGreenAltEvent(sseBody, greenAltCard);
-        // 📖 batch47-a 知识问答: 命中时注入 green_knowledge 事件 (最晚包装 → 排最前, chip 展示在卡片区顶部)
-        sseBody = withGreenKnowledgeEvent(sseBody, greenKnowledge.card);
-        // 🐘 batch55-c 替代足迹: 命中时注入 alt_footprint 事件 (最晚包装 → 排最前, 足迹卡展示在卡片区顶部)
-        sseBody = withAltFootprintEvent(sseBody, altFootprintCard);
-        // 🐞 batch46-b: 微挑战预注入 (最先包装 → 排最后, 与卡片渲染顺序 green → reuse → micro 一致)
-        if (microChallenge) {
-          sseBody = prependReuseHintEvent(sseBody, microChallengeSseEvent(microChallenge));
-        }
+        // 🔧 拆相位第23刀 (2026-09-30): SSE 包装栈 (audit→websearch→reuse→green→
+        //    knowledge→footprint→micro, 字节序核心) 拆出 parts/sse-pipeline.ts
+        //    纯函数 (纯机械搬移, "谁后包装谁更靠前" 层序逐一保留)。
+        const sseBody = buildSsePipeline({
+          innerStream, userContent, userId, locale,
+          impulseContext, validChallengeContext, targetAgentId,
+          greenAltCard, reuseHint, microChallenge, greenKnowledge, altFootprintCard,
+        });
         lettaStreamSucceeded = true;
 
         // 🔧 ARCH fix (Round 3 SSE H3): 用 mergeCookiesOnResponse 把刷新的 auth cookie 写回。

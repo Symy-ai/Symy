@@ -119,15 +119,22 @@ describe('route-structure-lock — 18 canned 块链序 (b137 全量块, 调用�
 describe('route-structure-lock — P5 SSE 包装栈层序 (字节序红线)', () => {
   it('包装顺序: audit → websearch → reuse → green_alt → green_knowledge → alt_footprint → micro', () => {
     // 方案 §1 SSE 包装栈: "谁后包装谁更靠前" — 源码调用序锁定拆分后的包装序。
-    // prependReuseHintEvent 有两处调用 (reuse 预注入 + micro 预注入), 用首参区分锚
-    const audit = anchor('wrapStreamWithAudit(');
-    const websearch = anchor('withWebSearchWaitEvent(');
-    const reuse = anchor('prependReuseHintEvent(webSearchWaitStream');
-    const greenAlt = anchor('withGreenAltEvent(');
-    const greenKnowledge = anchor('withGreenKnowledgeEvent(');
-    const altFootprint = anchor('withAltFootprintEvent(');
+    // 🔧b137随动 (刀23): 包装栈本体已拆出 parts/sse-pipeline.ts, 锚迁该文件内部
+    // (调用顺序=包装序=字节序); prependReuseHintEvent 两处调用用首参区分锚。
+    const partSource = readFileSync(new URL('../sse-pipeline.ts', import.meta.url), 'utf-8');
+    const partAnchor = (pattern: string) => {
+      const count = partSource.split(pattern).length - 1;
+      expect(count, `sse-pipeline 锚 ${JSON.stringify(pattern)} 应恰好出现 1 次 (实际 ${count})`).toBe(1);
+      return partSource.indexOf(pattern);
+    };
+    const audit = partAnchor('wrapStreamWithAudit(');
+    const websearch = partAnchor('withWebSearchWaitEvent(');
+    const reuse = partAnchor('prependReuseHintEvent(webSearchWaitStream');
+    const greenAlt = partAnchor('withGreenAltEvent(');
+    const greenKnowledge = partAnchor('withGreenKnowledgeEvent(');
+    const altFootprint = partAnchor('withAltFootprintEvent(');
     // micro 挑战: 包在 sseBody 上 (最后包装 → 排最前)
-    const micro = anchor('prependReuseHintEvent(sseBody');
+    const micro = partAnchor('prependReuseHintEvent(sseBody');
 
     expect(audit).toBeLessThan(websearch);
     expect(websearch).toBeLessThan(reuse);
@@ -138,9 +145,11 @@ describe('route-structure-lock — P5 SSE 包装栈层序 (字节序红线)', ()
   });
 
   it('SSE 包装栈整体在 streamToAgent 之后 (先有 innerStream 再包装)', () => {
+    // 🔧b137随动 (刀23): 包装锚已迁 sse-pipeline.ts, 此处锁 route 侧接线序 —
+    // streamToAgent 产出 innerStream 在前, buildSsePipeline 消费在后
     const stream = anchor('await streamToAgent(');
-    const audit = anchor('wrapStreamWithAudit(');
-    expect(audit).toBeGreaterThan(stream);
+    const pipeline = anchor('buildSsePipeline({');
+    expect(pipeline).toBeGreaterThan(stream);
   });
 });
 
