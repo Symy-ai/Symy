@@ -33,6 +33,54 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ deleted: deleteMcp, status: del.status, ok: del.ok });
   }
 
+  // 🔧 09-29: GET ?probeV1=<agentId> — Letta v1 全局 blocks 架构探测 (POST /v1/blocks + attach/detach)
+  const probeV1 = request.nextUrl.searchParams.get('probeV1');
+  if (probeV1) {
+    if (!/^agent-[a-z0-9-]+$/i.test(probeV1)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+    const attempts: Array<{ what: string; status: number; head: string }> = [];
+    const tryCall = async (what: string, url: string, method: string, body?: string) => {
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          ...(body ? { body } : {}),
+          signal: AbortSignal.timeout(15000),
+        });
+        const text = await res.text();
+        attempts.push({ what, status: res.status, head: text.replace(/\s+/g, ' ').slice(0, 250) });
+        return { res, text };
+      } catch (err) {
+        attempts.push({ what, status: -1, head: err instanceof Error ? err.message : String(err) });
+        return null;
+      }
+    };
+    // ① 全局 blocks 列表 (label 过滤)
+    await tryCall('GET /v1/blocks?label=probe_temp', 'https://api.letta.com/v1/blocks?label=probe_temp', 'GET');
+    // ② 全局创建 block
+    const created = await tryCall('POST /v1/blocks', 'https://api.letta.com/v1/blocks', 'POST',
+      JSON.stringify({ label: 'probe_temp', value: 'probe', limit: 1000 }));
+    let blockId = '';
+    if (created?.res.ok) {
+      try { blockId = (JSON.parse(created.text) as { id?: string }).id ?? ''; } catch { /* safe to ignore: probe parse */ }
+    }
+    if (blockId) {
+      // ③ 更新 block
+      await tryCall(`PATCH /v1/blocks/{id}`, `https://api.letta.com/v1/blocks/${blockId}`, 'PATCH',
+        JSON.stringify({ value: 'probe-v2' }));
+      // ④ 挂到 agent
+      await tryCall('POST attach', `https://api.letta.com/v1/agents/${probeV1}/memory/attach`, 'POST',
+        JSON.stringify({ block_ids: [blockId] }));
+      // ⑤ 摘除 (还原现场)
+      await tryCall('POST detach', `https://api.letta.com/v1/agents/${probeV1}/memory/detach`, 'POST',
+        JSON.stringify({ block_ids: [blockId] }));
+      // ⑥ 删除 block (还原现场)
+      await tryCall('DELETE /v1/blocks/{id}', `https://api.letta.com/v1/blocks/${blockId}`, 'DELETE');
+    }
+    return NextResponse.json({ attempts, blockId });
+  }
+
   // 🔧 09-29: GET ?probeEndpoints=1 — 拉 Letta OpenAPI spec 列出真实 blocks 写端点 (找可用写路径)
   const probeEndpoints = request.nextUrl.searchParams.get('probeEndpoints');
   if (probeEndpoints) {
