@@ -121,7 +121,7 @@ describe('source-order 锁 — 预报块不抢既有路由', () => {
     const impulseTime = routeSource.indexOf("tryImpulseTimeQueryBlock");
     const forecast = routeSource.indexOf("tryImpulseForecastBlock"); // 🔧 b137随动: 62-c下沉锚点改块调用
     const savings = routeSource.indexOf("trySavingsQueryBlock");
-    const emotion = routeSource.indexOf("import('./parts/emotion-guard-turn')");
+    const emotion = routeSource.indexOf("tryEmotionGuardBlock") /* 🔧b137随动 */;
     expect(impulseTime).toBeGreaterThan(-1);
     expect(forecast).toBeGreaterThan(impulseTime);
     expect(savings).toBeGreaterThan(forecast);

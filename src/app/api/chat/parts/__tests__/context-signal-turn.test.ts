@@ -412,7 +412,7 @@ describe('路由链序锁 — 弱信号块在 60-c 情绪守护之后、通用�
   it('弱信号块晚于 60-c 情绪守护与全部数据问答检测 (更强意图先答)', () => {
     const idx = source.indexOf('buildContextSignalTurn');
     expect(idx).toBeGreaterThan(-1);
-    expect(source.indexOf('buildEmotionGuardTurn')).toBeLessThan(idx);
+    expect(source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);
     expect(source.indexOf('tryImpulseTimeQueryBlock') /* 🔧b137随动 */).toBeLessThan(idx);

@@ -96,7 +96,7 @@ describe('路由链序锁 — 情绪守护块在数据问答之后、通用购�
   const source = readFileSync(new URL('../../route.ts', import.meta.url), 'utf-8');
 
   it('emotion 块晚于 57-c/58-c 数据问答检测 (更高优先级规则先答)', () => {
-    const emotionIdx = source.indexOf('buildEmotionGuardTurn');
+    const emotionIdx = source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */;
     expect(emotionIdx).toBeGreaterThan(-1);
     expect(source.indexOf('trySavingsQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
     expect(source.indexOf('tryCategoryQueryBlock') /* 🔧b137随动 */).toBeLessThan(emotionIdx);
@@ -105,7 +105,7 @@ describe('路由链序锁 — 情绪守护块在数据问答之后、通用购�
   });
 
   it('emotion 块早于 loadLettaTurnContext 调用点 (BNPL/green/reuse/micro 通用购买预检之前)', () => {
-    const emotionIdx = source.indexOf('buildEmotionGuardTurn');
+    const emotionIdx = source.indexOf('tryEmotionGuardBlock') /* 🔧b137随动 */;
     // 顶部 import 语句不算 — 只认 loadLettaTurnContext 的实际调用点
     const callIdx = source.indexOf('await loadLettaTurnContext({');
     expect(callIdx).toBeGreaterThan(-1);

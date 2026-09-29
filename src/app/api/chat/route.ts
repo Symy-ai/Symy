@@ -623,27 +623,14 @@ async function handleChatRequest(req: NextRequest) {
     //    优先; 通用购买预检 (BNPL/green/reuse/micro, loadLettaTurnContext 内)
     //    在后 — BNPL/绿色品类/问答形态由 detector 内让路, 链序由 source-order
     //    测试锁定; 高风险语义 detector 内排除, 自然降级通用聊天。
-    if (!suppressGuardCards) {
-      const { buildEmotionGuardTurn, buildEmotionGuardSseStream } = await import('./parts/emotion-guard-turn');
-      const emotionGuardTurn = buildEmotionGuardTurn({ userContent, locale, guardIntensity, greenPref });
-      if (emotionGuardTurn) {
-        logger.info('[Chat API] Emotion shopping detected, returning emotion guard turn');
-        if (stream) {
-          return mergeCookiesOnResponse(
-            new Response(buildEmotionGuardSseStream(emotionGuardTurn),
-              { headers: { ...SSE_HEADERS } },
-            ),
-          );
-        }
-        return mergeCookies(
-          NextResponse.json({
-            reply: emotionGuardTurn.reply,
-            reasoning: undefined,
-            toolCalls: undefined,
-            emotionGuardCard: emotionGuardTurn.emotionGuardCard,
-          }),
-        );
-      }
+    // 🔧 b137 拆解第六刀 (2026-09-29): 块本体下沉 parts/canned/emotion-guard-block.ts
+    {
+      const { tryEmotionGuardBlock } = await import('./parts/canned/emotion-guard-block');
+      const emotionGuardResponse = await tryEmotionGuardBlock({
+        userContent, locale, stream, guardIntensity, greenPref, suppressGuardCards,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+      });
+      if (emotionGuardResponse) return emotionGuardResponse;
     }
 
     // 🐘 batch61-b 购物场景弱信号: 生活语言里的消费决策 ("想奖励自己 / 最后三单 /

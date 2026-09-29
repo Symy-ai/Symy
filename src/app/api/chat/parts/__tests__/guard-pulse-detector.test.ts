@@ -63,7 +63,7 @@ describe('source-order 锁 — 脉搏块不抢既有路由', () => {
     const guardPulse = routeSource.indexOf("tryGuardPulseBlock") /* 🔧b137随动 */;
     // 🔧 b137 拆解随动: 57-c 下沉 parts/canned — 锚点改块调用点 (调用顺序=链序)
     const savings = routeSource.indexOf("trySavingsQueryBlock");
-    const emotion = routeSource.indexOf("import('./parts/emotion-guard-turn')");
+    const emotion = routeSource.indexOf("tryEmotionGuardBlock");
     expect(forecast).toBeGreaterThan(-1);
     expect(guardPulse).toBeGreaterThan(forecast);
     expect(savings).toBeGreaterThan(guardPulse);
