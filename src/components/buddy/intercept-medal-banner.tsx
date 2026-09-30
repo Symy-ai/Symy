@@ -106,7 +106,6 @@ export function InterceptMedalBanner({
               {warmTpl}
             </p>
           </div>
-          <InterceptReasonChip reason={medal.reason} />
           <button
             onClick={() => setMedal(null)}
             aria-label={t("common.close", { defaultValue: "Close" })}
@@ -115,6 +114,12 @@ export function InterceptMedalBanner({
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+        {/* 🔧 竖排文字 bug fix (2026-09-30): InterceptReasonChip 原先挤在上方横排 flex 行内,
+            其内部 <p> 带 truncate(nowrap) → chip min-content 宽 = 整行文字宽(~300px),
+            移动端窄容器下把中间 flex-1 文字列挤到 ~0px → 文字一字一行竖排占满页面。
+            修法: 与聊天拦截卡 (intercept-medal-moment.tsx) 同款块级用法 — chip 独占
+            下方一行, 自适应宽度, 不再挤压标题/副标题。chip 自带 mt-2 即为此形态设计。 */}
+        <InterceptReasonChip reason={medal.reason} />
         <button
           onClick={() => setShowShareModal(true)}
           data-testid="show-off-medal-button"
