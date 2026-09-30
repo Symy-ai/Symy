@@ -103,7 +103,7 @@ export function InventoryListCard() {
                       const cat = categoryLabel(item.category);
                       return (
                         <li key={item.id} className="rounded-lg bg-white/[0.03] px-2.5 py-1.5 flex items-center gap-2" data-testid={`inventory-item-${item.id}`}>
-                          <span className="truncate text-xs font-bold text-text-primary">{item.item_name}</span>
+                          <span className="min-w-0 flex-1 truncate text-xs font-bold text-text-primary">{item.item_name}</span>
                           {cat && <span className="flex-shrink-0 rounded-full border border-cyan-300/25 bg-cyan-950/30 px-1.5 py-0.5 text-[10px] text-cyan-100/90">{cat}</span>}
                           <span className="flex-shrink-0 rounded-full border border-emerald-300/25 bg-emerald-950/40 px-1.5 py-0.5 text-[10px] text-emerald-200/90">
                             {t(item.source === 'manual' ? 'profile.inventory.sourceManual' : 'profile.inventory.sourceChat')}

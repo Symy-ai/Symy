@@ -135,7 +135,7 @@ export function GuardConsistencyCard() {
                 data-testid={`guard-consistency-row-${row.category}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="truncate text-xs font-bold text-text-primary">
+                  <span className="min-w-0 flex-1 truncate text-xs font-bold text-text-primary">
                     {categoryLabel(row.category)}
                   </span>
                   {row.category === matrix.steadiestCategory && (
@@ -155,7 +155,7 @@ export function GuardConsistencyCard() {
                   </span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-[11px] text-text-secondary">
-                  <span className="truncate">{t('profile.guardMatrix.rowActions', { guarded: row.guarded, alt: row.adoptedAlt, reuse: row.reused })}</span>
+                  <span className="min-w-0 flex-1 truncate">{t('profile.guardMatrix.rowActions', { guarded: row.guarded, alt: row.adoptedAlt, reuse: row.reused })}</span>
                   {row.released > 0 && (
                     <span className="flex-shrink-0 text-text-tertiary">
                       {t('profile.guardMatrix.rowReleased', { released: row.released })}
