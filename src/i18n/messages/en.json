@@ -1013,7 +1013,8 @@
         "not_now": "Got it — we'll leave it for now",
         "wrong_channel": "Noted — next time we'll suggest a different route",
         "prefer_buy": "Okay — this time it's your call"
-      }
+      },
+      "preferBuyFollowUp": "I want to buy this time — help me pick a solid one"
     },
     "greenAltRetro": {
       "askReply": "Love that you went with the {item} swap 🌱 One quick curious question — what made this pick work for you? (Tap one below, or just type it)",

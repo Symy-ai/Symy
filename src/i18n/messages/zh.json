@@ -1022,7 +1022,8 @@
         "not_now": "好，这件事先放一放",
         "wrong_channel": "记下了，下次换个路子说",
         "prefer_buy": "好，这次就听你的"
-      }
+      },
+      "preferBuyFollowUp": "这次我想买，帮我挑个靠谱的"
     },
     "greenAltRetro": {
       "askReply": "看到你选了{item}这条更绿的路🌱 顺手问一句：这次主要是为什么？（下面选一个，或直接打字告诉我）",

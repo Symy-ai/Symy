@@ -42,7 +42,7 @@ import {
 import { MicroChallengeCard } from './micro-challenge-card';
 import type { GreenAltCardData } from '@/types/green-alt-card';
 
-export function GreenAltCard({ data }: { data: GreenAltCardData }) {
+export function GreenAltCard({ data, onSendMessage }: { data: GreenAltCardData; onSendMessage?: (content: string) => void | Promise<void> }) {
   const { t } = useI18n();
   const { greenPrefEnabled } = useGreenPref();
   const { guardIntensity } = useGuardIntensity();
@@ -69,10 +69,17 @@ export function GreenAltCard({ data }: { data: GreenAltCardData }) {
   };
 
   // 🐘 batch62-b: 记录拒绝原因 — 先进已确认态防连点 (本地日志 + 载荷双层幂等), 失败静默
+  // 🔧 fix (2026-09-30, owner 报 bug): prefer_buy = 用户明确说「这次想买」— 旧代码
+  //    只静默上报偏好库, 界面停在确认文案, AI 毫无动作("点了一点动静都没有")。
+  //    修法: 与 GreenAltRetroCard 同款 — 代发一条用户消息让 AI 立即接手选品
+  //    (服务端 greenAltPreference 上下文同时能看到 wants to buy this time 注记)。
   const handleReject = async (reason: GreenAltRejectionReason) => {
     if (rejection) return;
     setRejection(reason);
     await reportGreenAltRejection(data.id, reason);
+    if (reason === 'prefer_buy' && onSendMessage) {
+      onSendMessage(t('chat.greenAlt.preferBuyFollowUp', { defaultValue: '这次我想买，帮我挑个靠谱的' }));
+    }
   };
 
   return (

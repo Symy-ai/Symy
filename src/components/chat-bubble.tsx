@@ -299,7 +299,7 @@ export const ChatBubble = memo(function ChatBubble({ message, onDelete, userAvat
         {message.shoppingClarifyCard ? <ShoppingClarifyCard data={message.shoppingClarifyCard} onSendMessage={onSendMessage} /> : null}
 
         {/* 🌱 绿色替代卡 (green_alt SSE / JSON 附带) — 双卡命中时 green 在上 */}
-        {message.greenAlt ? <GreenAltCard data={message.greenAlt} /> : null}
+        {message.greenAlt ? <GreenAltCard data={message.greenAlt} onSendMessage={onSendMessage} /> : null}
         {/* 🌱 batch68-a 采纳后复盘卡 (green_alt_retro SSE / JSON 附带; 选项点击即发收束轮) */}
         {message.greenAltRetro ? <GreenAltRetroCard data={message.greenAltRetro} onSendMessage={onSendMessage} /> : null}
         {/* 🔁 复用优先: "先看看已有的" 建议卡 (服务端预检 reuse_hint 事件附带; guard-off 时卡内自静默) */}
