@@ -85,3 +85,16 @@ export const featureFlags = {
 export function createFeatureFlags(overrides: Partial<typeof featureFlags> = {}): typeof featureFlags {
   return { ...featureFlags, ...overrides };
 }
+
+
+// ============================================================
+// 🔧 2026-09-30 (owner 令): 「如果呢」(gacha/butterfly) 功能暂时隐藏
+// ============================================================
+// "现在功能太多先不上这个功能" — 隐藏 ≠ 删除: 组件代码、i18n 键、API 路由
+// 全部原样保留, 仅 UI 主动入口 (buddy 页按钮 / 登录页价值卡 / 代币与
+// Premium 页条目 / dailyNeeds 提示语) 用此开关条件渲染。
+// 恢复方法: 改回 true 即可, 全站入口一次点亮。
+// butterfly tab 的 URL 直达 (?tab=butterfly) 保留 — 旧分享链接不能断。
+// 注: 用代码常量而非 env — 这是产品决策不是环境差异, 且要的就是
+// "恢复时必须动代码留痕" 的审计性。
+export const GACHA_FEATURE_ENABLED = false;

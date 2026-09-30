@@ -264,7 +264,8 @@ describe('PremiumCard renders guardian framing (en)', () => {
     }
     expect(text).toContain('$9.90/mo · 7-day free trial');
     expect(text).toContain('5 gate guards/day');
-    expect(text).toContain('3 What If/day');
+    // 🔧 2026-09-30 (owner 令) 随动: 「如果呢」对比行随功能隐藏 — 恢复见 feature-flags.ts
+    expect(text).not.toContain('3 What If/day');
     // BUG-2 复用结构不动: WaitlistForm(button 模式) 挂载在卡内
     expect(text).toContain('Join waitlist');
     // 生命时长换算行已随话术移除, 不应再出现

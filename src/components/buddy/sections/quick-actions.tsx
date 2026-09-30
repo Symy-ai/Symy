@@ -1,6 +1,7 @@
 'use client';
 
 import { Shield } from 'lucide-react';
+import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import { useI18n } from '@/i18n/provider';
 import type { ChallengeLimitData } from '@/hooks/use-challenge-limit';
 
@@ -63,18 +64,22 @@ export function QuickActions({ isDemo, isCheckingChallenge, challengePulse, chal
           )}
         </button>
         {/* Round 105: Pet Symy moved to companion detail modal. This button is now Gacha entry. */}
-        <button
-          type="button"
-          onClick={() => onGacha?.()}
-          aria-label={t('buddy.gacha', { defaultValue: 'Gacha' })}
-          className="relative flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/15 hover:from-purple-500/20 hover:to-pink-500/20 hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5 active:scale-95 neon-border-purple cursor-pointer transition-all select-none"
-        >
-          <span className="text-base">🎁</span>
-          <div className="text-left">
-            <p className="text-xs font-semibold text-text-primary">{t('buddy.gacha', { defaultValue: 'Gacha' })}</p>
-            <p className="text-[9px] text-text-tertiary">{t('buddy.gachaDesc', { defaultValue: 'See your reclaimed life' })}</p>
-          </div>
-        </button>
+        {/* 🔧 2026-09-30 (owner 令): 「如果呢」功能暂时隐藏 — 功能太多先不上。
+            代码保留, 恢复 = src/lib/feature-flags.ts 的 GACHA_FEATURE_ENABLED 改回 true。 */}
+        {GACHA_FEATURE_ENABLED && (
+          <button
+            type="button"
+            onClick={() => onGacha?.()}
+            aria-label={t('buddy.gacha', { defaultValue: 'Gacha' })}
+            className="relative flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/15 hover:from-purple-500/20 hover:to-pink-500/20 hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-0.5 active:scale-95 neon-border-purple cursor-pointer transition-all select-none"
+          >
+            <span className="text-base">🎁</span>
+            <div className="text-left">
+              <p className="text-xs font-semibold text-text-primary">{t('buddy.gacha', { defaultValue: 'Gacha' })}</p>
+              <p className="text-[9px] text-text-tertiary">{t('buddy.gachaDesc', { defaultValue: 'See your reclaimed life' })}</p>
+            </div>
+          </button>
+        )}
       </div>
     </div>
   );

@@ -861,7 +861,8 @@
       "growth": "Growth Marks",
       "milestone": "Milestone Marks"
     },
-    "virtualCurrency": "Virtual currency"
+    "virtualCurrency": "Virtual currency",
+    "dailyNeedsLowHintNoGacha": "Symy is resting up. Chat with Symy or take a Guard-it challenge — your companion is right here."
   },
   "chat": {
     "title": "🐘 Symy",

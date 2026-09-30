@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useI18n } from '@/i18n/provider';
+import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
 
@@ -325,13 +326,16 @@ export default function LoginPage() {
                   <p className="text-xs text-text-tertiary mt-0.5 leading-snug">{t('auth.login.valueCards.gate.desc')}</p>
                 </div>
               </div>
-              <div className="glass-card rounded-xl p-3 flex items-start gap-3">
-                <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-lg">🦋</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-text-primary">{t('auth.login.valueCards.gacha.title')}</p>
-                  <p className="text-xs text-text-tertiary mt-0.5 leading-snug">{t('auth.login.valueCards.gacha.desc')}</p>
+              {/* 🔧 2026-09-30 (owner 令): 「如果呢」价值卡随功能一起隐藏 — 恢复见 feature-flags.ts */}
+              {GACHA_FEATURE_ENABLED && (
+                <div className="glass-card rounded-xl p-3 flex items-start gap-3">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/20 flex items-center justify-center text-lg">🦋</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-text-primary">{t('auth.login.valueCards.gacha.title')}</p>
+                    <p className="text-xs text-text-tertiary mt-0.5 leading-snug">{t('auth.login.valueCards.gacha.desc')}</p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Login Form — Glass card */}

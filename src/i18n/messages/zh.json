@@ -861,7 +861,8 @@
       "growth": "成长勋章",
       "milestone": "里程碑勋章"
     },
-    "virtualCurrency": "虚拟货币"
+    "virtualCurrency": "虚拟货币",
+    "dailyNeedsLowHintNoGacha": "Symy 正在攒劲休息。跟它聊聊、做个守护挑战——小象一直陪着你。"
   },
   "chat": {
     "title": "🐘 Symy",

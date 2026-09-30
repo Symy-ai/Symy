@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Coins, Info, X } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
+import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import { apiFetch } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 
@@ -81,10 +82,13 @@ export function TokenRow() {
                     <span className="text-xs text-text-primary">✨ {t('buddy.tokenEarnChallenge', { defaultValue: 'Complete a See it challenge' })}</span>
                     <span className="text-xs font-bold text-emerald-400">+5~10</span>
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-glass-fill/50">
-                    <span className="text-xs text-text-primary">🎁 {t('buddy.tokenEarnGacha', { defaultValue: 'Complete a What If story' })}</span>
-                    <span className="text-xs font-bold text-emerald-400">+10~15</span>
-                  </div>
+                  {/* 🔧 2026-09-30 (owner 令): 「如果呢」条目随功能一起隐藏 — 恢复见 feature-flags.ts */}
+                  {GACHA_FEATURE_ENABLED && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-glass-fill/50">
+                      <span className="text-xs text-text-primary">🎁 {t('buddy.tokenEarnGacha', { defaultValue: 'Complete a What If story' })}</span>
+                      <span className="text-xs font-bold text-emerald-400">+10~15</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-2 rounded-lg bg-glass-fill/50">
                     <span className="text-xs text-text-primary">🔥 {t('buddy.tokenEarnStreak', { defaultValue: 'Daily streak bonus' })}</span>
                     <span className="text-xs font-bold text-emerald-400">+5</span>
@@ -98,10 +102,13 @@ export function TokenRow() {
                     <span className="text-xs text-text-primary">🔄 +1 {t('buddy.tokenSpendSeeIt', { defaultValue: 'See it (extra challenge)' })}</span>
                     <span className="text-xs font-bold text-cyan-400">20</span>
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/8 border border-purple-500/15">
-                    <span className="text-xs text-text-primary">🔄 +1 {t('buddy.tokenSpendGacha', { defaultValue: 'What If (extra story)' })}</span>
-                    <span className="text-xs font-bold text-purple-400">50</span>
-                  </div>
+                  {/* 🔧 2026-09-30 (owner 令): 「如果呢」条目随功能一起隐藏 — 恢复见 feature-flags.ts */}
+                  {GACHA_FEATURE_ENABLED && (
+                    <div className="flex items-center justify-between p-2 rounded-lg bg-purple-500/8 border border-purple-500/15">
+                      <span className="text-xs text-text-primary">🔄 +1 {t('buddy.tokenSpendGacha', { defaultValue: 'What If (extra story)' })}</span>
+                      <span className="text-xs font-bold text-purple-400">50</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-2 rounded-lg bg-orange-500/8 border border-orange-500/15">
                     <span className="text-xs text-text-primary">🔄 {t('buddy.tokenSpendStreakRestore', { defaultValue: 'Restore broken streak' })}</span>
                     <span className="text-xs font-bold text-orange-400">50</span>

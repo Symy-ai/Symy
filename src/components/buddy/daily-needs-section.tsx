@@ -15,6 +15,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
+import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import type { DailyNeeds, NeedType, HarmonyStatus } from '@/types/buddy-state';
 import { getHarmonyStatus } from '@/lib/buddy-defaults';
 
@@ -193,7 +194,11 @@ export function DailyNeedsSection({ dailyNeeds }: DailyNeedsSectionProps) {
         <div className="mt-2.5 pt-2 border-t border-amber-500/10">
           <p className="text-[10px] text-amber-400/80 italic flex items-start gap-1">
             <span className="text-xs">💡</span>
-            <span>{t('buddy.dailyNeedsLowHint', { defaultValue: 'Symy is resting up. Chat with Symy, take a Guard-it challenge, or start a What If story — your companion is right here.' })}</span>
+            {/* 🔧 2026-09-30 (owner 令): 「如果呢」随功能隐藏, 提示语改为不含它 —
+                i18n 库原文保留, 恢复 = feature-flags.ts 开回 true 并还原此 defaultValue。 */}
+            <span>{GACHA_FEATURE_ENABLED
+              ? t('buddy.dailyNeedsLowHint', { defaultValue: 'Symy is resting up. Chat with Symy, take a Guard-it challenge, or start a What If story — your companion is right here.' })
+              : t('buddy.dailyNeedsLowHintNoGacha', { defaultValue: 'Symy 正在攒劲休息。跟它聊聊、做个守护挑战——小象一直陪着你。' })}</span>
           </p>
         </div>
       )}

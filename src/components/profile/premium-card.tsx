@@ -26,6 +26,7 @@
 
 import { Crown, Sparkles, BookOpen, Infinity as InfinityIcon, Wallet } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
+import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import { WaitlistForm } from './waitlist-form';
 
 export interface PremiumCardProps {
@@ -148,10 +149,13 @@ export function PremiumCard({ locale: _locale }: PremiumCardProps) {
             <span className="text-text-tertiary">{t('profile.premiumFreeLabel', { defaultValue: 'Free' })}</span>
             <span className="text-amber-600 dark:text-amber-400 font-bold">Premium</span>
           </div>
-          <div className="flex items-center justify-between text-[10px] text-text-tertiary">
-            <span>{t('profile.premiumCompareGacha', { defaultValue: '3 Gacha/day' })}</span>
-            <span className="text-amber-600 dark:text-amber-400">∞ {t('profile.premiumCompareUnlimited', { defaultValue: 'unlimited' })}</span>
-          </div>
+          {/* 🔧 2026-09-30 (owner 令): 「如果呢」对比行随功能一起隐藏 — 恢复见 feature-flags.ts */}
+          {GACHA_FEATURE_ENABLED && (
+            <div className="flex items-center justify-between text-[10px] text-text-tertiary">
+              <span>{t('profile.premiumCompareGacha', { defaultValue: '3 Gacha/day' })}</span>
+              <span className="text-amber-600 dark:text-amber-400">∞ {t('profile.premiumCompareUnlimited', { defaultValue: 'unlimited' })}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between text-[10px] text-text-tertiary">
             <span>{t('profile.premiumCompareGuards', { defaultValue: '5 gate guards/day' })}</span>
             <span className="text-amber-600 dark:text-amber-400">∞ {t('profile.premiumCompareUnlimited', { defaultValue: 'unlimited' })}</span>
