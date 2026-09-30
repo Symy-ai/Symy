@@ -210,6 +210,8 @@ describe('④ 非流式抛错 → null + 错误采集', () => {
     const res = await dispatchLettaTurn(baseInput());
 
     expect(res).toBeNull();
+    // 🔧 病灶2重试随动 (2026-09-30): 5xx 属可重试 → 先重试一次, 再挂才落 catch
+    expect(sendToAgent).toHaveBeenCalledTimes(2);
     expect(captureLLMGeneration).toHaveBeenCalledTimes(1);
     expect(captureLLMGeneration).toHaveBeenCalledWith(expect.objectContaining({
       isError: true,
@@ -229,13 +231,83 @@ describe('④ 非流式抛错 → null + 错误采集', () => {
       vi.clearAllMocks();
       vi.mocked(sendToAgent).mockRejectedValue(Object.assign(new Error(`fail ${status ?? 'none'}`), status !== undefined ? { status } : {}));
       await dispatchLettaTurn(baseInput());
+      // 🔧 病灶2重试随动: 429/无status(消息不含网络关键词,fail none) 不重试1次;
+      //    401/403 确定性错误不重试 1 次 — 429 重试 2 次 (fail 429 无网络词, 仍重试: status===429)
+      expect(sendToAgent).toHaveBeenCalledTimes(status === 429 ? 2 : 1);
       if (level === 'error') {
         expect(logger.error).toHaveBeenCalledTimes(1);
         expect(logger.warn).not.toHaveBeenCalled();
+      } else if (status === 429) {
+        // 病灶2随动: 429 重试一次 — warn 2 次 (重试提示 + 最终分类)
+        expect(logger.warn).toHaveBeenCalledTimes(2);
+        expect(logger.error).not.toHaveBeenCalled();
       } else {
         expect(logger.warn).toHaveBeenCalledTimes(1);
         expect(logger.error).not.toHaveBeenCalled();
       }
     }
+  });
+});
+
+describe('⑤ 非流式瞬态重试 (病灶2: Symy is quiet 间歇503 修复, 2026-09-30)', () => {
+  it('429 → 退避重试一次成功 → 正常 JSON 返回, 不再打用户 503', async () => {
+    const { sendToAgent } = await import('@/lib/letta');
+    vi.mocked(sendToAgent)
+      .mockRejectedValueOnce(Object.assign(new Error('rate limited'), { status: 429 }))
+      .mockResolvedValueOnce({ reply: 'recovered', reasoning: 'r', toolCalls: [] });
+
+    const res = await dispatchLettaTurn(baseInput());
+
+    expect(sendToAgent).toHaveBeenCalledTimes(2);
+    expect(res).not.toBeNull();
+    expect(res!.status).toBe(200);
+    const body = await res!.json();
+    expect(body.reply).toBe('recovered');
+  });
+
+  it('5xx 抖动 → 重试一次成功', async () => {
+    const { sendToAgent } = await import('@/lib/letta');
+    vi.mocked(sendToAgent)
+      .mockRejectedValueOnce(Object.assign(new Error('upstream boom'), { status: 502 }))
+      .mockResolvedValueOnce({ reply: 'ok after 502', reasoning: '', toolCalls: [] });
+
+    const res = await dispatchLettaTurn(baseInput());
+
+    expect(sendToAgent).toHaveBeenCalledTimes(2);
+    expect(res!.status).toBe(200);
+  });
+
+  it('网络类瞬态 (fetch failed 无 status) → 重试一次成功', async () => {
+    const { sendToAgent } = await import('@/lib/letta');
+    vi.mocked(sendToAgent)
+      .mockRejectedValueOnce(new Error('fetch failed'))
+      .mockResolvedValueOnce({ reply: 'net ok', reasoning: '', toolCalls: [] });
+
+    const res = await dispatchLettaTurn(baseInput());
+
+    expect(sendToAgent).toHaveBeenCalledTimes(2);
+    expect(res!.status).toBe(200);
+  });
+
+  it('401 确定性错误 → 不重试 (1次调用即抛, 避免白加延迟)', async () => {
+    const { sendToAgent } = await import('@/lib/letta');
+    vi.mocked(sendToAgent).mockRejectedValue(Object.assign(new Error('unauthorized'), { status: 401 }));
+
+    const res = await dispatchLettaTurn(baseInput());
+
+    expect(sendToAgent).toHaveBeenCalledTimes(1);
+    expect(res).toBeNull();
+  });
+
+  it('重试后仍失败 → 落 catch: null + 错误采集 + 分类日志 (与原失败路径一致)', async () => {
+    const { sendToAgent } = await import('@/lib/letta');
+    vi.mocked(sendToAgent).mockRejectedValue(Object.assign(new Error('down hard'), { status: 500 }));
+
+    const res = await dispatchLettaTurn(baseInput());
+
+    expect(sendToAgent).toHaveBeenCalledTimes(2);
+    expect(res).toBeNull();
+    expect(captureLLMGeneration).toHaveBeenCalledWith(expect.objectContaining({ isError: true, errorMessage: 'down hard' }));
+    expect(logger.error).toHaveBeenCalledWith('[Chat API] Letta server error (500):', 'down hard');
   });
 });

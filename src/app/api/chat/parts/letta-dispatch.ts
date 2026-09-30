@@ -86,7 +86,31 @@ export async function dispatchLettaTurn(input: LettaDispatchInput): Promise<Resp
     }
 
     // 非流式模式（fallback / 旧版前端兼容）
-    const testResult = await processLettaResponse(userContentWithStage, impulseContext, userId || undefined, targetAgentId, validChallengeContext);
+    // 🔧 可用性 fix (2026-09-30, 病灶2 of "Symy is quiet" 间歇503):
+    //    并发探针 2/3 挂 — Letta API 瞬态失败(429限流/5xx抖动/网络reset)时旧代码
+    //    直接 catch → return null → route 落 503「AI 不可用」。病灶1(getUserAgentId
+    //    DB查询)已修(85974d0); 本处是病灶2: Letta API 调用本身无重试。
+    //    修法: 仅对可重试错误(429/5xx/网络类)退避 400ms 重试一次; 401/403/404 等
+    //    确定性错误不重试(重试必然再挂, 白白加延迟)。流式路径不重试(SSE 已开流,
+    //    重试会产生重复流, 由前端 Retry 按钮兜底)。
+    const callNonStream = (): ReturnType<typeof processLettaResponse> =>
+      processLettaResponse(userContentWithStage, impulseContext, userId || undefined, targetAgentId, validChallengeContext);
+    const isRetryableLettaError = (e: unknown): boolean => {
+      const status = (e as { status?: number }).status;
+      if (status === 429 || (typeof status === 'number' && status >= 500)) return true;
+      // 网络类瞬态: fetch 超时/连接reset/DNS 抖动 — SDK 常以无 status 的 Error 冒出
+      const msg = e instanceof Error ? e.message : String(e);
+      return /timeout|timed?\s*out|network|fetch failed|ECONNRESET|ECONNREFUSED|ETIMEDOUT|socket hang up|aborted/i.test(msg);
+    };
+    let testResult;
+    try {
+      testResult = await callNonStream();
+    } catch (firstErr) {
+      if (!isRetryableLettaError(firstErr)) throw firstErr;
+      logger.warn('[Chat API] Letta transient failure (non-stream), retrying once after backoff:', firstErr instanceof Error ? firstErr.message : String(firstErr));
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      testResult = await callNonStream(); // 再挂则落外层 catch (退款+分类日志照旧)
+    }
 
     // 📋 AI 行为审计（道用四·减法 + 六·公开）— 异步写入，不阻塞响应
     // 🔧 ARCH fix (Round 22 BUG-R22-C1): 用 fireAndForgetSafely 防 Vercel kill 丢失审计日志

@@ -77,7 +77,9 @@ describe('route-structure-lock — 7 相位锚顺序 (拆分不可漂移)', () =
       return partSource.indexOf(pattern);
     };
     const stream = partAnchor('await streamToAgent(');
-    const nonStream = partAnchor('await processLettaResponse(');
+    // 🔧 病灶2重试随动 (2026-09-30): 调用点包入 callNonStream 闭包 (重试用),
+    //    锁闭包内的直呼形态 — 语义不变 (仍在 dispatch 体内, 流式先于非流式)。
+    const nonStream = partAnchor('processLettaResponse(userContentWithStage');
     const buildPipeline = partAnchor('buildSsePipeline({');
     expect(stream).toBeGreaterThan(-1);
     expect(nonStream).toBeGreaterThan(stream);
