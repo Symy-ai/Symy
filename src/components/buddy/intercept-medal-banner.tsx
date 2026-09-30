@@ -18,7 +18,7 @@ import { INTERCEPT_MEDAL_EVENT } from "@/lib/intercept-medal";
 import { classifyInterceptReason } from "@/lib/intercept-reason";
 import { InterceptReasonChip } from "@/components/chat/parts/intercept-reason-chip";
 import type { InterceptMedalData } from "@/types/intercept-medal";
-import { moneyToFreedomLabel } from "@/lib/freedom-time";
+import { moneyToFreedomLabel, moneyToHours } from "@/lib/freedom-time";
 import { ShareModal } from "@/components/share/share-modal";
 import { normalizeInterceptCategory, CATEGORY_WARM_COPY, type InterceptCategory } from "@/features/butterfly/green-alt-copy";
 
@@ -72,8 +72,16 @@ export function InterceptMedalBanner({
   const warmLine = t(CATEGORY_WARM_COPY[categoryId].lineKey, {
     defaultValue: 'A guard worth keeping.',
   });
+  // 🔧 文案 fix (2026-09-30, 竖排修复后的浏览器终验带出): bannerWithHours 模板
+  //    "+{hours} 小时自由时间" 的 {hours} 此前传的是 moneyToFreedomLabel 返回值
+  //    (自带"小时"单位) → 渲染成 "520 小时 小时自由时间" 单位重复。
+  //    修法: {hours} 传不带单位的数值 (moneyToHours + display 规则与 label 相同:
+  //    <10 保留 1 位小数, 否则取整), 单位由模板自己出。bannerSub 的 {amount}
+  //    用带单位 label 是正确形态, 不动。
+  const hoursNum = moneyToHours(medal.savedCents / 100, hourlyRate);
+  const hoursDisplay = hoursNum < 10 ? hoursNum.toFixed(1) : String(Math.round(hoursNum));
   const warmTpl = medal.savedCents > 0
-    ? t('chat.interceptWarm.bannerWithHours', { hours: savedTime, line: warmLine, defaultValue: `+{hours} free hours — ${warmLine}` })
+    ? t('chat.interceptWarm.bannerWithHours', { hours: hoursDisplay, line: warmLine, defaultValue: `+{hours} free hours — ${warmLine}` })
     : t('chat.interceptWarm.bannerNoAmount', { line: warmLine, defaultValue: `+0 free hours — ${warmLine}` });
 
   return (
