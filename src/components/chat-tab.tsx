@@ -48,6 +48,7 @@ import { CompanionBackground } from './chat/parts/companion-background';
 import { ChatComposer } from './chat/sections/chat-composer';
 import { DepositDialogSection } from './chat/sections/deposit-dialog-section';
 import { SilentMomentSection } from './chat/sections/silent-moment-section';
+import { useEntryDismiss } from './chat/hooks/use-entry-dismiss';
 import { BUDDY_ACCENT, BUDDY_GRADIENT } from './chat/chat-accents';
 import { useAuth } from '@/components/auth/auth-provider';
 import type { ChatTabProps } from './chat/chat-tab-props';
@@ -440,6 +441,13 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   const { timeline: guardMoments, isLoading: guardMomentsLoading } = useGuardMoments();
   const [guardMomentsOpen, setGuardMomentsOpen] = useState(false);
 
+  // 🔧 2026-09-30 (owner 需求): chat 顶部 4 张固定卡可彻底关闭 (本会话内不再出现,
+  // 刷新/新会话入口回归 — sessionStorage 见 use-entry-dismiss.ts)
+  const weeklyReviewDismiss = useEntryDismiss('weekly-review');
+  const guardMomentsDismiss = useEntryDismiss('guard-moments');
+  const activeGuardsDismiss = useEntryDismiss('active-guards');
+  const guardDiaryDismiss = useEntryDismiss('guard-diary');
+
   // 🐘 batch59-a 进行中守护面板 — 固定入口随时可开 (空态用最近胜利时刻激励);
     // 冷静期 pending 由组件层读 localStorage 传入 hook (hooks 层禁依赖 components)
     // 🔧 b138 §2.2 (2026-09-29): getActivePendingPrepurchase 每次 render 做 JSON.parse —
@@ -517,21 +525,21 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
       {/* 🐘 batch52-b 周复盘 — 固定入口常驻; 卡打开时入口让位 */}
       {/* 🔧 QA fix (BUG-2, 2026-09-28): demo/guest 态 derivation 恒为 null(设计上不派生个人数据), */}
       {/*   入口点击后只会隐藏自身、卡片永不渲染 = 死按钮。demo 态直接不渲染入口(QA Round 2A 实锤)。 */}
-      {!isDemo && !weeklyReviewOpen && <WeeklyReviewEntry onOpen={openReview} />}
+      {!isDemo && !weeklyReviewOpen && !weeklyReviewDismiss.dismissed && <WeeklyReviewEntry onOpen={openReview} onDismiss={weeklyReviewDismiss.dismiss} />}
       {weeklyReviewOpen && weeklyReview && (
         <WeeklyReviewCard derivation={weeklyReview} onCompleted={markReviewed} onClose={closeReview} />
       )}
 
       {/* 🐘 batch58-a 守护时刻时间线 — 固定入口常驻; 卡打开时入口让位 (数据未到时点击等加载) */}
       {/* 🔧 QA fix (BUG-2): 同上 — guest 态 /api/buddy/health-events 401 → timeline 恒 null, 入口成死按钮。 */}
-      {!isDemo && !guardMomentsOpen && <GuardMomentsEntry onOpen={() => setGuardMomentsOpen(true)} />}
+      {!isDemo && !guardMomentsOpen && !guardMomentsDismiss.dismissed && <GuardMomentsEntry onOpen={() => setGuardMomentsOpen(true)} onDismiss={guardMomentsDismiss.dismiss} />}
       {guardMomentsOpen && !guardMomentsLoading && guardMoments && (
         <GuardMomentsCard timeline={guardMoments} onClose={() => setGuardMomentsOpen(false)} />
       )}
 
       {/* 🐘 batch59-a 进行中守护面板 — 固定入口常驻; 卡打开时入口让位 (数据未到时点击等加载) */}
       {/* 🔧 QA fix (BUG-2): 同上 — guest 态 activeGuards 恒 null。 */}
-      {!isDemo && !activeGuardsOpen && <ActiveGuardsEntry onOpen={() => setActiveGuardsOpen(true)} />}
+      {!isDemo && !activeGuardsOpen && !activeGuardsDismiss.dismissed && <ActiveGuardsEntry onOpen={() => setActiveGuardsOpen(true)} onDismiss={activeGuardsDismiss.dismiss} />}
       {activeGuardsOpen && !activeGuardsLoading && activeGuards && (
         <ActiveGuardsPanel
           summary={activeGuards}
@@ -544,7 +552,7 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
       <NightGuardBanner />
 
       {/* 🐘 batch47-b 今日守护日记卡 — 回访条之下, ledger 数据的每日一句叙事 */}
-      <GuardDiaryCard streakDays={buddyState?.streak ?? 0} isDemo={isDemo} />
+      {!guardDiaryDismiss.dismissed && <GuardDiaryCard streakDays={buddyState?.streak ?? 0} isDemo={isDemo} onDismiss={guardDiaryDismiss.dismiss} />}
 
       {/* === Messages (Virtuoso + indicators) === */}
       <InterceptMedalMoment streakDays={(buddyState?.streak ?? 0) > 0 ? buddyState?.streak : undefined} isDemo={isDemo} />

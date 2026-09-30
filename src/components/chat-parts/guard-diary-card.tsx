@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Share2, Star } from 'lucide-react';
+import {ChevronDown, ChevronUp, Share2, Star, X } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 import { loadHtmlToImage } from '@/lib/html-to-image-loader';
 import { logger } from '@/lib/logger';
@@ -30,11 +30,13 @@ export interface GuardDiaryCardProps {
   /** 连续守护天数 (分享面用; 0 不显示) */
   streakDays: number;
   isDemo?: boolean;
+  /** 🔧 2026-09-30 (owner 需求): 卡片彻底关闭 — 点击后本会话不再出现 (use-entry-dismiss) */
+  onDismiss?: () => void;
 }
 
 type ShareState = 'idle' | 'generating' | 'ready' | 'error';
 
-export function GuardDiaryCard({ streakDays, isDemo = false }: GuardDiaryCardProps) {
+export function GuardDiaryCard({ streakDays, isDemo = false, onDismiss }: GuardDiaryCardProps) {
   const { t, locale } = useI18n();
   const { diary } = useGuardDiary(isDemo);
   const [expanded, setExpanded] = useState(false);
@@ -169,6 +171,16 @@ export function GuardDiaryCard({ streakDays, isDemo = false }: GuardDiaryCardPro
         >
           <Share2 className="h-4 w-4" aria-hidden="true" />
         </button>
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="shrink-0 rounded-lg p-1 text-text-tertiary transition-colors hover:bg-glass-fill hover:text-text-secondary"
+            aria-label={t('common.close', { defaultValue: 'Close' })}
+            data-testid="guard-diary-dismiss"
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
 
       {/* 私有展开面 — estSaved (里子) + 最近收藏回看 */}
