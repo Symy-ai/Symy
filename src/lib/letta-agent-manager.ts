@@ -511,13 +511,32 @@ export async function getUserAgentId(userId: string): Promise<string | null> {
     return null;
   }
 
+  // 🔧 可用性 fix (2026-09-30, "Symy is quiet" 间歇 503): profiles 查询是 chat 链路
+  //    的单点 — 瞬时 DB 抖动 (网络/连接池/超时) 返回 undefined 时, 旧代码直接把
+  //    null 传给 buildAgentUnavailableResponse → 已有 agent 的用户被打 503「AI 不可用」。
+  //    根因修复: 区分「查询失败」与「真的没有 agent」— 失败时退避重试一次, 重试仍
+  //    失败才落 null (此时 503 文案与真实状态一致)。
   const { supabase } = createAdminClient();
   if (!supabase) return null;
 
-  const { data: profile } = await supabase.from('profiles').select('letta_agent_id').eq('id', userId).maybeSingle();
+  const queryAgentId = async (): Promise<{ ok: true; value: string | null } | { ok: false }> => {
+    const { data: profile, error } = await supabase.from('profiles').select('letta_agent_id').eq('id', userId).maybeSingle();
+    if (error) return { ok: false };
+    const profileData = profile as { letta_agent_id: string | null } | null;
+    return { ok: true, value: profileData?.letta_agent_id || null };
+  };
 
-  const profileData = profile as { letta_agent_id: string | null } | null;
-  return profileData?.letta_agent_id || null;
+  const first = await queryAgentId();
+  if (first.ok) return first.value;
+
+  // 查询失败 (≠ 没有 agent): 退避 250ms 重试一次
+  logger.warn('[Letta Agent Manager] getUserAgentId: profiles query failed, retrying once after backoff');
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  const second = await queryAgentId();
+  if (second.ok) return second.value;
+
+  logger.error('[Letta Agent Manager] getUserAgentId: profiles query failed twice, returning null');
+  return null;
 }
 
 // 🔧 ARCH fix (Round 44 R44-A-7 — saveAgentIdToProfile 死代码 + 缺 CAS 的 orphan agent 风险):
