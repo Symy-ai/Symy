@@ -335,6 +335,81 @@ describe('POST /api/buddy/deposit', () => {
     expect(rollbackCalled).toBe(false);
   });
 
+  it('race fix: uses atomic RPC fund state and never writes stale dream_funds.current', async () => {
+    let fromCallCount = 0;
+    const dreamFundUpdate = vi.fn();
+    const rpc = vi.fn(async () => ({
+      data: {
+        dream_funds: [
+          { fund_id: 'df-savings', current: 125 },
+        ],
+      },
+      error: null,
+    }));
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      supabase: {
+        from: vi.fn((table: string) => {
+          fromCallCount++;
+          if (table === 'dream_funds') {
+            return {
+              select: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  order: vi.fn(() => ({
+                    order: vi.fn(async () => ({
+                      data: [{ fund_id: 'df-savings', name: 'Savings', target: 1000, current: 100, emoji: '🏦' }],
+                      error: null,
+                    })),
+                  })),
+                })),
+              })),
+              update: dreamFundUpdate,
+            };
+          }
+          if (fromCallCount === 1) {
+            return {
+              select: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    maybeSingle: vi.fn(async () => ({
+                      data: { id: 'ch-1', user_id: 'user-123', amount: 25, challenge_type: 'standard', status: 'active', deposit_status: 'unsettled' },
+                      error: null,
+                    })),
+                  })),
+                })),
+              })),
+              update: vi.fn(),
+            };
+          }
+          return {
+            update: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn(async () => ({ data: [{ id: 'ch-1' }], error: null })),
+                  })),
+                })),
+              })),
+            })),
+            select: vi.fn(),
+          };
+        }),
+        rpc,
+      },
+      user: { id: 'user-123' },
+      error: null,
+      mergeCookies: <T>(res: T) => res,
+      mergeCookiesOnResponse: <T>(res: T) => res,
+      pendingCookies: [],
+    } as never);
+
+    const res = await POST(makeRequest({ challengeId: 'ch-1', action: 'deposit' }));
+    const json = await res.json();
+    expect(res.status).toBe(200);
+    expect(json.newCurrent).toBe(125);
+    expect(dreamFundUpdate).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
+
   it.skip('returns 200 with partial=true when dream_funds UPDATE fails (CRITICAL-2 fix: prevent client retry)', async () => {
     // 🔧 ARCH fix (Round 23 ADV-REVIEW CRITICAL-2):
     //    Round 21 returned 500 on dream_funds UPDATE failure → client retries → double token reward

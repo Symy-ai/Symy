@@ -191,6 +191,7 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
 
   // 2. 调 apply_buddy_state_delta
   let firstAllocation = true;
+  const appliedFunds: Array<{ fund: typeof targetFund; amount: number; data: { dream_funds?: Array<{ fund_id?: string; current?: unknown }> } | null }> = [];
   const fundResults: Array<{
     fundId: string;
     fundName: string;
@@ -202,8 +203,9 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     goalReached: boolean;
   }> = [];
 
-  for (const { fund, amount } of fundAllocation) {
-    const { error: rpcError } = await supabase.rpc('apply_buddy_state_delta', {
+  for (const allocation of fundAllocation) {
+    const { fund, amount } = allocation;
+    const { data, error: rpcError } = await supabase.rpc('apply_buddy_state_delta', {
       p_user_id: user.id,
       p_token_delta: firstAllocation ? bonusTokens : 0,
       p_total_saved_delta: amount,
@@ -226,21 +228,28 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
       //    真正的根因修复 (需要 DB migration): 创建 batch RPC apply_deposit_batch,
       //    在单个 DB transaction 内原子地应用所有 funds — 要么全成功, 要么全失败。
       //    详见 supabase/migrations/125_deposit_batch_rpc.sql (待部署)。
-      logger.error(`[Deposit] PARTIAL FAILURE — challenge ${challengeId} marked deposited but ${fund.id} failed. Applied funds: ${fundResults.map(r => r.fundId).join(', ') || 'none'}. User cannot retry — ops reconciliation needed.`);
+      logger.error(`[Deposit] PARTIAL FAILURE — challenge ${challengeId} marked deposited but ${fund.id} failed. Applied funds: ${appliedFunds.map(r => r.fund.id).join(', ') || 'none'}. User cannot retry — ops reconciliation needed.`);
 
       return NextResponse.json({
         error: 'Deposit partially failed — please contact support',
         partial: true,
-        appliedFunds: fundResults.map(r => ({ fundId: r.fundId, fundName: r.fundName, amount: r.amount })),
+        appliedFunds: appliedFunds.map(r => ({ fundId: r.fund.id, fundName: r.fund.name, amount: r.amount })),
         failedFund: { fundId: fund.id, fundName: fund.name, amount },
         challengeId,
       }, { status: 500 });
     }
 
-    const fundNewCurrent = Math.min(fund.target, fund.current + amount);
-    const fundProgress = Math.round((fundNewCurrent / fund.target) * 100);
-    const fundGoalReached = fundNewCurrent >= fund.target;
+    appliedFunds.push({ fund, amount, data: data as { dream_funds?: Array<{ fund_id?: string; current?: unknown }> } | null });
 
+    firstAllocation = false;
+  }
+
+  const lastRpcData = appliedFunds.at(-1)?.data;
+  const finalFunds = Array.isArray(lastRpcData?.dream_funds) ? lastRpcData.dream_funds : [];
+  for (const { fund, amount } of appliedFunds) {
+    const finalFund = finalFunds.find((item: { fund_id?: string }) => item.fund_id === fund.id);
+    const fundNewCurrent = typeof finalFund?.current === 'number' ? finalFund.current : fund.current;
+    const fundProgress = Math.round((fundNewCurrent / fund.target) * 100);
     fundResults.push({
       fundId: fund.id,
       fundName: fund.name,
@@ -249,38 +258,13 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
       newCurrent: fundNewCurrent,
       target: fund.target,
       progress: fundProgress,
-      goalReached: fundGoalReached,
+      goalReached: fundNewCurrent >= fund.target,
     });
-
-    firstAllocation = false;
-  }
-
-  // 3. 同步 dream_funds 表
-  // 🔧 ARCH fix (2026-07-22 P1 — adversarial review: dream_funds UPDATE 无 CAS):
-  //    旧代码: UPDATE current = result.newCurrent (无 CAS)
-  //    Bug: 并发请求覆盖彼此的更新 (last-write-wins)
-  //    修复: 加 CAS — 只在 current 未变时更新 (但 RPC 已原子更新 buddy_state,
-  //    dream_funds 是同步副本, 所以用 RPC 返回的 newCurrent 作为期望值)
-  //    注意: 这里 CAS 失败是可接受的 — buddy_state 是 source of truth,
-  //    dream_funds 表最终会被 buddy-sync 同步
-  let partial = false;
-  let partialMessage: string | undefined;
-
-  for (const result of fundResults) {
-    const { error: fundUpdateError } = await supabase
-      .from('dream_funds')
-      .update({ current: result.newCurrent, updated_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .eq('fund_id', result.fundId);
-
-    if (fundUpdateError) {
-      logger.error(`[Deposit] dream_funds UPDATE failed for fund ${result.fundId}:`, fundUpdateError.message);
-      partial = true;
-      partialMessage = 'dream_funds table sync failed — buddy-sync will reconcile';
-    }
   }
 
   // 5. 为每个基金创建 health_event (Fill history)
+  const partial = false;
+  let partialMessage: string | undefined;
   try {
     const { createHealthEvent } = await import('@/lib/health-impact');
     const hourlyRate = await getUserHourlyRate(user.id);
