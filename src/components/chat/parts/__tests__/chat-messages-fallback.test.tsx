@@ -16,6 +16,7 @@ vi.mock('@/i18n/provider', () => ({
         'chat.deleteMessage': 'Delete',
         'chat.aiFallback.retry': 'Retry',
         'chat.aiFallback.streamInterrupted': 'The reply was cut off.',
+        'chat.messageUnavailable': 'This message is temporarily unavailable. Try refreshing.',
       };
       return map[key] ?? opts?.defaultValue ?? key;
     },
@@ -93,5 +94,11 @@ describe('ChatMessages fallback states', () => {
     expect(screen.queryByText(/\[symy-clarify:clothing\]/)).toBeNull();
     expect(screen.getByText('Want to see what for the child?')).toBeTruthy();
     expect(screen.queryByText('Hello')).toBeNull();
+  });
+
+  it('keeps malformed user content unchanged for the message-level boundary', () => {
+    const malformed = { id: 'bad', role: 'user' as const, content: null as unknown as string, timestamp: new Date() };
+
+    expect(toDisplayMessage(malformed)).toBe(malformed);
   });
 });

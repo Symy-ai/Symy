@@ -865,6 +865,7 @@
     "dailyNeedsLowHintNoGacha": "Symy is resting up. Chat with Symy or take a Guard-it challenge — your companion is right here."
   },
   "chat": {
+    "messageUnavailable": "This message is temporarily unavailable. Try refreshing.",
     "title": "🐘 Symy",
     "duplicatePrecheck": {
       "title": "Duplicate precheck",

@@ -865,6 +865,7 @@
     "dailyNeedsLowHintNoGacha": "Symy 正在攒劲休息。跟它聊聊、做个守护挑战——小象一直陪着你。"
   },
   "chat": {
+    "messageUnavailable": "这条消息暂时打不开了，刷新试试",
     "title": "🐘 Symy",
     "duplicatePrecheck": {
       "title": "重复购买预检",

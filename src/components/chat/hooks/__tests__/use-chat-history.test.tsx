@@ -111,6 +111,25 @@ describe('useChatHistory — 分页加载', () => {
     ]);
   });
 
+  it('畸形历史记录被过滤, 不进入消息列表', async () => {
+    apiFetchMock.mockResolvedValue({
+      messages: [
+        serverMessage('m1', 'user'),
+        { id: 'm2', role: 'assistant', content: null },
+        { id: 'm3', role: 'unknown', content: 'bad role' },
+        null,
+        serverMessage('m4', 'assistant'),
+      ],
+      hasMore: false,
+    });
+    const setMessagesSync = vi.fn();
+
+    renderHook(() => useChatHistory(makeParams({ setMessagesSync })));
+
+    await waitFor(() => expect(setMessagesSync).toHaveBeenCalled());
+    expect(setMessagesSync.mock.calls[0][0].map((message: { id: string }) => message.id)).toEqual(['m1', 'm4']);
+  });
+
   it('challenge 模式: 有 activeChallenge 时 mode=challenge, 消息带 challenge 标记', async () => {
     apiFetchMock.mockResolvedValue({ messages: [serverMessage('c1', 'user')], hasMore: false });
     const setMessagesSync = vi.fn();

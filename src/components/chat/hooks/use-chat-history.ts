@@ -143,16 +143,16 @@ export function useChatHistory({
         setHistoryLoadError(null);
         setHasMore(data.hasMore ?? false);
         if (data.messages?.length) {
-          const loaded: ChatMessage[] = data.messages.map(
-            (m) => ({
+          const loaded: ChatMessage[] = data.messages
+            .filter((m) => m?.id && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+            .map((m) => ({
               id: m.id,
               role: m.role as 'user' | 'assistant',
               content: m.content,
               reasoning: m.reasoning || undefined,
               timestamp: new Date(m.created_at),
               mode: mode as 'normal' | 'challenge',
-            })
-          );
+            }));
           setMessagesSync(loaded);
         } else {
           setMessagesSync([]);

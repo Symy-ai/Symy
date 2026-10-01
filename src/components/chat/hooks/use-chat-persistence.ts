@@ -136,16 +136,16 @@ export function useChatPersistence({
       setHasMore(data.hasMore ?? false);
 
       if (data.messages?.length) {
-        const older: ChatMessage[] = data.messages.map(
-          (m) => ({
+        const older: ChatMessage[] = data.messages
+          .filter((m) => m?.id && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+          .map((m) => ({
             id: m.id,
             role: m.role as 'user' | 'assistant',
             content: m.content,
             reasoning: m.reasoning || undefined,
             timestamp: new Date(m.created_at),
             mode: mode as 'normal' | 'challenge',
-          })
-        );
+          }));
 
         // 🔧 Adversarial review fix: 先计算 deduped (用 messagesRef.current 而非 setMessagesSync 内 prev)
         const existingIds = new Set(messagesRef.current.map(m => m.id));
