@@ -29,6 +29,8 @@ export interface BuildImpulseForecastTurnInput {
   now: Date;
   /** 测试可注入 rng, 让话术轮换确定 */
   rng?: () => number;
+  /** 用户 IANA 时区 — 时段/星期/自然日按用户本地分桶 (缺省回退运行时本地) */
+  timeZone?: string | null;
 }
 
 /**
@@ -37,7 +39,7 @@ export interface BuildImpulseForecastTurnInput {
  */
 export function buildImpulseForecastTurn(input: BuildImpulseForecastTurnInput): ImpulseForecastTurn | null {
   if (!detectForecastQuery(input.userContent)) return null;
-  return buildImpulseForecastTurnFromEvents({ locale: input.locale, events: input.events, now: input.now, rng: input.rng });
+  return buildImpulseForecastTurnFromEvents({ locale: input.locale, events: input.events, now: input.now, rng: input.rng, timeZone: input.timeZone });
 }
 
 export interface BuildImpulseForecastTurnFromEventsInput {
@@ -45,11 +47,13 @@ export interface BuildImpulseForecastTurnFromEventsInput {
   events: ImpulseForecastEvent[];
   now: Date;
   rng?: () => number;
+  /** 用户 IANA 时区 — 时段/星期/自然日按用户本地分桶 (缺省回退运行时本地) */
+  timeZone?: string | null;
 }
 
 export function buildImpulseForecastTurnFromEvents(input: BuildImpulseForecastTurnFromEventsInput): ImpulseForecastTurn {
-  const { locale, events, now, rng } = input;
-  const forecast = forecastImpulseRisk(events, now);
+  const { locale, events, now, rng, timeZone } = input;
+  const forecast = forecastImpulseRisk(events, now, timeZone);
   const ok = forecast.status === 'ok';
   return {
     reply: getElephantPhrase(ok ? 'forecast_welcome' : 'forecast_empty', locale, undefined, rng),
@@ -64,6 +68,8 @@ export interface BuildImpulseForecastDayTurnInput {
   events: ImpulseForecastEvent[];
   now: Date;
   rng?: () => number;
+  /** 用户 IANA 时区 — 同 buildImpulseForecastTurnFromEvents */
+  timeZone?: string | null;
 }
 
 /**
@@ -72,8 +78,8 @@ export interface BuildImpulseForecastDayTurnInput {
  * 供前端高亮。整体样本不足时回复用引导态, 卡照常 insufficient。
  */
 export function buildImpulseForecastDayTurn(input: BuildImpulseForecastDayTurnInput): ImpulseForecastTurn {
-  const { day, locale, events, now, rng } = input;
-  const forecast = forecastImpulseRisk(events, now);
+  const { day, locale, events, now, rng, timeZone } = input;
+  const forecast = forecastImpulseRisk(events, now, timeZone);
   const ok = forecast.status === 'ok';
   return {
     reply: getElephantPhrase(ok ? 'forecast_day_followup' : 'forecast_empty', locale, undefined, rng),

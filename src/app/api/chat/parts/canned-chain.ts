@@ -53,6 +53,7 @@ export interface CannedBlockChainCtx {
   guardIntensity?: string;         // 块17/18
   dismissedContextSignals: string[] | null | undefined; // 块18
   factsStore: unknown;             // 块18
+  timeZone?: string | null;        // 块13 (冲动预报 — 用户时区分桶)
 }
 
 /** 链出口 — response 非 null = 某块短路 (route 直接 return); 两缝随结果返回 */
@@ -205,7 +206,7 @@ export async function runCannedBlockChain(ctx: CannedBlockChainCtx): Promise<Can
       const { tryImpulseForecastBlock } = await import('./canned/impulse-forecast-block');
       const forecastResponse = await tryImpulseForecastBlock({
         userContent, locale, stream, userId, supabase, dataQueryContext,
-        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
+        mergeCookies, mergeCookiesOnResponse, SSE_HEADERS, timeZone: ctx.timeZone,
       });
       if (forecastResponse) return forecastResponse;
     }

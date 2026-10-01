@@ -23,10 +23,12 @@ interface ImpulseForecastBlockInput {
   mergeCookies: (res: NextResponse) => NextResponse;
   mergeCookiesOnResponse: (res: Response) => Response;
   SSE_HEADERS: Record<string, string>;
+  /** 用户 IANA 时区 (profiles.timezone) — 时段/星期/自然日按用户本地分桶 */
+  timeZone?: string | null;
 }
 
 export async function tryImpulseForecastBlock(input: ImpulseForecastBlockInput): Promise<Response | null> {
-  const { userContent, locale, stream = false, userId = null, supabase, dataQueryContext, mergeCookies, mergeCookiesOnResponse, SSE_HEADERS } = input;
+  const { userContent, locale, stream = false, userId = null, supabase, dataQueryContext, mergeCookies, mergeCookiesOnResponse, SSE_HEADERS, timeZone } = input;
   const { detectForecastQuery, detectForecastDayFollowUp } = await import('../impulse-forecast-detector');
   const isForecastQuery = detectForecastQuery(userContent);
   const forecastPrev = dataQueryContext?.kind === 'forecast';
@@ -39,10 +41,25 @@ export async function tryImpulseForecastBlock(input: ImpulseForecastBlockInput):
     // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
     store: (supabase ?? undefined) as unknown as import('../impulse-forecast-context').ImpulseForecastStore | undefined,
   });
+  // 🔧 time audit fix: 时段/星期/自然日按用户本地分桶 — 经 ctx.timeZone (route 侧读 profiles) 或
+  //    guard-pulse 同源读取兜底 (谁先到用谁, 数据同表同列)。
+  let effectiveTimeZone = timeZone ?? null;
+  if (!effectiveTimeZone && userId) {
+    try {
+      const { loadGuardPulseQueryData } = await import('../guard-pulse-context');
+      const { timezone } = await loadGuardPulseQueryData({
+        userId,
+        store: (supabase ?? undefined) as unknown as import('../guard-pulse-context').GuardPulseStore | undefined,
+      });
+      if (timezone) effectiveTimeZone = timezone;
+    } catch {
+      // safe to ignore: 时区读取失败 — 回退运行时本地分桶
+    }
+  }
   const now = new Date();
   const forecastTurn = forecastDay !== null
-    ? buildImpulseForecastDayTurn({ day: forecastDay, locale, events, now })
-    : buildImpulseForecastTurn({ userContent, locale, events, now })!;
+    ? buildImpulseForecastDayTurn({ day: forecastDay, locale, events, now, timeZone: effectiveTimeZone })
+    : buildImpulseForecastTurn({ userContent, locale, events, now, timeZone: effectiveTimeZone })!;
   logger.info('[Chat API] Impulse forecast detected, returning forecast turn');
   if (stream) {
     return mergeCookiesOnResponse(

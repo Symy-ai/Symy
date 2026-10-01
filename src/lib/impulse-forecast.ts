@@ -112,11 +112,6 @@ function emptyWeekdayStat(): WeekdayStat {
   return { sample: 0, weight: 0, windows: { dawn: 0, daytime: 0, evening: 0, lateNight: 0 }, categories: new Map() };
 }
 
-/** 星期序 Monday=0 — 与 heatmap/周对比同约定 */
-function mondayIndex(d: Date): number {
-  return (d.getDay() + 6) % 7;
-}
-
 /** 五类里按固定顺序取加权最大者; 全零返回 null */
 function topKnownCategory(weights: Map<ForecastCategory, number>): ForecastCategory | null {
   let best: ForecastCategory | null = null;
@@ -128,17 +123,57 @@ function topKnownCategory(weights: Map<ForecastCategory, number>): ForecastCateg
   return best;
 }
 
+/** 🔧 time audit fix: 服务器跑 UTC — 时段/星期/自然日语义是用户本地, 经可选 timeZone 换算 */
+function tzParts(date: Date, timeZone?: string | null): { hour: number; monday: number; dayKey: string } | null {
+  if (!timeZone) return null;
+  try {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone, hour12: false,
+      hour: '2-digit', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit',
+    });
+    const parts = fmt.formatToParts(date);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+    const map: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+    const monday = map[get('weekday')];
+    const hour = parseInt(get('hour'), 10) % 24;
+    const dayKey = `${get('year')}-${get('month')}-${get('day')}`;
+    if (!Number.isFinite(monday) || !Number.isFinite(hour)) return null;
+    return { hour, monday, dayKey };
+  } catch {
+    // safe to ignore: 无效时区名触发 RangeError — 回退运行时本地分桶是既定降级路径
+    return null;
+  }
+}
+
+function localMondayIndex(d: Date, timeZone?: string | null): number {
+  return tzParts(d, timeZone)?.monday ?? (d.getDay() + 6) % 7;
+}
+
+function localHour(d: Date, timeZone?: string | null): number {
+  return tzParts(d, timeZone)?.hour ?? d.getHours();
+}
+
+function localDayKey(d: Date, timeZone?: string | null): string {
+  const t = tzParts(d, timeZone);
+  if (t) return t.dayKey;
+  // 回退运行时本地: 补零成 ISO 形状 (en-CA parts 天然补零, 这里手动对齐)
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /**
  * 归纳未来 7 天逐日冲动风险。纯函数: 无效条目跳过, 空/undefined 输入恒
  * insufficient, 绝不抛错。等级/窗口/类别只在样本达标的天给出。
+ * timeZone 可选: 用户 IANA 时区 — 时段/星期/自然日按用户本地分桶 (缺省回退运行时本地)。
  */
 export function forecastImpulseRisk(
   events: ImpulseForecastEventInput[] | null | undefined,
   now: Date,
+  timeZone?: string | null,
 ): ImpulseRiskForecast {
   const perWeekday: WeekdayStat[] = Array.from({ length: 7 }, emptyWeekdayStat);
   const globalCategories = new Map<ForecastCategory, number>();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const nowDayMs = new Date(localDayKey(now, timeZone) + 'T00:00:00Z').getTime();
   const lookbackDays = FORECAST_LOOKBACK_WEEKS * 7;
   let totalSample = 0;
 
@@ -148,16 +183,16 @@ export function forecastImpulseRisk(
     const date = e.createdAt instanceof Date ? e.createdAt : new Date(String(e.createdAt ?? ''));
     const time = date.getTime();
     if (!Number.isFinite(time)) continue;
-    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-    const daysAgo = Math.round((todayStart - dayStart) / 86_400_000);
+    const dayStart = new Date(localDayKey(date, timeZone) + 'T00:00:00Z').getTime();
+    const daysAgo = Math.round((nowDayMs - dayStart) / 86_400_000);
     if (daysAgo < 0 || daysAgo >= lookbackDays) continue;
 
-    const w = mondayIndex(date);
+    const w = localMondayIndex(date, timeZone);
     const stat = perWeekday[w];
     stat.sample += 1;
     const weight = daysAgo < FORECAST_RECENT_WEEKS * 7 ? RECENT_WEIGHT : BASE_WEIGHT;
     stat.weight += weight;
-    stat.windows[hourToWindow(date.getHours())] += weight;
+    stat.windows[hourToWindow(localHour(date, timeZone))] += weight;
     const cat = resolveGuardCategory(e.metadata);
     if (cat !== 'other') {
       stat.categories.set(cat, (stat.categories.get(cat) ?? 0) + weight);
@@ -174,7 +209,7 @@ export function forecastImpulseRisk(
 
   for (let i = 0; i < FORECAST_HORIZON_DAYS; i++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-    const w = mondayIndex(date);
+    const w = localMondayIndex(date, timeZone);
     const stat = perWeekday[w];
     const row: ForecastDayRisk = {
       dayKey: dayKey(date),

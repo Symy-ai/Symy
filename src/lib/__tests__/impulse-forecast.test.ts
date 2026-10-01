@@ -242,3 +242,31 @@ describe('forecastImpulseRisk — 红线', () => {
     expect(Object.keys(forecast).sort()).toEqual(['days', 'highDays', 'lowDays', 'mediumDays', 'status', 'topCategory', 'totalSample']);
   });
 });
+
+// 🔧 time audit regression: UTC 服务器上, Asia/Shanghai 用户 (UTC+8) 的
+//    时段/星期/自然日必须按用户本地分桶 — 同一 UTC 时刻两种时区出不同桶。
+describe('forecastImpulseRisk — timeZone 分桶 (time audit fix)', () => {
+  // 2026-09-05T20:30:00Z (NOW 前4天): UTC=Saturday 20:30, Shanghai=Sunday 04:30 —
+  // 两种时区都不跨 NOW 之后的午夜, daysAgo 均合法。
+  const SAT_2030Z = '2026-09-05T20:30:00Z';
+
+  it('UTC 缺省: 事件落在 Saturday (weekday 5)', () => {
+    const f = forecastImpulseRisk([{ eventType: 'challenge_completed', createdAt: SAT_2030Z }], NOW);
+    const sat = f.days.find((d) => d.weekday === 5);
+    expect(sat?.sample ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  it('Asia/Shanghai: 同一时刻落 Sunday (weekday 6) — 星期按用户本地', () => {
+    const f = forecastImpulseRisk([{ eventType: 'challenge_completed', createdAt: SAT_2030Z }], NOW, 'Asia/Shanghai');
+    const sat = f.days.find((d) => d.weekday === 5);
+    const sun = f.days.find((d) => d.weekday === 6);
+    expect(sat?.sample ?? 0).toBe(0);
+    expect(sun?.sample ?? 0).toBeGreaterThanOrEqual(1);
+  });
+
+  it('无效时区回退运行时本地 (不抛错, 行为同缺省)', () => {
+    const f = forecastImpulseRisk([{ eventType: 'challenge_completed', createdAt: SAT_2030Z }], NOW, 'Not/AZone');
+    const fallback = forecastImpulseRisk([{ eventType: 'challenge_completed', createdAt: SAT_2030Z }], NOW);
+    expect(f.totalSample).toBe(fallback.totalSample);
+  });
+});

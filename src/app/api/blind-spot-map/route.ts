@@ -55,11 +55,33 @@ function isBlind(record: ChallengeRecord): boolean {
   return record.status === 'failed';
 }
 
-function getHour(timestamp: string): number {
+function getHour(timestamp: string, timeZone?: string | null): number {
+  if (timeZone) {
+    try {
+      // 🔧 time audit fix: 服务器跑 UTC, getHours() 是服务器本地小时 —
+      //   "深夜盲区"语义是用户本地 22-2 点, 必须按用户时区分桶。
+      //   复用 guard-pulse.ts createTzReader 的 Intl 模式。
+      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, hour12: false, hour: '2-digit' });
+      const h = parseInt(fmt.format(new Date(timestamp)), 10);
+      if (Number.isFinite(h)) return h % 24;
+    } catch {
+      // safe to ignore: 无效时区名 — 回退服务器本地小时
+    }
+  }
   return new Date(timestamp).getHours();
 }
 
-function getDayOfWeek(timestamp: string): number {
+function getDayOfWeek(timestamp: string, timeZone?: string | null): number {
+  if (timeZone) {
+    try {
+      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone, weekday: 'short' });
+      const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      const d = map[fmt.format(new Date(timestamp))];
+      if (Number.isFinite(d)) return d;
+    } catch {
+      // safe to ignore: 无效时区名 — 回退服务器本地星期
+    }
+  }
   // 0=Sunday, 1=Monday, ..., 6=Saturday
   return new Date(timestamp).getDay();
 }
@@ -95,6 +117,19 @@ export const GET = withAuth(async ({ supabase, user }) => {
 
     const records: ChallengeRecord[] = (challenges || []) as ChallengeRecord[];
 
+    // 🔧 time audit fix: 深夜/工作日盲区按用户时区分桶 (profiles.timezone, 无则回退服务器本地)
+    let userTimeZone: string | null = null;
+    try {
+      const { data: profileRow } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (typeof profileRow?.timezone === 'string' && profileRow.timezone) userTimeZone = profileRow.timezone;
+    } catch {
+      // safe to ignore: timezone 读失败回退服务器本地分桶
+    }
+
     // 🔧 2026-07-15: 把用户自己输入的盲盒数据 (is_example=false, decision_type='bought') 也纳入盲区地图
     //   理由: 用户在盲盒中输入的真实消费行为 (非示例)，大概率是他们在现实生活中真的执行了的
     //   这些数据作为 'failed' 记录 (bought = 没看见就买了) 加入盲区地图计算
@@ -125,7 +160,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
     const totalChallenges = records.length;
 
     // 1. 深夜盲区 (night)
-    const nightRecords = records.filter(r => isNightTime(getHour(r.created_at)));
+    const nightRecords = records.filter(r => isNightTime(getHour(r.created_at, userTimeZone)));
     const nightBlind = nightRecords.filter(isBlind).length;
     const nightRate = calcRate(nightBlind, nightRecords.length);
 
@@ -138,8 +173,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
     const livestreamRate = calcRate(livestreamBlind, livestreamRecords.length);
 
     // 3. 情绪盲区 (emotional) — 工作日 vs 周末
-    const weekdayRecords = records.filter(r => !isWeekend(getDayOfWeek(r.created_at)));
-    const weekendRecords = records.filter(r => isWeekend(getDayOfWeek(r.created_at)));
+    const weekdayRecords = records.filter(r => !isWeekend(getDayOfWeek(r.created_at, userTimeZone)));
+    const weekendRecords = records.filter(r => isWeekend(getDayOfWeek(r.created_at, userTimeZone)));
     const weekdayBlind = weekdayRecords.filter(isBlind).length;
     const weekendBlind = weekendRecords.filter(isBlind).length;
     const weekdayRate = calcRate(weekdayBlind, weekdayRecords.length);
