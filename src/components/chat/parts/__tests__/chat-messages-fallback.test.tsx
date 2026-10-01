@@ -22,7 +22,7 @@ vi.mock('@/i18n/provider', () => ({
   }),
 }));
 
-import { ChatMessages } from '../chat-messages';
+import { ChatMessages, toDisplayMessage } from '../chat-messages';
 import { ChatBubble } from '../../../chat-bubble';
 import type { ChatMessage } from '@/types/chat-message';
 import type { McpNotification } from '@/types/mcp-notification';
@@ -69,5 +69,29 @@ describe('ChatMessages fallback states', () => {
     render(<ChatBubble message={errorMessage} />);
     expect(screen.getByText('The reply was cut off.')).toBeTruthy();
     expect(screen.getByText('Retry')).toBeTruthy();
+  });
+
+  it('renders user bubbles without the internal symy-clarify tag', () => {
+    const taggedMessage: ChatMessage = {
+      id: 'u2',
+      role: 'user',
+      content: '[symy-clarify:clothing] Want to see what for the child?',
+      timestamp: new Date(),
+    };
+
+    expect(toDisplayMessage(taggedMessage)).toMatchObject({
+      id: 'u2',
+      role: 'user',
+      content: 'Want to see what for the child?',
+      timestamp: taggedMessage.timestamp,
+    });
+
+    expect(toDisplayMessage(baseMessages[0]).content).toBe('Hello');
+    expect(taggedMessage.content).toBe('[symy-clarify:clothing] Want to see what for the child?');
+
+    render(<ChatBubble message={toDisplayMessage(taggedMessage)} />);
+    expect(screen.queryByText(/\[symy-clarify:clothing\]/)).toBeNull();
+    expect(screen.getByText('Want to see what for the child?')).toBeTruthy();
+    expect(screen.queryByText('Hello')).toBeNull();
   });
 });

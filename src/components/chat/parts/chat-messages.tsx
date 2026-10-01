@@ -31,6 +31,17 @@ const ChatBubble = dynamic(
   }
 );
 
+export const SYMY_CLARIFY_TAG_PREFIX = /^\[symy-clarify:[^\]]*\]\s*/;
+
+export function toDisplayMessage(message: ChatMessage): ChatMessage {
+  if (message.role !== 'user') return message;
+
+  return {
+    ...message,
+    content: message.content.replace(SYMY_CLARIFY_TAG_PREFIX, ''),
+  };
+}
+
 export interface ChatMessagesProps {
   messages: ChatMessage[];
   isLoading: boolean;
@@ -151,7 +162,7 @@ function ChatMessagesInner({
       //   导致 flex-row-reverse 的右侧头像被推到 padding 区域外, 被 overflow-hidden 裁剪掉右半。
       //   修复: Virtuoso 不加 px-4, 每个 item 内部加 px-4, padding 在 item 内部生效。
       <div className="px-4">
-        <ChatBubble message={msg} onDelete={onDeleteMessage} userAvatarUrl={userAvatarUrl} onSendMessage={onSendMessage} />
+        <ChatBubble message={toDisplayMessage(msg)} onDelete={onDeleteMessage} userAvatarUrl={userAvatarUrl} onSendMessage={onSendMessage} />
       </div>
     ),
     [onDeleteMessage, userAvatarUrl, onSendMessage]
