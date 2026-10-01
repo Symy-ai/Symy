@@ -569,16 +569,16 @@ describe('Architecture Guards: Timer cleanup', () => {
       const setTimeoutCount = (codeOnly.match(/setTimeout\(/g) || []).length;
       const clearTimeoutCount = (codeOnly.match(/clearTimeout\(/g) || []).length;
 
-      // Each setTimeout should have a corresponding clearTimeout
-      // (either in cleanup or in a ref cleanup)
-      // Allow some flexibility (refs tracked elsewhere)
-      if (setTimeoutCount > clearTimeoutCount + 2) {
-        // Only flag if significantly mismatched
-        console.warn(`${file}: setTimeout=${setTimeoutCount}, clearTimeout=${clearTimeoutCount} — possible timer leak`);
+      // Timer cleanup can be in-component (clearTimeout in same file) or
+      // extracted to hooks (clearTimeout in separate file). Both patterns are valid.
+      // This guard verifies the in-component pattern for files that use it.
+      const hasExternalCleanup = file.includes('chat-tab.tsx') || file.includes('page.tsx');
+      if (!hasExternalCleanup) {
+        expect(clearTimeoutCount).toBeGreaterThanOrEqual(setTimeoutCount);
       }
     }
-    // This is a soft guard — no hard failure, just awareness
-    expect(true).toBe(true);
+    // Verify at least one file was checked
+    expect(filesToCheck.length).toBeGreaterThan(0);
   });
 });
 
@@ -2048,8 +2048,9 @@ describe('Architecture Guards: Silent catch blocks must have explanatory comment
       violations.slice(0, 10).forEach(v => console.warn(`  ${v}`));
     }
 
-    // For now, just verify the guard runs without error
-    expect(violations.length).toBeGreaterThanOrEqual(0);
+    // Ratchet at the current audited baseline; fixing existing catches may
+    // lower this count, but adding an unaudited silent catch must fail.
+    expect(violations.length).toBeLessThanOrEqual(94);
   });
 });
 
