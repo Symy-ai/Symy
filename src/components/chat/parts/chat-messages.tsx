@@ -246,6 +246,7 @@ function ChatMessagesInner({
             <Virtuoso
               ref={virtuosoRef}
               data={messages}
+              computeItemKey={(_, message) => message.id}
               itemContent={renderItemContent}
               // 🔧 ARCH fix: followOutput 用函数形式, 返回 'auto' (而非 'smooth') 确保即时跳转
               //    'smooth' 在虚拟列表高度变化时可能不触发到底部
