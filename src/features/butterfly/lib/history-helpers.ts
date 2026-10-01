@@ -10,6 +10,9 @@
 
 import type { ButterflySession, StoryChapter, StoryTone, ButterflyChoice } from '../types';
 import { splitScenes } from '@/features/butterfly/hooks/player';
+import type { Locale } from '@/i18n/config';
+import zhMessages from '@/i18n/messages/zh.json';
+import enMessages from '@/i18n/messages/en.json';
 
 export interface ButterflyShareTextInput {
   decisionType: ButterflySession['decisionType'];
@@ -71,24 +74,26 @@ export function getChoiceForChapter(session: ButterflySession, chapterIndex: num
 }
 
 export function buildButterflyShareText({
+  locale,
   decisionType,
   decisionDescription,
   butterflyEffect,
   shareUrl,
-}: ButterflyShareTextInput): string {
+}: ButterflyShareTextInput & { locale: Locale }): string {
+  const messages = locale === 'zh' ? zhMessages.butterfly.share : enMessages.butterfly.share;
   const decisionLabel = decisionType === 'bought'
-    ? 'I bought'
+    ? messages.iBought
     : decisionType === 'resisted'
-      ? 'I didn\'t buy'
-      : 'I\'m considering';
+      ? messages.iResisted
+      : messages.iAmConsidering;
   const lines = [
-    '🎰 My butterfly-effect story on Symy',
+    messages.title,
     '',
     `${decisionLabel}: "${decisionDescription}"`,
   ];
 
   if (butterflyEffect) lines.push('', butterflyEffect);
-  lines.push('', `Read the full story: ${shareUrl}`);
+  lines.push('', messages.readFullStory.replace('{url}', shareUrl));
   return lines.join('\n');
 }
 

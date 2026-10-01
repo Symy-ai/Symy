@@ -587,6 +587,7 @@ export function ButterflyHistoryDetail({
                     decisionDescription: session.decisionDescription,
                     butterflyEffect: session.butterflyEffect,
                     shareUrl,
+                    locale,
                   });
                   // 🔧 2026-07-17 fix: 优先用 navigator.share (移动端原生分享), fallback 复制到剪贴板
                   if (typeof navigator !== 'undefined' && navigator.share) {

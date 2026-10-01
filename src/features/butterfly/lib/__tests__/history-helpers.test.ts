@@ -107,16 +107,32 @@ describe('getOptionLabel', () => {
 });
 
 describe('buildButterflyShareText', () => {
-  it('keeps share text free of private amounts', () => {
+  it('builds English share text and keeps it free of private amounts', () => {
     const text = buildButterflyShareText({
+      locale: 'en',
       decisionType: 'resisted',
       decisionDescription: 'A new phone',
       butterflyEffect: 'I won an evening back.',
       shareUrl: 'https://symy.ai/?tab=butterfly&session=session-1',
     });
 
+    expect(text).toContain('My butterfly-effect story on Symy');
     expect(text).toContain('I didn\'t buy: "A new phone"');
     expect(text).toContain('Read the full story: https://symy.ai/?tab=butterfly&session=session-1');
     expect(text).not.toMatch(/Amount:|\b(?:USD|CNY|RMB)\b|[$¥£]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:元|块)/i);
+  });
+
+  it('builds Chinese share text', () => {
+    const text = buildButterflyShareText({
+      locale: 'zh',
+      decisionType: 'bought',
+      decisionDescription: '一件新外套',
+      butterflyEffect: '衣柜里多了一份犹豫。',
+      shareUrl: 'https://symy.ai/?tab=butterfly&session=session-2',
+    });
+
+    expect(text).toContain('我在 Symy 的「如果呢」故事');
+    expect(text).toContain('我买了: "一件新外套"');
+    expect(text).toContain('阅读完整故事：https://symy.ai/?tab=butterfly&session=session-2');
   });
 });

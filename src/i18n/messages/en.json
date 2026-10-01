@@ -3043,6 +3043,13 @@
     }
   },
   "butterfly": {
+    "share": {
+      "title": "🎰 My butterfly-effect story on Symy",
+      "iBought": "I bought",
+      "iResisted": "I didn't buy",
+      "iAmConsidering": "I'm considering",
+      "readFullStory": "Read the full story: {url}"
+    },
     "futureGacha": "🎁 What If",
     "futureGachaDesc": "One guarded choice. Two storylines. Let's see what this decision helps bloom.",
     "demoModeBadge": "✨ Demo — No sign-in required",

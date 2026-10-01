@@ -3043,6 +3043,13 @@
     }
   },
   "butterfly": {
+    "share": {
+      "title": "🎰 我在 Symy 的「如果呢」故事",
+      "iBought": "我买了",
+      "iResisted": "我没买",
+      "iAmConsidering": "我在考虑",
+      "readFullStory": "阅读完整故事：{url}"
+    },
     "futureGacha": "🎁 如果呢",
     "futureGachaDesc": "一次守护，两条故事线。看看这个选择会开出什么样的花。",
     "demoModeBadge": "✨ 演示 —— 无需登录",
