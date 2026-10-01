@@ -494,6 +494,9 @@ def main():
     parser.add_argument("--cdp-url", default=os.environ.get("CDP_URL", DEFAULT_CDP_URL))
     parser.add_argument("--email", default=os.environ.get("E2E_EMAIL", "793160223@qq.com"))
     parser.add_argument("--password", default=os.environ.get("E2E_PASSWORD", "793160223@qq.com"))
+    # 默认消息取词库实测命中清单(green-alternatives matchGreenAltEntries 验证):
+    #   空气炸锅→small_appliance / 咖啡机→coffee_shop / 升降桌→office_furniture_upgrade
+    #   手机屏碎→repair_first — 未命中词库的品类(牙刷/跑鞋等)不会出绿色卡
     parser.add_argument("--message", default=os.environ.get("E2E_MESSAGE", "想买一台空气炸锅，帮我看看值不值得买"))
     parser.add_argument("--with-challenge", action="store_true", default=os.environ.get("E2E_WITH_CHALLENGE") == "1")
     parser.add_argument("--challenge-message", default=os.environ.get("E2E_CHALLENGE_MESSAGE", "我想买一台空气炸锅"))
