@@ -233,6 +233,17 @@ describe('GET /api/buddy/state', () => {
           })),
         };
       }
+      if (table === 'invitations') {
+        // 🔧 并行化后 (dream_funds + invitations Promise.all) 此用例也会触达 invitations —
+        //    mock 必须提供完整链, 否则 {}.select undefined → TypeError → withAuth 兜底 500。
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(async () => ({ count: 0, error: null })),
+            })),
+          })),
+        };
+      }
       return {};
     }) as never;
     vi.mocked(createAuthenticatedClient).mockResolvedValueOnce(authed as never);

@@ -32,7 +32,7 @@ export const GET = withAuth(async ({ supabase, user, request }) => {
 
   let query = supabase
     .from('email_receipts')
-    .select('*')
+    .select('id, user_id, connection_id, message_id, thread_id, from_address, subject, snippet, platform, order_id, item_name, amount, currency, received_at, impulse_score, refund_eligible, refund_deadline, status, created_at')
     .eq('user_id', user.id)
     .order('received_at', { ascending: false })
     .limit(limit);

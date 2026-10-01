@@ -57,11 +57,21 @@ export const GET = withAuth(async ({ supabase, user }) => {
   // 🔧 Round 126 用户决策: 删除 dream_funds JSONB 列, dream_funds 表是唯一 source of truth
   //    旧代码: 先读 JSONB (fallback), 再读表覆盖 — 两个数据源可能 drift
   //    新代码: 只读 dream_funds 表, 无 fallback, 无 drift
-  const { data: dfRows, error: dfError } = await supabase
-    .from('dream_funds')
-    .select('fund_id, name, target, current, emoji, sort_order')
-    .eq('user_id', user.id)
-    .order('sort_order', { ascending: true });
+  // 🔧 性能优化: 并行化三个独立查询 (dream_funds + invitations + 后续可能的扩展)
+  const [dfResult, inviteResult] = await Promise.all([
+    supabase
+      .from('dream_funds')
+      .select('fund_id, name, target, current, emoji, sort_order')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('referrer_user_id', user.id)
+      .eq('status', 'completed'),
+  ]);
+
+  const { data: dfRows, error: dfError } = dfResult;
   if (dfError) {
     logger.error('[Buddy State] dream_funds table query failed:', dfError.message);
     return NextResponse.json({ error: 'Failed to load dream funds. Please refresh.' }, { status: 500 });
@@ -74,11 +84,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
     emoji: r.emoji,
   }));
 
-  const { count: invitedCount, error: inviteError } = await supabase
-    .from('invitations')
-    .select('id', { count: 'exact', head: true })
-    .eq('referrer_user_id', user.id)
-    .eq('status', 'completed');
+  const { count: invitedCount, error: inviteError } = inviteResult;
   if (inviteError) {
     // safe to ignore: covenant badge progress degrades to zero; buddy state remains usable
     logger.warn('[Buddy State] invitations count query failed:', inviteError.message);

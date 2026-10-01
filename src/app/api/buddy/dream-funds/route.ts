@@ -43,8 +43,8 @@ interface DreamFundRow {
   updated_at: string;
 }
 
-/** 将独立表行转为前端格式 */
-function rowToFE(row: DreamFundRow) {
+/** 将独立表行转为前端格式（GET 收窄 select 后仅含 5 列, POST/PATCH 全列兼容） */
+function rowToFE(row: Pick<DreamFundRow, 'fund_id' | 'name' | 'target' | 'current' | 'emoji'>) {
   return {
     id: row.fund_id,
     name: row.name,
@@ -58,9 +58,10 @@ function rowToFE(row: DreamFundRow) {
 export const GET = withAuth(async ({ supabase, user }) => {
   const { data, error } = await supabase
     .from('dream_funds')
-    .select('*')
+    .select('fund_id, name, target, current, emoji')
     .eq('user_id', user.id)
-    .order('sort_order', { ascending: true });
+    .order('sort_order', { ascending: true })
+    .limit(MAX_FUNDS);
 
   if (error) {
     // 🔧 ARCH fix (Round 11 API-3 — fake success 根因修复):
@@ -70,8 +71,7 @@ export const GET = withAuth(async ({ supabase, user }) => {
     return NextResponse.json({ error: 'Failed to load dream funds. Please refresh.' }, { status: 500 });
   }
 
-  const funds = (data || []) as DreamFundRow[];
-  return NextResponse.json({ dreamFunds: funds.map(rowToFE) });
+  return NextResponse.json({ dreamFunds: (data || []).map(rowToFE) });
 });
 
 // POST: 创建新梦想基金

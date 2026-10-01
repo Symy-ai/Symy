@@ -33,7 +33,7 @@ export const GET = withAuth(async ({ supabase, user, request }) => {
 
   let query = supabase
     .from('health_events')
-    .select('*')
+    .select('id, event_type, vitality_change, new_vitality, token_change, trigger_source, trigger_id, description, metadata, created_at')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(limit);
