@@ -25,6 +25,11 @@ export const dynamic = 'force-dynamic';
 import { withAuth } from '@/lib/with-auth';
 import { logger } from '@/lib/logger';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+const bookmarkSchema = z.object({
+  isBookmarked: z.boolean().optional(),
+});
 
 export const PATCH = withAuth<{ id: string }>(async ({ supabase, user, request, params }) => {
   const { id } = params;
@@ -33,13 +38,13 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, user, request, 
   }
 
   // 解析 body (允许空 body = toggle)
-  let body: { isBookmarked?: boolean } = {};
+  let parsed: z.infer<typeof bookmarkSchema> = {};
   try {
     const text = await request.text();
-    if (text) body = JSON.parse(text) as { isBookmarked?: boolean };
+    if (text) parsed = bookmarkSchema.parse(JSON.parse(text));
   } catch {
-    // safe to ignore: body 解析失败 — 当作 toggle 处理
-    body = {};
+    // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
+    return NextResponse.json({ error: 'Invalid JSON or bookmark payload' }, { status: 400 });
   }
 
   // 查询当前 is_bookmarked 状态
@@ -61,7 +66,7 @@ export const PATCH = withAuth<{ id: string }>(async ({ supabase, user, request, 
 
   // 计算新状态: 优先用 body.isBookmarked, 否则 toggle
   const currentBookmarked = session.is_bookmarked ?? false;
-  const newBookmarked = typeof body.isBookmarked === 'boolean' ? body.isBookmarked : !currentBookmarked;
+  const newBookmarked = parsed.isBookmarked ?? !currentBookmarked;
 
   // 更新
   const { error: updateError } = await supabase

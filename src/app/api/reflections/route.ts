@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/with-auth';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import { isGatedFeedEntry } from '@/lib/content-gate';
 
 type ReflectionRow = {
@@ -13,7 +14,10 @@ type ReflectionRow = {
   created_at: string;
 };
 
-type CreatePayload = { text: string; avatar?: string };
+const createReflectionSchema = z.object({
+  text: z.string().trim().min(1).max(500),
+  avatar: z.string().trim().min(1).max(8).optional(),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -64,18 +68,19 @@ export const GET = withAuth(async ({ supabase, request }) => {
 
 export const POST = withAuth(async ({ supabase, user, request }) => {
   try {
-    const body = (await request.json()) as CreatePayload;
-
-    const text = String(body?.text ?? '').trim();
-    const avatar = String(body?.avatar ?? '🌙').trim() || '🌙';
-
-    if (!text || text.length < 1 || text.length > 500) {
-      return NextResponse.json({ error: 'Invalid text length' }, { status: 422 });
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+    }
+    const parsed = createReflectionSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
     }
 
-    if (avatar.length < 1 || avatar.length > 8) {
-      return NextResponse.json({ error: 'Invalid avatar' }, { status: 400 });
-    }
+    const { text, avatar = '🌙' } = parsed.data;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);

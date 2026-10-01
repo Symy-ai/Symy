@@ -39,7 +39,7 @@ vi.mock('@/lib/logger', () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
-import { GET } from '../route';
+import { GET, POST } from '../route';
 
 function makeRequest(locale: 'en' | 'zh'): NextRequest {
   return new NextRequest(`http://localhost/api/reflections?locale=${locale}`, { method: 'GET' });
@@ -73,5 +73,18 @@ describe('GET /api/reflections — content gate', () => {
     const res = await GET(makeRequest('en'));
     expect(res.status).toBe(200);
     expect((await res.json()).reflections).toEqual([]);
+  });
+});
+
+describe('POST /api/reflections — validation', () => {
+  it('returns 400 for invalid reflection payloads', async () => {
+    const request = new NextRequest('http://localhost/api/reflections', {
+      method: 'POST',
+      body: JSON.stringify({ text: 123, avatar: 'x'.repeat(9) }),
+    });
+    const response = await POST(request);
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ error: 'Validation failed' });
   });
 });

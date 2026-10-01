@@ -12,6 +12,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { verifyAdminAuth } from '@/lib/admin-auth';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+const vipActionSchema = z.object({
+  userIds: z.array(z.string().uuid()).min(1),
+  action: z.enum(['activate', 'deactivate']),
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -87,16 +93,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { userIds, action } = body as { userIds: string[]; action: 'activate' | 'deactivate' };
-
-    if (!Array.isArray(userIds) || userIds.length === 0) {
-      return NextResponse.json({ error: 'userIds must be a non-empty array' }, { status: 400 });
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
-
-    if (action !== 'activate' && action !== 'deactivate') {
-      return NextResponse.json({ error: 'action must be activate or deactivate' }, { status: 400 });
+    const parsed = vipActionSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
     }
+    const { userIds, action } = parsed.data;
 
     const newPlan = action === 'activate' ? 'premium' : 'free';
 

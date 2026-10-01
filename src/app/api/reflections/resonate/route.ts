@@ -1,19 +1,28 @@
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/with-auth';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 
-type ResonatePayload = { id: string };
+const resonateSchema = z.object({
+  id: z.string().uuid(),
+});
 
 export const dynamic = 'force-dynamic';
 
 export const POST = withAuth(async ({ supabase, user, request }) => {
   try {
-    const body = (await request.json()) as ResonatePayload;
-    const target = String(body?.id ?? '').trim();
-
-    if (!target || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(target)) {
-      return NextResponse.json({ error: 'Invalid id' }, { status: 422 });
+    let raw: unknown;
+    try {
+      raw = await request.json();
+    } catch {
+      // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
+      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
     }
+    const parsed = resonateSchema.safeParse(raw);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
+    }
+    const target = parsed.data.id;
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
