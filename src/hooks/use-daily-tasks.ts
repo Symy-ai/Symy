@@ -48,6 +48,15 @@ function getStorageKey(): string {
   return `symy_daily_tasks_${getTodayKey()}`;
 }
 
+function removeStaleDailyTaskKeys(todayKey: string): void {
+  const prefix = 'symy_daily_tasks_';
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith(prefix) && key !== `${prefix}${todayKey}`) {
+      localStorage.removeItem(key);
+    }
+  }
+}
+
 /**
  * @param isDemo 是否 demo 模式 (demo 模式也追踪, 但 hourlyRateSet 从 hourlyRate prop 推断)
  * @param hourlyRate 当前时薪 (用于推断 hourlyRateSet)
@@ -58,6 +67,10 @@ export function useDailyTasks(isDemo: boolean, hourlyRate: number) {
   // mount 时从 localStorage 加载
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    try {
+      removeStaleDailyTaskKeys(getTodayKey());
+    } catch { /* stale cleanup is best-effort */ }
 
     const loadFromStorage = (): DailyTasks => {
       try {

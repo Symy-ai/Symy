@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { setPendingGreenAltRetro } from '@/components/chat/parts/green-alt-retro-store';
 
 const ADOPTED_STORAGE_KEY = 'symy-green-alt-adopted-ids';
+const ADOPTED_STORAGE_LIMIT = 200;
 
 function readAdoptedIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
@@ -32,7 +33,7 @@ function readAdoptedIds(): Set<string> {
 function persistAdoptedIds(ids: Set<string>): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(ADOPTED_STORAGE_KEY, JSON.stringify([...ids]));
+    window.localStorage.setItem(ADOPTED_STORAGE_KEY, JSON.stringify([...ids].slice(-ADOPTED_STORAGE_LIMIT)));
   } catch {
     // safe to ignore: 隐私模式下持久化失败, 只影响跨会话去重
   }

@@ -95,19 +95,22 @@ export function useEmailMonitor(
 
   function migrateLegacyAutoSyncKeys(userId?: string): void {
     if (!userId) return;
-    const userSyncKey = `${AUTO_SYNC_KEY}_${userId}`;
-    const userEnabledKey = `${AUTO_SYNC_ENABLED_KEY}_${userId}`;
-    const legacySync = localStorage.getItem(AUTO_SYNC_KEY);
-    const legacyEnabled = localStorage.getItem(AUTO_SYNC_ENABLED_KEY);
+    try {
+      const userSyncKey = `${AUTO_SYNC_KEY}_${userId}`;
+      const userEnabledKey = `${AUTO_SYNC_ENABLED_KEY}_${userId}`;
+      const legacySync = localStorage.getItem(AUTO_SYNC_KEY);
+      const legacyEnabled = localStorage.getItem(AUTO_SYNC_ENABLED_KEY);
 
-    if (localStorage.getItem(userSyncKey) === null && legacySync !== null) {
-      localStorage.setItem(userSyncKey, legacySync);
+      if (localStorage.getItem(userSyncKey) === null && legacySync !== null) {
+        localStorage.setItem(userSyncKey, legacySync);
+      }
+      if (localStorage.getItem(userEnabledKey) === null && legacyEnabled !== null) {
+        localStorage.setItem(userEnabledKey, legacyEnabled);
+      }
+      localStorage.removeItem(AUTO_SYNC_KEY);
+      localStorage.removeItem(AUTO_SYNC_ENABLED_KEY);
     }
-    if (localStorage.getItem(userEnabledKey) === null && legacyEnabled !== null) {
-      localStorage.setItem(userEnabledKey, legacyEnabled);
-    }
-    localStorage.removeItem(AUTO_SYNC_KEY);
-    localStorage.removeItem(AUTO_SYNC_ENABLED_KEY);
+    catch { /* migration is best-effort; per-user defaults remain intact */ }
   }
 
   // Derived
