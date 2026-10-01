@@ -103,7 +103,7 @@ let _lettaClient: Letta | null = null;
 /** 获取单例 Letta client (旧三处 `new Letta(...)` 每次新建 → 收敛缓存复用) */
 export function getLettaClient(): Letta {
   if (!_lettaClient) {
-    if (!LETTA_API_KEY) warnMissingEnvOnce('Letta client');
+    if (!LETTA_API_KEY) warnMissingEnvOnce('Letta conversation and agent management');
     _lettaClient = new Letta({
       apiKey: LETTA_API_KEY,
       environment: 'cloud',

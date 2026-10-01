@@ -12,7 +12,7 @@ interface EnvConsumerSpec {
 export const ENV_CONSUMERS = [
   { feature: 'Supabase authenticated client', requirements: [['NEXT_PUBLIC_SUPABASE_URL'], ['NEXT_PUBLIC_SUPABASE_ANON_KEY', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY']], behavior: 'disabled', impact: 'Authentication-dependent browser/server requests are unavailable.' },
   { feature: 'Supabase admin client', requirements: [['NEXT_PUBLIC_SUPABASE_URL'], ['SUPABASE_SERVICE_ROLE_KEY', 'SUPABASE_SECRET_KEY']], behavior: 'explicit-failure', impact: 'Database-backed server operations and cron jobs fail closed.' },
-  { feature: 'Letta conversation and agent management', requirements: [['LETTA_API_KEY']], behavior: 'explicit-failure', impact: 'AI conversations and agent provisioning are unavailable.' },
+  { feature: 'Letta conversation and agent management', requirements: [['LETTA_API_KEY']], behavior: 'explicit-failure', impact: 'AI conversations, agent provisioning, and the Letta client are unavailable.' },
   { feature: 'Sentry error monitoring', requirements: [['NEXT_PUBLIC_SENTRY_DSN', 'SENTRY_DSN']], behavior: 'disabled', impact: 'Errors and performance traces are not exported.' },
   { feature: 'Gmail OAuth connection', requirements: [['GOOGLE_CLIENT_ID'], ['GOOGLE_CLIENT_SECRET']], behavior: 'disabled', impact: 'Users cannot connect Gmail or monitor Gmail receipts.' },
   { feature: 'Web Push delivery', requirements: [['VAPID_PUBLIC_KEY'], ['VAPID_PRIVATE_KEY']], behavior: 'disabled', impact: 'Push subscriptions and scheduled notifications are not sent.' },

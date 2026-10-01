@@ -3,6 +3,7 @@ export const maxDuration = 120;
 
 import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { SSE_HEADERS } from '@/lib/sse';
 import { extractAndValidateApiKey, getCorsHeaders, handleOptions } from '@/lib/proxy-auth';
 import { z } from 'zod';
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
   const upstreamUrl = `${UPSTREAM_BASE_URL}/chat/completions`;
 
   if (!UPSTREAM_API_KEY) {
+    warnMissingEnvOnce('OpenAI-compatible LLM proxy');
     logger.error('[Azure LLM Proxy] UPSTREAM_LLM_API_KEY environment variable is not set');
     return Response.json(
       { error: { message: 'Upstream service not configured. Please contact admin.', type: 'server_error' } },

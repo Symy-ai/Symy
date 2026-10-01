@@ -13,6 +13,7 @@ import 'server-only'; // 🔧 ARCH fix Round 73: server-only — prevents client
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { warnPartialEnvOnce } from '@/lib/env-consumers';
 import type { Database } from './database.types';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -75,6 +76,10 @@ export function createAdminClient(): AdminClientResult {
     return { supabase: null, error: _adminClientError };
   }
 
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+    warnPartialEnvOnce('Supabase admin client');
+  }
+
   if (!SUPABASE_URL) {
     _adminClientError = 'Missing NEXT_PUBLIC_SUPABASE_URL. Set it in Vercel Environment Variables.';
     return { supabase: null, error: _adminClientError };
@@ -94,4 +99,3 @@ export function createAdminClient(): AdminClientResult {
   });
   return { supabase: _cachedAdminClient, error: null };
 }
-

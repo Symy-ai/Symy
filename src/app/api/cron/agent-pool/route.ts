@@ -25,6 +25,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { timingSafeCompare } from '@/lib/timing-safe-compare';
 import { checkAndRefill } from '@/lib/letta-agent-pool';
 
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
   const secret = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!secret || !CRON_SECRET || !timingSafeCompare(secret, CRON_SECRET)) {
+    if (!CRON_SECRET) warnMissingEnvOnce('Vercel cron authentication');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

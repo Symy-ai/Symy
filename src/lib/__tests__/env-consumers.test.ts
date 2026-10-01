@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ENV_CONSUMERS, getEnvConsumerStatus, resetEnvWarningStateForTests, warnMissingEnvOnce } from '@/lib/env-consumers';
+import {
+  ENV_CONSUMERS,
+  getEnvConsumerStatus,
+  resetEnvWarningStateForTests,
+  warnMissingEnvOnce,
+  warnPartialEnvOnce,
+} from '@/lib/env-consumers';
 
 const controlledEnvKeys = [
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SUPABASE_SECRET_KEY',
   'NEXT_PUBLIC_SENTRY_DSN',
   'SENTRY_DSN',
   'LETTA_API_KEY',
@@ -69,5 +77,16 @@ describe('env consumer registry', () => {
     expect(getEnvConsumerStatus('Sentry error monitoring')).toMatchObject({ configured: true, behavior: 'disabled' });
     expect(warnMissingEnvOnce('Sentry error monitoring')).toBe(false);
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns for partially configured Supabase admin credentials', () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.test';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = '';
+    process.env.SUPABASE_SECRET_KEY = undefined;
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    expect(warnPartialEnvOnce('Supabase admin client')).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY');
   });
 });

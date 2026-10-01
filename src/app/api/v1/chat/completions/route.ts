@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
+import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { SSE_HEADERS } from '@/lib/sse';
 import { extractAndValidateApiKey, getCorsHeaders, handleOptions } from '@/lib/proxy-auth';
 import { z } from 'zod';
@@ -136,6 +137,7 @@ export async function POST(req: NextRequest) {
 
   // 环境变量检查：UPSTREAM_API_KEY 必须配置
   if (!UPSTREAM_API_KEY) {
+    warnMissingEnvOnce('OpenAI-compatible LLM proxy');
     logger.error('[LLM Proxy] UPSTREAM_LLM_API_KEY environment variable is not set');
     return Response.json(
       { error: { message: 'Upstream service not configured. Please contact admin.', type: 'server_error' } },
@@ -199,4 +201,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
