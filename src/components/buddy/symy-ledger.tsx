@@ -105,7 +105,7 @@ export function SymyLedger({ buddyState, config: _config, isDemo, onToast, _onCh
         body: { prevStreak },
       });
       if (result.success) {
-        onToast?.(t('buddy.streakRedeemed', { defaultValue: `✓ Streak restored to ${result.newStreak} days!`, n: result.newStreak }), 'success');
+        onToast?.(t('buddy.streakRedeemed', { n: result.newStreak }), 'success');
         // 清除 prev-streak (已用)
         try {
           for (let i = 0; i < localStorage.length; i++) {
@@ -272,14 +272,14 @@ export function SymyLedger({ buddyState, config: _config, isDemo, onToast, _onCh
                         {t('buddy.streakRedeemTitle', { defaultValue: 'Streak broken?', n: prevStreak })}
                       </p>
                       <p className="text-[10px] text-text-tertiary mb-2">
-                        {t('buddy.streakRedeemDesc', { defaultValue: `Restore your ${prevStreak}-day streak for 50 tokens`, n: prevStreak })}
+                        {t('buddy.streakRedeemDesc', { n: prevStreak })}
                       </p>
                       <button
                         onClick={handleRedeemStreak}
                         disabled={streakRedeeming}
                         className="w-full py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold hover:from-amber-400 hover:to-orange-400 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                       >
-                        {streakRedeeming ? '...' : t('buddy.streakRedeemButton', { defaultValue: '🔄 Restore streak (50 tokens)' })}
+                        {streakRedeeming ? '...' : t('buddy.streakRedeemButton', { tokens: 50 })}
                       </button>
                     </div>
                   )}

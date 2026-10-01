@@ -174,7 +174,7 @@ export function WeeklyReviewCard({ isActive = true, onOpenInsights }: WeeklyRevi
         {data.streakDays > 0 && (
           <div
             className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/15 border border-orange-500/30"
-            title={t('profile.weeklyActiveDaysFull', { n: data.streakDays, s: data.streakDays !== 1 ? 's' : '' })}
+            title={t('profile.weeklyActiveDaysFull', { n: data.streakDays })}
           >
             <Flame className="w-3.5 h-3.5 text-orange-500" />
             <span className="text-xs font-bold text-orange-600 dark:text-orange-400">

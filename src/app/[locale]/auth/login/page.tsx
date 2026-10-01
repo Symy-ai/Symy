@@ -215,7 +215,7 @@ export default function LoginPage() {
       const elapsed = now - parseInt(lastRequestTime, 10);
       if (elapsed < MAGIC_LINK_COOLDOWN_MS) {
         const remainingSec = Math.ceil((MAGIC_LINK_COOLDOWN_MS - elapsed) / 1000);
-        setError(t('auth.login.errors.magicLinkCooldown', { defaultValue: `Please wait ${remainingSec}s before requesting another magic link`, sec: remainingSec }));
+        setError(t('auth.login.errors.magicLinkCooldown', { sec: remainingSec }));
         return;
       }
     }

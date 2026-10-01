@@ -280,7 +280,7 @@
     "streakTooltip": "连续守护的天数。每天至少完成1个挑战或对话来维持。24小时不参与就归零。",
     "streakRedeemTitle": "断签了？",
     "streakRedeemDesc": "用 50 代币恢复你的 {n} 天连续",
-    "streakRedeemButton": "🔄 恢复连续（50 代币）",
+    "streakRedeemButton": "🔄 恢复连续（{tokens} 代币）",
     "streakRedeemed": "✓ 连续已恢复到 {n} 天！",
     "streakRedeemFailed": "恢复失败，请重试",
     "yourBalance": "帮你赢回",
@@ -2877,7 +2877,7 @@
         "enterEmail": "请输入你的邮箱",
         "invalidEmail": "请输入有效的邮箱地址",
         "enterPassword": "请输入密码",
-        "magicLinkCooldown": "请等待  秒后再请求新的魔法链接",
+        "magicLinkCooldown": "请等待 {sec} 秒后再请求新的魔法链接",
         "networkError": "无法连接服务器，请检查网络后重试。",
         "invalidCredentials": "邮箱或密码不正确。"
       },

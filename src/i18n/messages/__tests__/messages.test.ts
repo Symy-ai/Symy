@@ -13,8 +13,8 @@ describe('chat product i18n', () => {
   it('keeps en and zh keys symmetric', () => {
     const english = new Set(keys(en));
     const chinese = new Set(keys(zh));
-    expect([...english].filter((key) => !chinese.has(key))).toEqual([]);
     expect([...chinese].filter((key) => !english.has(key))).toEqual([]);
+    expect([...english].filter((key) => !chinese.has(key))).toEqual([]);
   });
 
   it('defines all product card copy', () => {
