@@ -21,7 +21,8 @@ DEFAULT_CDP_URL = "http://127.0.0.1:9225"
 CHALLENGE_TEXT = "再陪我看一看"
 BUY_THIS_TIME_TEXT = "这次想买"
 PREFER_BUY_FOLLOW_UP_TEXT = "这次我想买，帮我挑个靠谱的"
-CHALLENGE_BUY_TEXT = "我买了"
+# 🔧 挑战横幅专属文案（带🛒前缀）— 「我买了」裸词会撞 butterfly「如果呢」卡的同名按钮
+CHALLENGE_BUY_TEXT = "🛒 我买了"
 
 
 def log(message):
