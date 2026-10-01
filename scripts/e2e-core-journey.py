@@ -19,6 +19,7 @@ import websockets
 DEFAULT_BASE_URL = "http://localhost:3000"
 DEFAULT_CDP_URL = "http://127.0.0.1:9225"
 CHALLENGE_TEXT = "再陪我看一看"
+BUY_THIS_TIME_TEXT = "这次想买"
 
 
 def log(message):
@@ -198,6 +199,116 @@ async def wait_challenge(client, timeout):
     return False
 
 
+async def wait_green_alt_buy_button(client, timeout):
+    selector = (
+        "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
+        " for (const card of cards) {"
+        " const button = [...card.querySelectorAll('button')].find(b => (b.textContent || '').trim() === "
+        f"{json.dumps(BUY_THIS_TIME_TEXT)});"
+        " if (button) return true;"
+        " } return false; })()"
+    )
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if await client.evaluate(selector):
+            return True
+        await asyncio.sleep(0.5)
+    return False
+
+
+async def challenge_confirm_state(client):
+    return await client.evaluate(
+        "(() => { const button = [...document.querySelectorAll('button')]"
+        f".find(b => (b.textContent || '').trim() === {json.dumps(CHALLENGE_TEXT)});"
+        " if (!button) return {found: false};"
+        " const container = button.closest('div, aside, section, form');"
+        " const text = container ? container.innerText : '';"
+        " return {found: true, hasPrompt: text.includes('确定？'), text: text.slice(0, 300)}; })()"
+    )
+
+
+async def wait_challenge_confirm(client, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        state = await challenge_confirm_state(client)
+        if state.get("found"):
+            return state
+        await asyncio.sleep(0.5)
+    return {"found": False}
+
+
+async def run_challenge_chain(client, args, record):
+    before_send = await client.evaluate("document.body.innerText.length")
+    await chat_send(client, args.challenge_message)
+    flow = await message_flow(client, before_send, args.reply_timeout)
+    if not flow["grew"]:
+        await record("challenge-chain-send", "SUSPECT", flow)
+        return
+    await record("challenge-chain-send", "PASS", flow)
+
+    button_visible = await wait_green_alt_buy_button(client, args.challenge_timeout)
+    if not button_visible:
+        tail = await client.evaluate("document.body.innerText.slice(-1200)")
+        card_count = await client.evaluate("document.querySelectorAll('[data-testid=\"green-alt-card\"]').length")
+        await record(
+            "challenge-chain-card",
+            "SUSPECT",
+            {"reason": "green alternative buy button unavailable", "cardCount": card_count, "tail": tail},
+        )
+        return
+    card_text = await client.evaluate(
+        "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
+        " const card = cards.find(c => [...c.querySelectorAll('button')].some(b => (b.textContent || '').trim() === "
+        f"{json.dumps(BUY_THIS_TIME_TEXT)}));"
+        " return card ? card.innerText.slice(0, 500) : null; })()"
+    )
+    await record("challenge-chain-card", "PASS", {"button": BUY_THIS_TIME_TEXT, "cardText": card_text})
+
+    before_buy = await client.evaluate("document.body.innerText.length")
+    await client.click_element(
+        "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
+        " for (const card of cards) {"
+        " const button = [...card.querySelectorAll('button')].find(b => (b.textContent || '').trim() === "
+        f"{json.dumps(BUY_THIS_TIME_TEXT)});"
+        " if (button) return button;"
+        " } return null; })()"
+    )
+    confirm = await wait_challenge_confirm(client, args.challenge_timeout)
+    if not confirm.get("found") or not confirm.get("hasPrompt"):
+        tail = await client.evaluate("document.body.innerText.slice(-1200)")
+        buttons = await client.evaluate(
+            "[...document.querySelectorAll('button')].map(b => (b.textContent || '').trim()).filter(Boolean).slice(-30)"
+        )
+        await record(
+            "challenge-chain-confirm",
+            "SUSPECT",
+            {
+                "reason": "challenge confirmation not found in one container with prompt",
+                "confirm": confirm,
+                "buttons": buttons,
+                "tail": tail,
+            },
+        )
+        return
+    await record("challenge-chain-confirm", "PASS", confirm)
+
+    await client.click_element(
+        f"(() => [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === {json.dumps(CHALLENGE_TEXT)}))"
+    )
+    await asyncio.sleep(2)
+    closed = not (await challenge_confirm_state(client)).get("found")
+    after_length = await client.evaluate("document.body.innerText.length")
+    if not closed:
+        tail = await client.evaluate("document.body.innerText.slice(-1200)")
+        await record("challenge-chain-dismiss", "SUSPECT", {"closed": False, "tail": tail})
+        return
+    await record(
+        "challenge-chain-dismiss",
+        "PASS",
+        {"closed": True, "lengthBefore": before_buy, "lengthAfter": after_length},
+    )
+
+
 async def message_flow(client, before_length, timeout):
     deadline = time.monotonic() + timeout
     last_length = before_length
@@ -256,18 +367,24 @@ async def run(args):
         if not challenge_visible:
             final_text = await client.evaluate("document.body.innerText.slice(-1200)")
             await record("challenge-confirm", "SKIPPED-CHALLENGE", {"reason": "challenge state unavailable", "tail": final_text})
-            return 0, results
+        else:
+            await record("challenge-confirm", "PASS", {"text": CHALLENGE_TEXT})
+            before_click = await client.evaluate("document.body.innerText.length")
+            await client.click_element(f"(() => [...document.querySelectorAll('button')].find(b => b.textContent.includes({json.dumps(CHALLENGE_TEXT)})))")
+            await asyncio.sleep(3)
+            challenge_closed = not await client.evaluate(f"document.body.innerText.includes({json.dumps(CHALLENGE_TEXT)})")
+            flow = await message_flow(client, before_click, args.reply_timeout)
+            if not challenge_closed or not flow["grew"]:
+                await record("challenge-action", "FAIL", {"closed": challenge_closed, **flow})
+                return 1, results
+            await record("challenge-action", "PASS", {"closed": True, **flow})
 
-        await record("challenge-confirm", "PASS", {"text": CHALLENGE_TEXT})
-        before_click = await client.evaluate("document.body.innerText.length")
-        await client.click_element(f"(() => [...document.querySelectorAll('button')].find(b => b.textContent.includes({json.dumps(CHALLENGE_TEXT)})))")
-        await asyncio.sleep(3)
-        challenge_closed = not await client.evaluate(f"document.body.innerText.includes({json.dumps(CHALLENGE_TEXT)})")
-        flow = await message_flow(client, before_click, args.reply_timeout)
-        if not challenge_closed or not flow["grew"]:
-            await record("challenge-action", "FAIL", {"closed": challenge_closed, **flow})
-            return 1, results
-        await record("challenge-action", "PASS", {"closed": True, **flow})
+        if args.with_challenge:
+            try:
+                await run_challenge_chain(client, args, record)
+            except Exception as error:
+                await record("challenge-chain-error", "SUSPECT", {"error": str(error)})
+        return 0, results
         return 0, results
     except Exception as error:
         try:
@@ -293,6 +410,8 @@ def main():
     parser.add_argument("--email", default=os.environ.get("E2E_EMAIL", "793160223@qq.com"))
     parser.add_argument("--password", default=os.environ.get("E2E_PASSWORD", "793160223@qq.com"))
     parser.add_argument("--message", default=os.environ.get("E2E_MESSAGE", "想买一台空气炸锅，帮我看看值不值得买"))
+    parser.add_argument("--with-challenge", action="store_true", default=os.environ.get("E2E_WITH_CHALLENGE") == "1")
+    parser.add_argument("--challenge-message", default=os.environ.get("E2E_CHALLENGE_MESSAGE", "我想买一台空气炸锅"))
     parser.add_argument("--login-timeout", type=float, default=45)
     parser.add_argument("--reply-timeout", type=float, default=120)
     parser.add_argument("--challenge-timeout", type=float, default=90)
