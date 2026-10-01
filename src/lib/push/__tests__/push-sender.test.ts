@@ -12,8 +12,8 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 const { sendPushToUser } = await import('../push-sender');
-import { createAdminClient } from '@/lib/supabase-admin';
-import { sendPushNotification } from '@/lib/push/web-push-config';
+import { createAdminClient, type AdminClientResult } from '@/lib/supabase-admin';
+import { isWebPushConfigured, sendPushNotification } from '@/lib/push/web-push-config';
 
 function setupSubscription(preferences: Record<string, unknown>) {
   const builder = {
@@ -114,5 +114,86 @@ describe('sendPushToUser device-level frequency gate (batch60-b)', () => {
     const result = await sendPushToUser('u1', { title: 'Symy', body: 'miss you', url: '/' });
     expect(result.sent).toBe(1);
     expect(result.failed).toBe(0);
+  });
+});
+
+describe('sendPushToUser failure and query paths (covgap batch 3)', () => {
+  it('skips before client creation when web push is not configured', async () => {
+    vi.mocked(isWebPushConfigured).mockReturnValue(false);
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 0, removed: 0 });
+    expect(createAdminClient).not.toHaveBeenCalled();
+    expect(sendPushNotification).not.toHaveBeenCalled();
+  });
+
+  it('returns zero when the admin client is unavailable', async () => {
+    vi.mocked(createAdminClient).mockReturnValue({ supabase: null, error: 'secret missing' } as AdminClientResult);
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 0, removed: 0 });
+    expect(sendPushNotification).not.toHaveBeenCalled();
+  });
+
+  it('returns zero when the subscription query errors', async () => {
+    const queryError = new Error('query failed');
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => ({ data: null, error: queryError })),
+    };
+    vi.mocked(createAdminClient).mockReturnValue({ supabase: { from: vi.fn(() => builder) }, error: null } as unknown as AdminClientResult);
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 0, removed: 0 });
+    expect(sendPushNotification).not.toHaveBeenCalled();
+  });
+
+  it('returns zero without querying devices after the last subscription is gone', async () => {
+    setupSubscription({});
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => ({ data: [], error: null })),
+    };
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ supabase: { from: vi.fn(() => builder) }, error: null });
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 0, removed: 0 });
+    expect(sendPushNotification).not.toHaveBeenCalled();
+  });
+
+  it('counts transient failures without deleting the subscription', async () => {
+    setupSubscription({});
+    vi.mocked(isWebPushConfigured).mockReturnValue(true);
+    vi.mocked(sendPushNotification).mockRejectedValueOnce(new Error('network'));
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 1, removed: 0 });
+  });
+
+  it('attempts cleanup for both 404 and 410 subscriptions', async () => {
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => ({ data: [
+        { id: 'gone', endpoint: 'https://push.example/gone', p256dh_key: 'k', auth_key: 'a', preferences: {} },
+        { id: 'stale', endpoint: 'https://push.example/stale', p256dh_key: 'k', auth_key: 'a', preferences: {} },
+      ], error: null })),
+      delete: vi.fn(() => builder),
+    };
+    const client = { supabase: { from: vi.fn(() => builder) }, error: null };
+    vi.mocked(createAdminClient).mockReturnValue(client as unknown as AdminClientResult);
+    vi.mocked(isWebPushConfigured).mockReturnValue(true);
+    vi.mocked(sendPushNotification)
+      .mockRejectedValueOnce(Object.assign(new Error('gone'), { statusCode: 404 }))
+      .mockRejectedValueOnce(Object.assign(new Error('cleanup failed'), { statusCode: 410 }));
+
+    const result = await sendPushToUser('u1', { title: 'Symy', body: 'hello' });
+
+    expect(result).toEqual({ sent: 0, failed: 2, removed: 2 });
+    expect(builder.delete).toHaveBeenCalledTimes(2);
   });
 });

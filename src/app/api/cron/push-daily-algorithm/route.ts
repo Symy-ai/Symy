@@ -173,16 +173,17 @@ export async function GET(req: NextRequest) {
     // Step 5: 发送推送 + 记录到 push_notification_log
     let totalSent = 0;
     let totalFailed = 0;
+    let totalSkipped = 0;
 
     for (const user of usersToNotify) {
-      const locale = localeByUser.get(user.user_id) ?? DEFAULT_PUSH_LOCALE;
-      const copy = DAILY_ALGORITHM_MESSAGES[locale][algorithmKey];
-      const result = await sendPushToUser(user.user_id, { title: copy.title, body: copy.body, url: '/?tab=chat' });
-      totalSent += result.sent;
-      totalFailed += result.failed;
-
-      // 记录到 push_notification_log (无论发送成功与否, 都记录避免重试)
       try {
+        const locale = localeByUser.get(user.user_id) ?? DEFAULT_PUSH_LOCALE;
+        const copy = DAILY_ALGORITHM_MESSAGES[locale][algorithmKey];
+        const result = await sendPushToUser(user.user_id, { title: copy.title, body: copy.body, url: '/?tab=chat' });
+        totalSent += result.sent;
+        totalFailed += result.failed;
+
+        // 记录到 push_notification_log (无论发送成功与否, 都记录避免重试)
         await supabase
           .from('push_notification_log')
           .upsert({
@@ -194,12 +195,13 @@ export async function GET(req: NextRequest) {
           }, {
             onConflict: 'user_id,notification_type,reference_id,milestone',
           });
-      } catch {
-        // safe to ignore: log record is best-effort, failure just means possible duplicate push next run
+      } catch (itemErr) {
+        totalSkipped += 1;
+        logger.error(`[Cron Push Daily Algorithm] Failed user ${user.user_id}; continuing batch:`, itemErr);
       }
     }
 
-    logger.info(`[Cron Push Daily Algorithm] ✅ Done. Sent: ${totalSent}, Failed: ${totalFailed}`);
+    logger.info(`[Cron Push Daily Algorithm] ✅ Done. Sent: ${totalSent}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`);
 
     return NextResponse.json({
       success: true,
@@ -207,6 +209,7 @@ export async function GET(req: NextRequest) {
       notified: usersToNotify.length,
       sent: totalSent,
       failed: totalFailed,
+      skipped: totalSkipped,
     });
   } catch (err) {
     // safe to ignore: log error, return 500

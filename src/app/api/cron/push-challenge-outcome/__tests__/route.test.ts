@@ -103,7 +103,7 @@ describe('GET /api/cron/push-challenge-outcome', () => {
 
     const res = await GET(makeRequest('test-cron-secret'));
     const json = await res.json();
-    expect(json).toEqual({ success: true, notified: 1, sent: 1, failed: 0, removed: 0 });
+    expect(json).toEqual({ success: true, notified: 1, sent: 1, failed: 0, removed: 0, skipped: 0 });
     expect(sentPayloads()).toEqual([
       {
         title: '🎉 守护成功！赢回 ≈2 小时',
@@ -137,6 +137,23 @@ describe('GET /api/cron/push-challenge-outcome', () => {
     expect(sendPushToUsers).not.toHaveBeenCalled();
   });
 
+  it('continues the batch when one challenge throws', async () => {
+    setupRoute({
+      challenges: [challenge({ id: 'challenge-1', user_id: 'u1' }), challenge({ id: 'challenge-2', user_id: 'u2' })],
+      profiles: [{ id: 'u1', locale: 'zh' }, { id: 'u2', locale: 'zh' }],
+    });
+    (sendPushToUsers as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('unexpected route failure'))
+      .mockResolvedValue({ sent: 1, failed: 0, removed: 0 });
+
+    const res = await GET(makeRequest('test-cron-secret'));
+    const json = await res.json();
+
+    expect(json).toEqual({ success: true, notified: 1, sent: 1, failed: 0, removed: 0, skipped: 1 });
+    expect(sendPushToUsers).toHaveBeenCalledTimes(2);
+    expect(sentPayloads()[0].title).toContain('守护成功');
+  });
+
   it('never sends failed or expired challenges', async () => {
     const { challengeBuilder } = setupRoute({
       challenges: [challenge({ id: 'failed', status: 'failed' })],
@@ -158,7 +175,7 @@ describe('GET /api/cron/push-challenge-outcome', () => {
 
     const res = await GET(makeRequest('test-cron-secret'));
     const json = await res.json();
-    expect(json).toEqual({ success: true, notified: 0, sent: 0, failed: 0, removed: 0 });
+    expect(json).toEqual({ success: true, notified: 0, sent: 0, failed: 0, removed: 0, skipped: 0 });
     expect(logBuilder.upsert).not.toHaveBeenCalled();
   });
 

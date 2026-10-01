@@ -113,6 +113,24 @@ describe('GET /api/cron/push-dream-fund — zh copy / en copy', () => {
     expect(payloads()[0]).toEqual({ title: 'Symy', body: 'Fund f1 已守护过半，继续保持。', url: '/' });
   });
 
+  it('continues the batch when one milestone throws', async () => {
+    setupRoute({
+      users: ['u1', 'u2'],
+      funds: [fund('u1', 'f1', 50), fund('u2', 'f2', 50)],
+      profiles: [{ id: 'u1', locale: 'zh' }, { id: 'u2', locale: 'zh' }],
+    });
+    (sendPushToUser as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('unexpected route failure'))
+      .mockResolvedValue({ sent: 1, failed: 0 });
+
+    const response = await GET(makeRequest());
+    const json = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ success: true, notified: 2, sent: 1, failed: 0, skipped: 1 });
+    expect(sendPushToUser).toHaveBeenCalledTimes(2);
+  });
+
   it('keeps zh copy free of amount wording (en legacy dollar copy is exempt)', async () => {
     setupRoute({
       users: ['zh-user', 'en-user'],

@@ -106,6 +106,26 @@ describe('GET /api/cron/push-daily-algorithm — zh copy / en copy', () => {
       vi.useRealTimers();
     }
   });
+
+  it('continues the batch when one user throws', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-04T00:00:00.000Z'));
+    setupRoute({
+      users: [{ user_id: 'u1', preferences: null }, { user_id: 'u2', preferences: null }],
+      profiles: [{ id: 'u1', locale: 'zh' }, { id: 'u2', locale: 'zh' }],
+    });
+    (sendPushToUser as ReturnType<typeof vi.fn>)
+      .mockRejectedValueOnce(new Error('unexpected route failure'))
+      .mockResolvedValue({ sent: 1, failed: 0, removed: 0 });
+
+    const response = await GET(makeRequest());
+    const json = await response.json();
+    vi.useRealTimers();
+
+    expect(response.status).toBe(200);
+    expect(json).toEqual({ success: true, algorithm: 'pickedForYou', notified: 2, sent: 1, failed: 0, skipped: 1 });
+    expect(sendPushToUser).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('GET /api/cron/push-daily-algorithm — preference gating (batch60-b)', () => {

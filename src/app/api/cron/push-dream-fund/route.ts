@@ -203,17 +203,18 @@ export async function GET(req: NextRequest) {
     // Step 6: 发送推送 + 记录到 push_notification_log
     let totalSent = 0;
     let totalFailed = 0;
+    let totalSkipped = 0;
 
     for (const notif of notificationsToSend) {
-      // 🔧 batch60-b: 显式 dreamFund 桶 — 修 url '/' 误落 missYou 桶的旧错 (dreamFund=false
-      //   而 missYou=true 的用户会被误发), sender 设备级按 dreamFund 开关终门
-      const result = await sendPushToUser(notif.userId, notif.payload, 'dreamFund');
-      totalSent += result.sent;
-      totalFailed += result.failed;
-
-      // 记录到 push_notification_log (无论发送成功与否, 都记录避免重试)
-      // 🔧 用 upsert 避免并发重复 (UNIQUE 约束)
       try {
+        // 🔧 batch60-b: 显式 dreamFund 桶 — 修 url '/' 误落 missYou 桶的旧错 (dreamFund=false
+        //   而 missYou=true 的用户会被误发), sender 设备级按 dreamFund 开关终门
+        const result = await sendPushToUser(notif.userId, notif.payload, 'dreamFund');
+        totalSent += result.sent;
+        totalFailed += result.failed;
+
+        // 记录到 push_notification_log (无论发送成功与否, 都记录避免重试)
+        // 🔧 用 upsert 避免并发重复 (UNIQUE 约束)
         await supabase
           .from('push_notification_log')
           .upsert({
@@ -225,19 +226,20 @@ export async function GET(req: NextRequest) {
           }, {
             onConflict: 'user_id,notification_type,reference_id,milestone',
           });
-      } catch (logErr) {
-        // safe to ignore: log record is best-effort, failure just means possible duplicate push next run
-        logger.warn(`[Cron Push Dream Fund] Failed to log notification for user ${notif.userId}, fund ${notif.fundId}, milestone ${notif.milestone}:`, logErr);
+      } catch (itemErr) {
+        totalSkipped += 1;
+        logger.error(`[Cron Push Dream Fund] Failed user ${notif.userId}, fund ${notif.fundId}, milestone ${notif.milestone}; continuing batch:`, itemErr);
       }
     }
 
-    logger.info(`[Cron Push Dream Fund] ✅ Done. Sent: ${totalSent}, Failed: ${totalFailed}`);
+    logger.info(`[Cron Push Dream Fund] ✅ Done. Sent: ${totalSent}, Failed: ${totalFailed}, Skipped: ${totalSkipped}`);
 
     return NextResponse.json({
       success: true,
       notified: notificationsToSend.length,
       sent: totalSent,
       failed: totalFailed,
+      skipped: totalSkipped,
     });
   } catch (err) {
     // safe to ignore: log error, return 500

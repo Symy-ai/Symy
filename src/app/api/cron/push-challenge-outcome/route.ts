@@ -177,47 +177,53 @@ export async function GET(req: NextRequest) {
     let totalSent = 0;
     let totalFailed = 0;
     let totalRemoved = 0;
+    let totalSkipped = 0;
     let notified = 0;
 
     for (const challenge of pendingRows) {
-      const locale = localeByUser.get(challenge.user_id) ?? DEFAULT_PUSH_LOCALE;
-      const hourlyRate = await getUserHourlyRate(challenge.user_id);
-      const hours = hourlyRate > 0 ? challenge.amount / hourlyRate : 0;
-      const { title, body } = buildChallengeOutcomeCopy(locale, challenge.item_name, hours);
-      const payload = { title, body, url: `/${locale}?tab=chat` };
+      try {
+        const locale = localeByUser.get(challenge.user_id) ?? DEFAULT_PUSH_LOCALE;
+        const hourlyRate = await getUserHourlyRate(challenge.user_id);
+        const hours = hourlyRate > 0 ? challenge.amount / hourlyRate : 0;
+        const { title, body } = buildChallengeOutcomeCopy(locale, challenge.item_name, hours);
+        const payload = { title, body, url: `/${locale}?tab=chat` };
 
-      // 🔧 batch60-b: 显式 challenge 桶 — 修 url 含 tab=chat 误落 dailyAlgorithm 桶的旧错
-      //   (挑战结算是事件通道, 只受 challenge 开关控制, 豁免频率; 不能被 daily 节奏误伤)
-      const result = await sendPushToUsers([challenge.user_id], payload, 'challenge');
-      totalSent += result.sent;
-      totalFailed += result.failed;
-      totalRemoved += result.removed;
-      if (result.sent === 0) continue;
+        // 🔧 batch60-b: 显式 challenge 桶 — 修 url 含 tab=chat 误落 dailyAlgorithm 桶的旧错
+        //   (挑战结算是事件通道, 只受 challenge 开关控制, 豁免频率; 不能被 daily 节奏误伤)
+        const result = await sendPushToUsers([challenge.user_id], payload, 'challenge');
+        totalSent += result.sent;
+        totalFailed += result.failed;
+        totalRemoved += result.removed;
+        if (result.sent === 0) continue;
 
-      notified += 1;
-      const { error: insertError } = await supabase
-        .from('push_notification_log')
-        .upsert({
-          user_id: challenge.user_id,
-          notification_type: 'challenge_outcome',
-          reference_id: challenge.id,
-          milestone: null,
-          sent_at: new Date().toISOString(),
-        }, { onConflict: 'user_id,notification_type,reference_id,milestone' });
+        notified += 1;
+        const { error: insertError } = await supabase
+          .from('push_notification_log')
+          .upsert({
+            user_id: challenge.user_id,
+            notification_type: 'challenge_outcome',
+            reference_id: challenge.id,
+            milestone: null,
+            sent_at: new Date().toISOString(),
+          }, { onConflict: 'user_id,notification_type,reference_id,milestone' });
 
-      if (insertError) {
-        const pgError = insertError as { code?: string };
-        if (pgError.code === '23514' || pgError.code === '42883') {
-          logger.warn('[Cron Push Challenge Outcome] challenge_outcome could not be logged (CHECK constraint). Push retained; owner decision required for migration.');
-        } else {
-          logger.warn('[Cron Push Challenge Outcome] Notification log insert failed:', insertError);
+        if (insertError) {
+          const pgError = insertError as { code?: string };
+          if (pgError.code === '23514' || pgError.code === '42883') {
+            logger.warn('[Cron Push Challenge Outcome] challenge_outcome could not be logged (CHECK constraint). Push retained; owner decision required for migration.');
+          } else {
+            logger.warn('[Cron Push Challenge Outcome] Notification log insert failed:', insertError);
+          }
+          // safe to ignore: the push already succeeded; logging is best-effort deduplication
         }
-        // safe to ignore: the push already succeeded; logging is best-effort deduplication
+      } catch (itemErr) {
+        totalSkipped += 1;
+        logger.error(`[Cron Push Challenge Outcome] Failed challenge ${challenge.id}; continuing batch:`, itemErr);
       }
     }
 
-    logger.info(`[Cron Push Challenge Outcome] ✅ Done. Notified: ${notified}, Sent: ${totalSent}, Failed: ${totalFailed}, Removed: ${totalRemoved}`);
-    return NextResponse.json({ success: true, notified, sent: totalSent, failed: totalFailed, removed: totalRemoved });
+    logger.info(`[Cron Push Challenge Outcome] ✅ Done. Notified: ${notified}, Sent: ${totalSent}, Failed: ${totalFailed}, Removed: ${totalRemoved}, Skipped: ${totalSkipped}`);
+    return NextResponse.json({ success: true, notified, sent: totalSent, failed: totalFailed, removed: totalRemoved, skipped: totalSkipped });
   } catch (err) {
     // safe to ignore: the error is reported and converted to a 500 response
     logger.error('[Cron Push Challenge Outcome] Exception:', err);
