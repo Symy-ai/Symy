@@ -62,6 +62,8 @@ export interface CannedBlockChainResult {
   suppressGuardCards: boolean;
   /** 缝2: 块1 复盘回答产出 — route 侧随 loadLettaTurnContext 下传注入 prompt */
   answerContext: import('./green-alt-retro-context').GreenAltRetroAnswerPrompt | undefined;
+  /** 缝3: 块16 快问卡应答转译后的自然语言意图 */
+  effectiveUserContent?: string;
 }
 
 export async function runCannedBlockChain(ctx: CannedBlockChainCtx): Promise<CannedBlockChainResult> {
@@ -230,6 +232,7 @@ export async function runCannedBlockChain(ctx: CannedBlockChainCtx): Promise<Can
 
     // 🔧 b137 第21刀 shopping-clarify 三态块 — response 短路 / suppressGuardCards 旗标 (not_purchase) / null 直通
     let suppressGuardCards = false;
+    let effectiveUserContent: string | undefined;
     {
       const { tryShoppingClarifyBlock } = await import('./canned/shopping-clarify-block');
       const clarifyResult = await tryShoppingClarifyBlock({
@@ -238,6 +241,7 @@ export async function runCannedBlockChain(ctx: CannedBlockChainCtx): Promise<Can
       });
       suppressGuardCards = clarifyResult.suppressGuardCards;
       if (clarifyResult.response) return clarifyResult.response;
+      effectiveUserContent = clarifyResult.effectiveUserContent;
     }
 
     // 🐘 batch60-c 情绪守护 — 数据问答之后、通用购买预检之前 (消费 suppressGuardCards; BNPL/绿色品类 detector 内让路)
@@ -261,7 +265,7 @@ export async function runCannedBlockChain(ctx: CannedBlockChainCtx): Promise<Can
       if (contextSignalResponse) return contextSignalResponse;
     }
 
-    return { response: null, suppressGuardCards, answerContext: greenAltRetroAnswerContext };
+    return { response: null, suppressGuardCards, answerContext: greenAltRetroAnswerContext, effectiveUserContent };
   };
   const outcome = await runChain();
   return outcome instanceof Response

@@ -32,13 +32,21 @@ export interface ShoppingClarifyBlockResult {
   response: Response | null;
   /** 副作用旗标: true = 意图判 not_purchase, 下游守护卡全静默 */
   suppressGuardCards: boolean;
+  /** 快问卡应答转译后的自然语言意图; 未命中机器应答时 undefined */
+  effectiveUserContent?: string;
 }
 
 export async function tryShoppingClarifyBlock(input: ShoppingClarifyBlockInput): Promise<ShoppingClarifyBlockResult> {
   const { userContent, locale, stream = false, askedSubjects = [], mergeCookies, mergeCookiesOnResponse, SSE_HEADERS } = input;
   try {
-    const { buildShoppingClarifyTurn, buildShoppingClarifySseStream } = await import('../shopping-clarify-turn');
+    const { buildShoppingClarifyTurn, buildShoppingClarifySseStream, shoppingClarifyAnswerToIntent } = await import('../shopping-clarify-turn');
     const { classifyShoppingIntent } = await import('@/lib/shopping-intent-clarify');
+
+    const clarifiedIntent = shoppingClarifyAnswerToIntent(userContent, locale);
+    if (clarifiedIntent) {
+      return { response: null, suppressGuardCards: false, effectiveUserContent: clarifiedIntent };
+    }
+
     const clarification = buildShoppingClarifyTurn({ userContent, locale, askedSubjects });
     const intent = clarification ? undefined : classifyShoppingIntent({ message: userContent, locale, askedSubjects });
     if (clarification) {

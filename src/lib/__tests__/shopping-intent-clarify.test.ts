@@ -43,6 +43,12 @@ describe('classifyShoppingIntent', () => {
     expect(classifyShoppingIntent({ message, locale: locale as Locale })).toEqual({ confidence: 'high' });
   });
 
+  it.each([
+    ['想给5岁的孩子买两件夏天穿的童装上衣，预算150以内，帮我想想怎么买划算', 'zh'],
+  ])('does not clarify when recipient and category are explicit (%s)', (message: string, locale: string) => {
+    expect(classifyShoppingIntent({ message, locale: locale as Locale })).toEqual({ confidence: 'high' });
+  });
+
   it('asks one clarification per subject per session', () => {
     const message = '买点给孩子的东西';
     const first = classifyShoppingIntent({ message, locale: 'zh' });

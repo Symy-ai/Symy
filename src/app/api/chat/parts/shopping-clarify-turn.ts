@@ -19,8 +19,31 @@ export interface BuildShoppingClarifyTurnInput {
 
 export const SHOPPING_CLARIFY_SKIP_TOKEN = '[symy-clarify:skip]';
 
+const CLARIFY_TOKEN_TO_CATEGORY: Record<string, 'electronics' | 'clothing' | 'food'> = {
+  '[symy-clarify:electronics]': 'electronics',
+  '[symy-clarify:clothing]': 'clothing',
+  '[symy-clarify:food]': 'food',
+};
+
 export function isShoppingClarifyAnswer(message: string): boolean {
   return /^\[symy-clarify:[a-z-]+\]/.test(message.trim());
+}
+
+export function parseShoppingClarifyAnswer(message: string): { category: 'electronics' | 'clothing' | 'food' } | null {
+  const token = message.trim().match(/^\[symy-clarify:([a-z-]+)\]/)?.[0];
+  if (!token) return null;
+  const category = CLARIFY_TOKEN_TO_CATEGORY[token];
+  return category ? { category } : null;
+}
+
+export function shoppingClarifyAnswerToIntent(message: string, locale: 'en' | 'zh'): string | null {
+  const parsed = parseShoppingClarifyAnswer(message);
+  if (!parsed) return null;
+  if (locale === 'zh') {
+    const subject = parsed.category === 'electronics' ? '电子产品' : parsed.category === 'clothing' ? '衣物' : '食品';
+    return `我想买${subject}`;
+  }
+  return `I want to buy ${parsed.category}`;
 }
 
 export function buildShoppingClarifyTurn(input: BuildShoppingClarifyTurnInput): ShoppingClarifyTurn | null {

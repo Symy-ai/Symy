@@ -130,7 +130,8 @@ async function handleChatRequest(req: NextRequest) {
       mergeCookies, mergeCookiesOnResponse, SSE_HEADERS,
     });
     if (chainResult.response) return chainResult.response;
-    const { suppressGuardCards, answerContext: greenAltRetroAnswerContext } = chainResult;
+    const { suppressGuardCards, answerContext: greenAltRetroAnswerContext, effectiveUserContent } = chainResult;
+    const modelUserContent = effectiveUserContent ?? userContent;
 
     // batch26-c 拆分: 上下文装载（修身阶段/时薪/buddy 统计/RAG/挑战历史）+ BNPL/symy cart/green/reuse
     // 预检 + userContentWithStage 组装 → parts/letta-turn-context.ts（纯机械搬移，内部
@@ -140,7 +141,7 @@ async function handleChatRequest(req: NextRequest) {
     const turnContext = await loadLettaTurnContext({
       userId,
       supabase,
-      userContent,
+      userContent: modelUserContent,
       locale,
       greenPref,
       // 🛡️ batch48-a: 守护强度三档 → letta-turn-context 注入档位指令行
@@ -202,7 +203,7 @@ async function handleChatRequest(req: NextRequest) {
     //    两个跨 try/catch 可变状态已内部化, 不再暴露在 route 顶层。
     //    返回 null 的唯一情形: 非流式 catch → 下方 P6 兜底 (与搬移前隐式跌出语义一致)。
     const dispatchResponse = await dispatchLettaTurn({
-      userContent,
+      userContent: modelUserContent,
       userContentWithStage,
       userId,
       locale,

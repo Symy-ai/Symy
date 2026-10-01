@@ -28,7 +28,7 @@ const CAMPING_PATTERN = /露营|camping/i;
 
 const CATEGORY_SIGNALS: Record<GuardCategory, RegExp> = {
   electronics: /电子|电器|手机|电脑|耳机|electronics|phone|laptop|headphones?/i,
-  clothing: /衣|鞋|外套|衣服|clothes|clothing|shoes|jacket/i,
+  clothing: /衣|鞋|外套|衣服|童装|上衣|裤子|clothes|clothing|shoes|jacket/i,
   beauty: /美妆|护肤|化妆品|beauty|skincare|makeup|cosmetics/i,
   home: /家居|家具|日用品|home|furniture|household/i,
   food: /吃的|喝的|零食|饮料|奶茶|food|snacks?|drinks?|bubble ?tea/i,
@@ -70,7 +70,10 @@ export function classifyShoppingIntent({
     return { confidence: 'clarify', data: { subject, slot: 'timing' } };
   }
 
-  if (/孩子|kids?|children/i.test(text)) {
+  const existingCategory = existingCategoryOf(text);
+  if (existingCategory && highConfidence(text)) return { confidence: 'high' };
+
+  if (/孩子|kids?|children/i.test(text) && !existingCategory) {
     return { confidence: 'clarify', data: { subject, slot: 'category' } };
   }
 

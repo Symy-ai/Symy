@@ -64,6 +64,15 @@ describe('runCannedBlockChain — 链出口形状与两缝 (批4方案B T1-T3)',
     expect(result.answerContext).toBeUndefined();
   });
 
+  it('T4 快问卡应答转译: 衣物 token → effectiveUserContent=我想买衣物, 不再澄清/不静默守护', async () => {
+    const result = await runCannedBlockChain(baseCtx({
+      userContent: '[symy-clarify:clothing] 想给孩子看哪类东西？',
+    }));
+    expect(result.response).toBeNull();
+    expect(result.suppressGuardCards).toBe(false);
+    expect(result.effectiveUserContent).toBe('我想买衣物');
+  });
+
   it('T3 缝2 (链后): 复盘自由文本回答 (让位 gate 放行) → answerContext 定义 (evidenceLine + promptLine 注入面)', async () => {
     // fixture 抄 green-alt-retro-gate.test.ts 不让位用例 — '哈哈确实' 不让位,
     // block1 走自由文本路径产出结构化复盘证据; 未登录 (userId undefined) 跳过落账。

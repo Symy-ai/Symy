@@ -9,13 +9,18 @@
  * ③ null 直通 (高置信购买意图, 旗标 false)
  */
 import { describe, expect, it } from 'vitest';
-import { buildShoppingClarifySseStream, buildShoppingClarifyTurn, isShoppingClarifyAnswer } from '../shopping-clarify-turn';
+import { buildShoppingClarifySseStream, buildShoppingClarifyTurn, isShoppingClarifyAnswer, shoppingClarifyAnswerToIntent } from '../shopping-clarify-turn';
 import { tryShoppingClarifyBlock } from '../canned/shopping-clarify-block';
 
 describe('shopping clarify turn', () => {
   it('returns no turn for machine answers', () => {
     expect(buildShoppingClarifyTurn({ userContent: '[symy-clarify:gift] For her', locale: 'en' })).toBeNull();
     expect(isShoppingClarifyAnswer(' [symy-clarify:skip] ')).toBe(true);
+  });
+
+  it('translates category quick answers into clear purchase intent', () => {
+    expect(shoppingClarifyAnswerToIntent('[symy-clarify:clothing] 想给孩子看哪类东西？', 'zh')).toBe('我想买衣物');
+    expect(shoppingClarifyAnswerToIntent('[symy-clarify:skip]', 'zh')).toBeNull();
   });
 
   it('builds a short stream with card and done event', async () => {
@@ -77,5 +82,14 @@ describe('shopping-clarify 三态块 (tryShoppingClarifyBlock, 刀21)', () => {
     });
     expect(result.response).toBeNull();
     expect(result.suppressGuardCards).toBe(false);
+  });
+
+  it('快问卡衣物应答 → 直通选品流并携带自然语言意图 (不再输出澄清卡)', async () => {
+    const result = await tryShoppingClarifyBlock({
+      ...base, userContent: '[symy-clarify:clothing] 想给孩子看哪类东西？', stream: false, SSE_HEADERS: {},
+    });
+    expect(result.response).toBeNull();
+    expect(result.suppressGuardCards).toBe(false);
+    expect(result.effectiveUserContent).toBe('我想买衣物');
   });
 });
