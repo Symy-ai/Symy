@@ -154,6 +154,14 @@ export function wrapStreamWithAudit(
         } catch {
           /* silent: non-critical operation */
         }
+        const isAbort = err instanceof Error && (err.name === 'AbortError' || err.message.includes('abort'));
+        if (!isAbort) {
+          try {
+            controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ type: 'error', content: 'AI stream interrupted. Please try again.' })}\n\n`));
+          } catch {
+            /* controller already closed or cancelled */
+          }
+        }
         closeSSE(controller);
       }
     },

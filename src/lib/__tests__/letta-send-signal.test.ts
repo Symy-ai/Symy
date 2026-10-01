@@ -3,7 +3,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { sendToAgent, type LettaChatResponse } from '../letta';
+import { sendToAgent, streamToAgent, type LettaChatResponse } from '../letta';
 
 const observedSignals: AbortSignal[] = [];
 const fetchMock = vi.fn((_: string, init?: RequestInit) => {
@@ -61,5 +61,23 @@ describe('sendToAgent request options', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(observedSignals).toHaveLength(1);
+  });
+});
+
+describe('streamToAgent request options', () => {
+  beforeEach(() => {
+    fetchMock.mockClear();
+    observedSignals.length = 0;
+  });
+
+  it('passes an AbortSignal through the streaming SDK request-options argument', async () => {
+    const controller = new AbortController();
+
+    const stream = await streamToAgent('hello', undefined, 'user-1', 'agent-1', controller.signal);
+    await stream.cancel();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(observedSignals).toHaveLength(1);
+    expect(observedSignals[0].aborted).toBe(true);
   });
 });

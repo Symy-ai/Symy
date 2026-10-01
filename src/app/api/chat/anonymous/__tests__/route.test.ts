@@ -10,6 +10,7 @@
  * 4. 错误处理: ZAI SDK 不可用时返回 503
  */
 
+/* eslint-disable require-await -- ReadableStream callbacks use async per webstreams contract */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import enMessages from '@/i18n/messages/en.json';
@@ -37,11 +38,15 @@ vi.mock('@/lib/z-ai-config', () => ({
   isZAIAvailable: vi.fn(),
 }));
 
-vi.mock('@/lib/sse', () => ({
-  sendSSEData: vi.fn(),
-  closeSSE: vi.fn(),
-  SSE_HEADERS: { 'Content-Type': 'text/event-stream' },
-}));
+vi.mock('@/lib/sse', async (importOriginal) => {
+  // 🔧 sse-audit: 错误契约测试需要真实 enqueue — 真实现包 vi.fn: 记录 calls 且不吞数据
+  const actual = await importOriginal<typeof import('@/lib/sse')>();
+  return {
+    sendSSEData: vi.fn(actual.sendSSEData),
+    closeSSE: vi.fn(actual.closeSSE),
+    SSE_HEADERS: { 'Content-Type': 'text/event-stream' },
+  };
+});
 
 import { checkRateLimit } from '@/lib/distributed-lock';
 import { callZAIChatCompletionStream } from '@/lib/zai-sdk-types';
@@ -128,6 +133,32 @@ describe('Anonymous Chat API', () => {
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toContain('text/event-stream');
     expect(res.headers.get('X-Anonymous-Remaining')).toBe('2');
+  });
+
+  it('emits the frontend error event contract when the upstream stream fails', async () => {
+    let firstPull = true;
+    vi.mocked(callZAIChatCompletionStream).mockResolvedValue(
+      new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          if (firstPull) {
+            firstPull = false;
+            controller.enqueue(new TextEncoder().encode('data: {"type":"token","content":"partial"}\n\n'));
+            return;
+          }
+          throw new Error('upstream reset');
+        },
+      })
+    );
+
+    const req = createMockRequest({
+      messages: [{ role: 'user', content: 'I want to buy AirPods' }],
+    });
+    const responsePromise = POST(req);
+    const response = (await responsePromise) as Response;
+    const text = await response.text();
+
+    expect(text).toContain('"type":"error"');
+    expect(text).toContain('"content":"Stream interrupted. Please try again."');
   });
 
   it.each([

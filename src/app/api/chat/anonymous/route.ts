@@ -286,9 +286,16 @@ export async function POST(req: NextRequest) {
         } catch (err) {
           logger.error('[Anonymous Chat] Stream error:', err);
           // 发送 error 事件给前端
-          sendSSEData(controller, { type: 'error', message: 'Stream interrupted. Please try again.' });
+          // 🔧 sse-audit fix: errored controller 上 enqueue 可能同步抛 — 包裹防二次异常挂死流
+          try {
+            sendSSEData(controller, { type: 'error', content: 'Stream interrupted. Please try again.' });
+          } catch (enqueueErr) {
+            // safe to ignore: 外层流已 errored/cancel — 无法再告知前端, 日志留痕
+            logger.warn('[Anonymous Chat] error event enqueue failed:', enqueueErr);
+          }
         } finally {
-          try { reader.cancel(); } catch { /* ignore */ }
+          // 🔧 sse-audit fix: 对 errored 流 cancel() 会 rethrow 原始错误 → 必须吞掉, 否则 unhandled rejection
+          try { await reader.cancel(); } catch { /* safe to ignore: upstream already errored */ }
           closeSSE(controller);
         }
       },

@@ -7,6 +7,7 @@
  * 失败态 (错误采集 + 不写行为审计) / 取消态传播 / 与 websearch 组合红线 (zh+en)。
  */
 
+/* eslint-disable require-await -- ReadableStream callbacks use async per webstreams contract */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/logger', () => ({
@@ -29,6 +30,7 @@ import { withWebSearchWaitEvent } from '../websearch-wait-stream';
 import { buildWebSearchWaitTurn } from '@/lib/websearch-wait-turn';
 import { logAIBehavior } from '@/lib/ai-audit';
 import { captureLLMGeneration } from '@/lib/posthog-server';
+import { logger } from '@/lib/logger';
 import type { ChallengeContext } from '@/types/challenge-context';
 
 const challenge: ChallengeContext = { itemName: '无人机', amount: 2999, challengeId: 'c-1' };
@@ -105,6 +107,26 @@ describe('wrapStreamWithAudit — 透传保真', () => {
   it('流结束 → 正常 done (closeSSE 路径), 下游不 reject', async () => {
     const events = [{ type: 'token', content: 'ok' }];
     await expect(collectSseEvents(wrapStreamWithAudit(sseStream(events), 'q', 'u1'))).resolves.toEqual(events);
+  });
+});
+
+describe('wrapStreamWithAudit — 失败兜底', () => {
+  it('上游 reader 抛错时补发 error 事件并正常 close', async () => {
+    const inner = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        controller.enqueue(new TextEncoder().encode('data: {"type":"token","content":"partial"}\n\n'));
+        throw new Error('upstream reset');
+      },
+    });
+
+    const events = await collectSseEvents(wrapStreamWithAudit(inner, 'q', 'u1'));
+
+    expect(events).toEqual([
+      { type: 'token', content: 'partial' },
+      { type: 'error', content: 'AI stream interrupted. Please try again.' },
+    ]);
+    expect(logger.error).toHaveBeenCalledWith('[Chat API] Stream wrapper error:', expect.any(Error));
+    expect(captureLLMGeneration).toHaveBeenCalledWith(expect.objectContaining({ isError: true }));
   });
 });
 
@@ -196,7 +218,10 @@ describe('wrapStreamWithAudit — 失败态', () => {
     });
 
     const events = await collectSseEvents(wrapStreamWithAudit(inner, 'q', 'u1'));
-    expect(events).toEqual([{ type: 'token', content: '部分' }]);
+    expect(events).toEqual([
+      { type: 'token', content: '部分' },
+      { type: 'error', content: 'AI stream interrupted. Please try again.' },
+    ]);
 
     expect(captureLLMGeneration).toHaveBeenCalledWith(
       expect.objectContaining({

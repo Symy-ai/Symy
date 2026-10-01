@@ -280,6 +280,7 @@ export async function streamToAgent(
   },
   userId?: string,
   agentId?: string,  // 🔧 新增：per-user agent ID
+  signal?: AbortSignal,
 ): Promise<ReadableStream<Uint8Array>> {
   const client = getLettaClient();
 
@@ -298,11 +299,12 @@ export async function streamToAgent(
 
   // 🔧 Architecture refactor: 移除流式首字节 timeout — Vercel maxDuration=60 已硬兜底
   // 之前 40s timeout 触发 fallback chain，新架构信任 AI 完成响应
+  const requestOptions = signal ? { signal } : undefined;
   const stream = await client.agents.messages.create(targetAgentId, {
     messages: [{ role: 'user', content: messageContent }],
     streaming: true,
     stream_tokens: true,
-  });
+  }, requestOptions);
 
   const encoder = new TextEncoder();
 
@@ -395,7 +397,7 @@ export async function streamToAgent(
         // abort() 会让 for-await 循环抛出 AbortError, 走 catch 路径优雅退出
         stream.controller.abort();
       } catch {
-        // stream 可能已结束, controller.abort() 抛错 — 忽略
+        // safe to ignore: stream 可能已结束, controller.abort() 抛错属预期清理路径
       }
     },
   });

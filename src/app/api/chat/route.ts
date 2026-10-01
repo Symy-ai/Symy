@@ -220,6 +220,7 @@ async function handleChatRequest(req: NextRequest) {
       microChallenge,
       greenKnowledge,
       altFootprintCard,
+      signal: req.signal,
     });
     if (dispatchResponse) return dispatchResponse;
   }

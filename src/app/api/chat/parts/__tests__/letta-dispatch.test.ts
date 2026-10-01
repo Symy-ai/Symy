@@ -115,6 +115,7 @@ describe('① 流式成功 → SSE Response (真实包装栈)', () => {
       undefined,
       'u-dispatch',
       'agent-dispatch-1',
+      undefined,
     );
 
     const bytes = await res!.text();

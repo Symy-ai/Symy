@@ -52,6 +52,8 @@ export interface LettaDispatchInput {
   microChallenge: MicroChallengeProposal | null;
   greenKnowledge: GreenKnowledgeInjection;
   altFootprintCard: AltFootprintCardData | null;
+  /** route req.signal — 客户端断开时同步取消 Letta 上游请求 */
+  signal?: AbortSignal;
 }
 
 export async function dispatchLettaTurn(input: LettaDispatchInput): Promise<Response | null> {
@@ -62,7 +64,7 @@ export async function dispatchLettaTurn(input: LettaDispatchInput): Promise<Resp
   try {
     // 🚀 流式模式：前端请求 stream=true 时，使用 SSE 让用户更早看到首 token
     if (stream) {
-      const innerStream = await streamToAgent(userContentWithStage, impulseContext, userId || undefined, targetAgentId);
+      const innerStream = await streamToAgent(userContentWithStage, impulseContext, userId || undefined, targetAgentId, input.signal);
       // 🔧 拆相位第23刀 (2026-09-30): SSE 包装栈 (audit→websearch→reuse→green→
       //    knowledge→footprint→micro, 字节序核心) 拆出 parts/sse-pipeline.ts
       //    纯函数 (纯机械搬移, "谁后包装谁更靠前" 层序逐一保留)。
