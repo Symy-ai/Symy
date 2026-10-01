@@ -124,18 +124,10 @@ export async function retryAiResponseImpl({
   if (sendMessageLockRef.current.inProgress) return;
   sendMessageLockRef.current.inProgress = true;
   setIsLoading(true);
-
-  // 🔧 FIX: 从最后一条用户消息推断 mode, 而非用当前 activeChallenge
-  // 之前: mode: activeChallenge ? 'challenge' : 'normal'
-  //   问题: 如果用户在挑战模式发消息 → AI 失败 → 用户退出挑战 → 点 retry
-  //   → activeChallenge=undefined → mode='normal' → 保存为 normal
-  //   → loadHistory 按 mode='challenge' 过滤时丢失这条消息!
-  // 现在: 找最后一条用户消息的 mode, 保持一致
   const lastUserMsg = messagesRef.current.filter(m => m.role === 'user').pop();
   // 🔧 Round 19 Frontend-H2: 读 activeChallengeRef.current (实时值) 而非闭包的 activeChallenge
   const currentActiveChallenge = activeChallengeRef.current;
   const retryMode = lastUserMsg?.mode || (currentActiveChallenge ? 'challenge' : 'normal');
-
   const assistantMsgId = nextId('ai');
   const assistantMsg: ChatMessage = {
     id: assistantMsgId,
@@ -145,11 +137,9 @@ export async function retryAiResponseImpl({
     timestamp: new Date(),
     mode: retryMode,
   };
-  setMessagesSync((prev) => [...prev, assistantMsg]);
-
-  // 🔧 ARCH fix (Give Up race): 在 try 外声明 abortController, finally 可访问。
   let abortController: AbortController | null = null;
   try {
+    setMessagesSync((prev) => [...prev, assistantMsg]);
     const apiMessages = messagesRef.current
       .filter((m) => m.id !== assistantMsgId && !m.isError)
       .map((m) => ({ role: m.role, content: m.content }));
