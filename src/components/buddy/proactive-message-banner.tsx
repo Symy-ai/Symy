@@ -293,6 +293,12 @@ export function ProactiveMessageBanner({ messages, onMarkRead }: ProactiveMessag
                         role="button"
                         tabIndex={0}
                         aria-label={isUnread ? t('buddy.proactiveMessagesMarkRead') : undefined}
+                        onKeyDown={(event) => {
+                          if (isUnread && (event.key === 'Enter' || event.key === ' ')) {
+                            event.preventDefault();
+                            event.currentTarget.click();
+                          }
+                        }}
                         className={`p-2.5 rounded-xl border transition-colors cursor-pointer hover:border-cyan-500/40 ${
                           isUnread
                             ? 'bg-cyan-500/8 border-cyan-500/25'

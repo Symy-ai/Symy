@@ -176,7 +176,7 @@ export function SettingsAdvancedSection({ isDemo, greenPrefEnabled, emailConnect
             onToggle={showComingSoonToast}
           />
           {/* Language Switcher */}
-          <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-glass-hover transition-colors cursor-pointer" onClick={() => {
+          <button type="button" className="flex items-center gap-3 p-3 rounded-xl hover:bg-glass-hover transition-colors cursor-pointer w-full text-left" onClick={() => {
             const currentIndex = LOCALES.findIndex((l) => l.code === locale);
             const nextIndex = (currentIndex + 1) % LOCALES.length;
             const newLocale = LOCALES[nextIndex].code;
@@ -196,7 +196,7 @@ export function SettingsAdvancedSection({ isDemo, greenPrefEnabled, emailConnect
               </p>
             </div>
             <ChevronRight className="w-4 h-4 text-icon-muted" />
-          </div>
+          </button>
           <SettingLink
             icon={<CreditCard className="w-4 h-4" />}
             label={t('profile.paymentMethods')}

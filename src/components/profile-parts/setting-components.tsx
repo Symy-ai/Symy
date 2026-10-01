@@ -67,7 +67,7 @@ export function SettingLink({
   onClick?: () => void;
 }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-glass-hover transition-colors cursor-pointer" onClick={onClick}>
+    <button type="button" className="flex items-center gap-3 p-3 rounded-xl hover:bg-glass-hover transition-colors cursor-pointer w-full text-left" onClick={onClick}>
       <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-glass-fill flex items-center justify-center text-icon-muted">
         {icon}
       </div>
@@ -76,6 +76,6 @@ export function SettingLink({
         <p className="text-xs text-text-tertiary">{description}</p>
       </div>
       <ChevronRight className="w-4 h-4 text-icon-muted" />
-    </div>
+    </button>
   );
 }

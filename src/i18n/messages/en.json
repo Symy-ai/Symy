@@ -1856,6 +1856,7 @@
   "profile": {
     "settingsAdvanced": "More settings",
     "settingsAdvancedDesc": "Open this when you want fine-tuning",
+    "changeAvatar": "Change avatar",
     "plainIntensity": {
       "gentle": "A gentle nudge",
       "balanced": "Just the right balance",

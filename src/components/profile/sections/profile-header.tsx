@@ -29,7 +29,19 @@ export function ProfileHeader({ displayName, displayEmail, avatarInitial, plan, 
   return (
     <div className="flex flex-col items-center pt-4">
       {/* 🔧 CL3 fix: 头像可点击上传 — 显示真实头像 (若有) 或字母首字母 */}
-      <div className="relative w-20 h-20 mb-3 group/avatar cursor-pointer" onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={t('profile.changeAvatar', { defaultValue: 'Change avatar' })}
+        className="relative w-20 h-20 mb-3 group/avatar cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-cyan-400/40"
+        onClick={() => !isUploadingAvatar && fileInputRef.current?.click()}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            if (!isUploadingAvatar) fileInputRef.current?.click();
+          }
+        }}
+      >
         {/* Glow ring */}
         <div className="absolute inset-0 rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-400/20 blur-md animate-pulse" />
         {effectiveAvatarUrl ? (

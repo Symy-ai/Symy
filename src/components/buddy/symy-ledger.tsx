@@ -303,13 +303,14 @@ export function SymyLedger({ buddyState, config: _config, isDemo, onToast, _onCh
           <div className="bg-glass-fill rounded-xl p-3 text-center border border-glass-border relative">
             <p className="text-[10px] text-text-tertiary tracking-wide mb-1">
               {t('buddy.yourBalance')}
-              <span
+              <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); setShowReclaimDetail(true); }}
-                className="text-text-tertiary/60 hover:text-cyan-400 transition-colors cursor-pointer ml-1"
+                className="text-text-tertiary/60 hover:text-cyan-400 transition-colors cursor-pointer ml-1 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 rounded-full"
                 aria-label={t('home.moneySavedDetail', { defaultValue: 'These are hours you won back — time represented by money you considered spending but didn\'t.' })}
               >
                 ⓘ
-              </span>
+              </button>
             </p>
             {/* 三行布局 — 第2行: 🕐 + 小时数 (owner 铁律 09-06: 不再显示钱数, 金额只在梦想基金语境) */}
             <p className="text-lg font-bold text-text-primary inline-flex items-center justify-center gap-1 mb-0.5">
