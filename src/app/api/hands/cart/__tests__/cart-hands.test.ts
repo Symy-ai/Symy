@@ -74,7 +74,7 @@ describe('MCP envelope unwrap', () => {
 
   it('surfaces the business error without throwing', () => {
     const out = unwrapCartEnvelope(envelopeFor({ ok: false, error: 'cart not found' }));
-    expect(out).toEqual({ ok: false, error: 'cart not found' });
+    expect(out).toEqual({ ok: false, data: undefined, error: 'cart not found' });
   });
 
   it('parses SSE-formatted envelopes (data: lines)', () => {
@@ -96,7 +96,7 @@ describe('MCP envelope unwrap', () => {
       error: { code: -32602, message: 'Invalid params' },
     }));
     expect(out.ok).toBe(false);
-    expect(out.error).toBe('Invalid params');
+    expect(out.error).toBe('Cart request failed');
   });
 
   it('maps result.isError to ok:false', () => {

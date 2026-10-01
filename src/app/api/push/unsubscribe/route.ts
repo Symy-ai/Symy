@@ -73,7 +73,7 @@ export const DELETE = withAuth(async ({ supabase, user, request }) => {
       }
 
       return NextResponse.json(
-        { error: pgError.message || 'Failed to remove subscription', error_code: pgError.code || 'DB_ERROR' },
+        { error: 'Failed to remove subscription', error_code: 'DB_ERROR' },
         { status: 500 },
       );
     }

@@ -126,7 +126,7 @@ export const PATCH = withAuth(async ({ supabase, user, request }) => {
       const pgError = updateError as { code?: string; message?: string };
       logger.error('[Push Preferences] PATCH update error:', { code: pgError.code, message: pgError.message });
       return NextResponse.json(
-        { error: pgError.message || 'Failed to save push preferences', error_code: pgError.code || 'DB_ERROR' },
+        { error: 'Failed to save push preferences', error_code: 'DB_ERROR' },
         { status: 500 },
       );
     }

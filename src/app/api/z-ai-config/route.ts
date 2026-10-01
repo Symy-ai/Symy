@@ -10,6 +10,7 @@ import { withAuth } from '@/lib/with-auth';
 import { NextResponse } from 'next/server';
 import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { readFile } from 'fs/promises';
+import { logger } from '@/lib/logger';
 import { join } from 'path';
 
 export const GET = withAuth(async () => {
@@ -46,6 +47,8 @@ export const GET = withAuth(async () => {
       return NextResponse.json({ error: 'z-ai configuration not available' }, { status: 503 });
     }
     const errMsg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: 'z-ai-config file read failed', detail: errMsg }, { status: 500 });
+    // 🔧 errleak audit fix: 文件读取错误细节不进响应（可含服务器路径）— 固定文案, 细节进日志
+    logger.error('[z-ai-config] config file read failed:', errMsg);
+    return NextResponse.json({ error: 'z-ai-config unavailable' }, { status: 500 });
   }
 });

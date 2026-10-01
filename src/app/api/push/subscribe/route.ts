@@ -121,9 +121,8 @@ export const POST = withAuth(async ({ user, request }) => {
         );
       }
 
-      // Default: DB error — include code + message for frontend diagnosis
       return NextResponse.json(
-        { error: pgError.message || 'Failed to save subscription', error_code: pgError.code || 'DB_ERROR' },
+        { error: 'Failed to save subscription', error_code: 'DB_ERROR' },
         { status: 500 },
       );
     }

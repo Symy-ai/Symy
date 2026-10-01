@@ -35,7 +35,7 @@ function setupSubs(opts: { rows?: unknown[]; error?: unknown; updateError?: unkn
   const latestRows = opts.rows ?? [];
   const selectResult: Result = { data: latestRows, error: opts.error ?? null };
   const updateResult: Result = { data: null, error: opts.updateError ?? null };
-  const builder = {
+  const readBuilder: TableBuilder = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     order: vi.fn(() => builder),
@@ -43,6 +43,25 @@ function setupSubs(opts: { rows?: unknown[]; error?: unknown; updateError?: unkn
     update: vi.fn(() => selectResultIsUpdate(updateResult)),
     then: (resolve: (value: Result) => unknown) => Promise.resolve(selectResult).then(resolve),
   };
+  const builder = readBuilder;
+  if (opts.updateError !== undefined) {
+    const updateBuilder: TableBuilder = {
+      select: vi.fn(() => updateBuilder),
+      eq: vi.fn(() => updateBuilder),
+      order: vi.fn(() => updateBuilder),
+      limit: vi.fn(() => updateBuilder),
+      update: vi.fn(() => updateBuilder),
+      then: (resolve: (value: Result) => unknown) => Promise.resolve(updateResult).then(resolve),
+    };
+    let fromCallCount = 0;
+    const from = vi.fn(() => {
+      fromCallCount += 1;
+      void 0;
+      return fromCallCount === 2 ? updateBuilder : builder;
+    });
+    const supabase = { from };
+    return { builder: { ...builder, update: updateBuilder.update }, supabase };
+  }
   function selectResultIsUpdate(updateRes: Result): TableBuilder {
     return {
       select: builder.select,
@@ -145,5 +164,18 @@ describe('PATCH /api/push/preferences', () => {
 
     const res = await PATCH(authedContext(patchRequest({ missYou: false }), supabase));
     expect(res.status).toBe(503);
+  });
+
+  it('does not leak the database error message on update failure', async () => {
+    const { supabase } = setupSubs({
+      rows: [{ preferences: {}, updated_at: '2026-01-01' }],
+      updateError: { code: '23505', message: 'duplicate key violates unique constraint "push_subscriptions_pkey"' },
+    });
+
+    const res = await PATCH(authedContext(patchRequest({ missYou: false }), supabase));
+    const json = await res.json();
+
+    expect(res.status).toBe(500);
+    expect(json).toEqual({ error: 'Failed to save push preferences', error_code: 'DB_ERROR' });
   });
 });

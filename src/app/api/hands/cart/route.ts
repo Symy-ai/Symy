@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
 import { warnMissingEnvOnce } from '@/lib/env-consumers';
 import { createServerClient } from '@supabase/ssr';
 import { z } from 'zod';
-import { logger } from '@/lib/logger';
 import {
   buildCartToolCall,
   currencyForLang,
@@ -94,6 +94,9 @@ export async function POST(request: NextRequest) {
 
     // 解包 MCP envelope (JSON-RPC → result.content[0].text → {ok, data, error}), 直接回给前端
     const unwrapped = unwrapCartEnvelope(upstreamText);
+    if (!unwrapped.ok && upstreamText.includes('"error"')) {
+      logger.warn('[Hands Cart Proxy] upstream application error:', upstreamText.slice(0, 500));
+    }
     return NextResponse.json(unwrapped);
   } catch (err) {
     // safe to ignore: upstream outage is recovered by returning 502 below —

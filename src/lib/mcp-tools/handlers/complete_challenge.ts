@@ -644,6 +644,7 @@ export async function handleCompleteChallenge(ctx: MCPHandlerContext): Promise<M
       // 🔧 ARCH refactor: use rollbackChallengeStatusOnFailure helper
       //    Fixes P2-11 (uses admin client) + preserves Round 120 AUDIT-6 fix
       logger.error('[MCP] complete_challenge: applyBuddyStateDelta failed after CAS commit, rolling back challenge status + deposit_status to active');
+      logger.error('[MCP] complete_challenge: applyBuddyStateDelta error:', result.error);
       let rollbackOk = false;
       if (challengeId) {
         rollbackOk = await rollbackChallengeStatusOnFailure(userId, challengeId);

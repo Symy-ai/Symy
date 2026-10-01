@@ -122,7 +122,7 @@ export function unwrapCartEnvelope(rawText: string): UnwrappedCartResult {
   }
 
   if (envelope?.error) {
-    return { ok: false, error: envelope.error.message || 'Cart request failed' };
+    return { ok: false, error: 'Cart request failed' };
   }
 
   const result = envelope?.result;

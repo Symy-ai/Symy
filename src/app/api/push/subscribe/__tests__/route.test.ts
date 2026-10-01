@@ -15,7 +15,7 @@ import { createAdminClient } from '@/lib/supabase-admin';
 
 type Result = { data: unknown; error: unknown };
 
-function setupRoute(existingPreferences: unknown = null) {
+function setupRoute(existingPreferences: unknown = null, upsertError: unknown = null) {
   const upsert = vi.fn((payload: Record<string, unknown>) => {
     void payload;
     return builder;
@@ -25,6 +25,7 @@ function setupRoute(existingPreferences: unknown = null) {
     eq: vi.fn(() => builder),
     maybeSingle: vi.fn(async () => ({ data: existingPreferences === null ? null : { preferences: existingPreferences }, error: null }) as Result),
     upsert,
+    then: vi.fn((resolve: (value: Result) => unknown) => Promise.resolve({ data: null, error: upsertError }).then(resolve)),
   };
   (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({
     supabase: { from: vi.fn(() => builder) },
@@ -99,5 +100,15 @@ describe('POST /api/push/subscribe', () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  it('does not leak the database error message on subscribe failure', async () => {
+    setupRoute(null, { code: '23505', message: 'duplicate key violates unique constraint "push_subscriptions_pkey"' });
+
+    const response = await POST({ user: { id: 'u1' }, request: makeRequest() });
+    const json = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(json).toEqual({ error: 'Failed to save subscription', error_code: 'DB_ERROR' });
   });
 });
