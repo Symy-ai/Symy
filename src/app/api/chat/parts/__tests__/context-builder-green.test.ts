@@ -5,6 +5,7 @@
  * 覆盖: 新字段注入 / 缺失省略 / 默认 on / sanitizer 过滤 / getSymyGreenContext 读取。
  */
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { readFileSync } from "node:fs";
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: vi.fn(),
@@ -123,13 +124,15 @@ describe("getSymyGreenContext", () => {
     process.env.SYMY_SUPABASE_KEY = "test-key";
   });
 
-  it("profile 显式 off → off; 默认 (无 green_pref 字段) → on", async () => {
+  it("profiles 探测已删(列不存在死代码) — 默认 on; requestPref 仍是权威开关", async () => {
     mockSupabaseTables({
       profiles: makeChain({ data: [{ id: "u1", green_pref: "off" }], error: null }),
       impulse_events: makeChain({ data: [], error: null }),
     });
+    // 🔧 dead-code removal: green_pref 列在 profiles 上不存在 — 旧断言 mock 的是假列(假绿),
+    //    探测分支从未在生产命中。删除后 profiles 行不再影响 greenPref。
     expect(await getSymyGreenContext("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee")).toEqual({
-      greenPref: "off",
+      greenPref: "on",
     });
 
     mockSupabaseTables({
@@ -183,6 +186,14 @@ describe("getSymyGreenContext", () => {
     expect(await getSymyGreenContext("aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee")).toEqual({
       greenPref: "on",
     });
+  });
+});
+
+describe("getSymyGreenContext — independent queries", () => {
+  it("impulse_events 查询保持单条(死探测已删)", () => {
+    const source = readFileSync(new URL("../context-builder.ts", import.meta.url), "utf-8");
+    expect(source).toContain('.from("impulse_events")');
+    expect(source).not.toMatch(/select\("id,green_pref"\)/);
   });
 });
 

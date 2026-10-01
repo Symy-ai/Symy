@@ -9,6 +9,7 @@
  */
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { loadLettaTurnContext } from '../letta-turn-context';
 
 if (typeof globalThis.fetch !== 'function') {
@@ -69,6 +70,22 @@ describe('loadLettaTurnContext — batch44-a profile awareness', () => {
     expect(result.userContentWithStage).toContain('[PROFILE AWARENESS:');
     // zh 路径应为中文 prompt
     expect(result.userContentWithStage).toContain('我注意到你的夜间盲区是 67%');
+  });
+
+  it('parallelizes independent cultivation, hourly-rate, and blind-spot loads', async () => {
+    const source = readFileSync(new URL('../letta-turn-context.ts', import.meta.url), 'utf-8');
+    const parallelAnchor = source.indexOf('const [lettaCultivationStage, userHourlyRate, blindSpotInfo] = await Promise.all([');
+    const cultivationCall = source.indexOf('await getUserCultivationStage(userId)');
+    const hourlyRateCall = source.indexOf('await getUserHourlyRate(userId)');
+    const blindSpotCall = source.indexOf("await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/blind-spot-map`");
+
+    expect(parallelAnchor).toBeGreaterThan(0);
+    expect(cultivationCall).toBeGreaterThan(0);
+    expect(hourlyRateCall).toBeGreaterThan(0);
+    expect(blindSpotCall).toBeGreaterThan(0);
+    expect(cultivationCall).toBeLessThan(parallelAnchor);
+    expect(hourlyRateCall).toBeLessThan(parallelAnchor);
+    expect(blindSpotCall).toBeLessThan(parallelAnchor);
   });
 
   it('en locale: injects blind spots and weekly streak into prompt', async () => {

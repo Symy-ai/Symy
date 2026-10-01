@@ -88,39 +88,41 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
 
   // 🧠 加载用户修身阶段（道体二·共生：AI 根据用户阶段调整风格）
   // 永不阻塞主流程 — 失败时用默认 zhi_yu
-  let lettaCultivationStage: CultivationStage = 'zhi_yu';
-  if (userId) {
+  const loadCultivationStage = async (): Promise<CultivationStage> => {
+    if (!userId) return 'zhi_yu';
     try {
-      lettaCultivationStage = await getUserCultivationStage(userId);
+      const stage = await getUserCultivationStage(userId);
       // 异步触发重新评估（1 小时缓存）
       triggerReassessIfNeeded(userId).catch((err) => logger.warn('[Chat API] triggerReassessIfNeeded failed:', err));
-      if (lettaCultivationStage !== 'zhi_yu') {
-        logger.info(`[Chat API] 🧠 Letta path cultivation stage: ${lettaCultivationStage}`);
+      if (stage !== 'zhi_yu') {
+        logger.info(`[Chat API] 🧠 Letta path cultivation stage: ${stage}`);
       }
-      // safe to ignore: non-critical background operation, error already logged
+      return stage;
     } catch (err) {
-      // safe to ignore: non-critical background operation, error already logged
+      // safe to ignore: 修身阶段读取失败回退默认档 — 主回复继续
       logger.warn('[Chat API] Failed to get cultivation stage:', err);
+      return 'zhi_yu';
     }
-  }
+  };
 
   // 💰 P0 fix: 加载用户时薪 — 用于 Freedom Translation (金钱↔生命时间换算)
   //    旧代码: AI prompt 用 hardcoded $20/hr → 用户改了时薪后 AI 仍用旧值
   //    根因修复: 从 profiles.hourly_rate 读取, 注入 context header, AI 用此 rate 换算
   //    永不阻塞主流程 — 失败时用默认 20
-  let userHourlyRate = 20;
-  if (userId) {
+  const loadHourlyRate = async (): Promise<number> => {
+    if (!userId) return 20;
     try {
-      userHourlyRate = await getUserHourlyRate(userId);
-      if (userHourlyRate !== 20) {
-        logger.info(`[Chat API] 💰 User hourly rate: $${userHourlyRate}/hr`);
+      const rate = await getUserHourlyRate(userId);
+      if (rate !== 20) {
+        logger.info(`[Chat API] 💰 User hourly rate: $${rate}/hr`);
       }
-      // safe to ignore: non-critical background operation, error already logged
+      return rate;
     } catch (err) {
-      // safe to ignore: non-critical background operation, error already logged
+      // safe to ignore: 时薪读取失败回退默认 20 — 主回复继续
       logger.warn('[Chat API] Failed to get user hourly rate:', err);
+      return 20;
     }
-  }
+  };
 
   // 🔧 P2-1 fix (2026-07-11): 加载用户 buddy_state 统计数据 — 用于 Look back 等功能
   //    旧代码: AI 不知道用户的真实统计 (total_saved, challenges_completed, streak, vitality)
@@ -162,29 +164,36 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
   //    旧代码: AI 不知道用户的 blind spot (如"深夜 67%"), 回复泛化 ("Keep challenging!")
   //    根因修复: 从 /api/blind-spot-map 取 show=true 且 sample_count>=10 的前 1-2 条
   //    永不阻塞主流程 — 失败时静默降级 (AI 仍能回复)
-  let blindSpotInfo = '';
-  if (userId) {
+  const loadBlindSpotInfo = async (): Promise<string> => {
+    if (!userId) return '';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
       const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/blind-spot-map`, {
         signal: controller.signal,
         headers: { 'Accept': 'application/json' },
       });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        const data = await res.json();
-        const visible = (data.blind_spots || [])
-          .filter((b: { show: boolean; sample_count: number }) => b.show && b.sample_count >= 10)
-          .slice(0, 2);
-        if (visible.length > 0) {
-          blindSpotInfo = ' | ' + visible.map((b: { type: string; rate: number | null }) => `blind_spot: ${b.type} ${b.rate ?? 0}%`).join(', ');
-        }
-      }
+      if (!res.ok) return '';
+      const data = await res.json();
+      const visible = (data.blind_spots || [])
+        .filter((b: { show: boolean; sample_count: number }) => b.show && b.sample_count >= 10)
+        .slice(0, 2);
+      return visible.length > 0
+        ? ' | ' + visible.map((b: { type: string; rate: number | null }) => `blind_spot: ${b.type} ${b.rate ?? 0}%`).join(', ')
+        : '';
     } catch {
-      // safe to ignore: non-critical profile data fetch failed; AI still replies
+      // safe to ignore: 辅助上下文超时/失败回退空串 — 主回复继续
+      return '';
+    } finally {
+      clearTimeout(timeoutId);
     }
-  }
+  };
+
+  const [lettaCultivationStage, userHourlyRate, blindSpotInfo] = await Promise.all([
+    loadCultivationStage(),
+    loadHourlyRate(),
+    loadBlindSpotInfo(),
+  ]);
 
   // 🌱 RAG: 检索用户历史上下文（道体二·共生）+ 触发懒加载回填
   // 永不阻塞主流程 — 失败时 lettaUserHistory 为空
@@ -263,57 +272,54 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
   const bnplResult = detectBNPL(bnplMessage, validChallengeContext?.amount);
   const bnplPrefix = bnplResult.detected ? buildBNPLContextPrefix(bnplResult, userHourlyRate) : '';
   const symyUserRef = userId;
-  const symyCartTotalCents = await getSymyCartTotalCents(symyUserRef);
+  const symyCartTotalCentsPromise = getSymyCartTotalCents(symyUserRef);
   // 🌱 绿色守护开关: 请求级 body.greenPref 优先于 profiles 探测 (green_pref 列尚不存在,
   //    零 DDL)。关闭时脑侧收 symy_green_pref: off → 不再做绿色替代拦截。
-  const symyGreenContext = await getSymyGreenContext(symyUserRef, greenPref);
-  if (symyGreenContext.greenPref === 'off') {
-    logger.info('[Chat API] symy_green_pref: off (client green guardian toggle)');
-  }
+  const symyGreenContextPromise = getSymyGreenContext(symyUserRef, greenPref);
   // 🧺 batch25-b: 读取购物事实摘要 — 与绿色上下文同级 best-effort。单索引查询
   //    (idx_shopping_facts_user_updated), 表缺失/失败静默 undefined → 字段省略,
   //    绝不阻塞聊天。
-  const symyShoppingFacts = userId && factsStore
-    ? await loadFactsForContext({ userId, store: factsStore })
-    : undefined;
+  const symyShoppingFactsPromise = userId && factsStore
+    ? loadFactsForContext({ userId, store: factsStore })
+    : Promise.resolve(undefined);
   // 🧭 batch52-c: 冲动触发画像摘要 — 与 shopping-facts 同级 best-effort。
   //    factsStore 即 route 侧 service-key admin client, 结构面满足只读查询;
   //    任何失败/样本不足在模块内静默降级为 undefined (字段省略), 绝不阻塞聊天。
-  const symyImpulseProfile = await loadImpulseProfileContextLine({
+  const symyImpulseProfilePromise = loadImpulseProfileContextLine({
     userId,
     store: factsStore as unknown as ImpulseProfileStore | undefined,
   });
   // 🔮 batch62-c: 未来 7 天冲动风险预报摘要 — 同级 best-effort。失败在模块内
   //    静默降级为 undefined (字段省略); 样本不足输出明确降级行, 绝不阻塞聊天。
-  const symyImpulseForecast = await loadImpulseForecastContextLine({
+  const symyImpulseForecastPromise = loadImpulseForecastContextLine({
     userId,
     store: factsStore as unknown as ImpulseForecastStore | undefined,
   });
   // 🌱 batch53-a: 进行中绿色承诺摘要 — 同级 best-effort, 失败/无承诺静默 undefined
-  const symyGreenCommitment = await loadGreenCommitmentContextLine({
+  const symyGreenCommitmentPromise = loadGreenCommitmentContextLine({
     userId,
     store: factsStore as unknown as GreenCommitmentStore | undefined,
   });
   // 🏅 batch54-a: 近 14 天高光摘要 — 同级 best-effort, 失败/无高光静默 undefined
-  const symyRecentWins = await loadRecentWinsContextLine({
+  const symyRecentWinsPromise = loadRecentWinsContextLine({
     userId,
     store: factsStore as unknown as RecentWinsStore | undefined,
   });
   // 🐘 batch55-c 替代足迹摘要 + 足迹召回卡 — 同级 best-effort, 失败/样本不足静默降级
-  const altAdoption = await loadAltAdoptionContext({
+  const altAdoptionPromise = loadAltAdoptionContext({
     userId,
     store: factsStore as unknown as AltAdoptionStore | undefined,
     userContent,
     locale,
   });
   // 🎨 batch56-c 守护风格摘要 — 同级 best-effort, 失败/样本不足静默 undefined
-  const guardStyle = await loadGuardStyleContext({
+  const guardStylePromise = loadGuardStyleContext({
     userId,
     store: factsStore as unknown as GuardStyleStore | undefined,
   });
-  const spendingCap = await loadSpendingCapContext(userId, supabase as unknown as SpendingCapStore | undefined);
+  const spendingCapPromise = loadSpendingCapContext(userId, supabase as unknown as SpendingCapStore | undefined);
   // 🐘 batch62-b 拒绝偏好摘要 — 同级 best-effort, 失败/无有效偏好静默降级 (空状态 = 现状行为)
-  const greenAltPreference = await loadGreenAltPreferenceContext({
+  const greenAltPreferencePromise = loadGreenAltPreferenceContext({
     userId,
     store: factsStore as unknown as GreenAltPreferenceStore | undefined,
     locale,
@@ -321,11 +327,41 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
   // 🌱 batch68-a 复盘证据 — 同级 best-effort: 历史复盘行 → 定性证据行 + 偏好 gap-fill
   //    合并 (显式拒绝偏好优先, already_have/rent_borrow 才产冷却)。失败静默降级为
   //    空事件, 合并后状态与 base 一致 = 现状行为。
-  const greenAltRetro = await loadGreenAltRetroContext({
+  const greenAltRetroPromise = loadGreenAltRetroContext({
     userId,
     store: factsStore as unknown as GreenAltRetroStore | undefined,
     locale,
   });
+  const [
+    symyCartTotalCents,
+    symyGreenContext,
+    symyShoppingFacts,
+    symyImpulseProfile,
+    symyImpulseForecast,
+    symyGreenCommitment,
+    symyRecentWins,
+    altAdoption,
+    guardStyle,
+    spendingCap,
+    greenAltPreference,
+    greenAltRetro,
+  ] = await Promise.all([
+    symyCartTotalCentsPromise,
+    symyGreenContextPromise,
+    symyShoppingFactsPromise,
+    symyImpulseProfilePromise,
+    symyImpulseForecastPromise,
+    symyGreenCommitmentPromise,
+    symyRecentWinsPromise,
+    altAdoptionPromise,
+    guardStylePromise,
+    spendingCapPromise,
+    greenAltPreferencePromise,
+    greenAltRetroPromise,
+  ]);
+  if (symyGreenContext.greenPref === 'off') {
+    logger.info('[Chat API] symy_green_pref: off (client green guardian toggle)');
+  }
   const greenAltPreferenceState = mergeGreenAltRetroPreference(greenAltPreference.state, greenAltRetro.events);
   // 🌱 绿色替代预检: 开关关/未命中 → null (零开销, 流原样透传); 命中 → SSE 最前注入 green_alt 事件
   //    偏好状态参与候选排序: 冷却词条后置但不减员 (显式问起仍返回), 无偏好时与基线一致

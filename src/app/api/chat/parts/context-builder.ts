@@ -257,20 +257,9 @@ export async function getSymyGreenContext(
   try {
     const supabase = createClient(url, key);
 
-    // 未带请求级开关时才读 profiles 探测; 请求级 'on' 优先于 profiles 探测结果
-    if (requestPref === undefined) {
-      const { data: profileRows } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userRef)
-        .limit(1);
-      const profile = profileRows?.[0] as Record<string, unknown> | undefined;
-      const pref = profile?.green_pref;
-      if (pref === false || pref === "off" || pref === "0") {
-        result.greenPref = "off";
-      }
-    }
-
+    // 🔧 latency+dead-code fix: 原 profiles 探测读 green_pref — 该列在 profiles 上
+    //    不存在(列守卫证实), select('*') cast 后永远 undefined, 探测分支是死代码 → 删除。
+    //    requestPref 仍是权威开关(调用方传入); impulse_events 查询保持不变。
     const { data: impulseRows } = await supabase
       .from("impulse_events")
       .select("title")
