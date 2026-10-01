@@ -23,6 +23,8 @@ BUY_THIS_TIME_TEXT = "这次想买"
 PREFER_BUY_FOLLOW_UP_TEXT = "这次我想买，帮我挑个靠谱的"
 # 🔧 挑战横幅专属文案（带🛒前缀）— 「我买了」裸词会撞 butterfly「如果呢」卡的同名按钮
 CHALLENGE_BUY_TEXT = "🛒 我买了"
+# prefer_buy 点击后的 ack 文案（点击生效的标志）
+BUY_ACK_TEXT = "好，这次就听你的"
 
 
 def log(message):
@@ -99,6 +101,7 @@ class CDP:
         return str(path)
 
     async def click(self, x, y):
+        # 🔧 视口外坐标对 CDP 鼠标事件无效 — 坐标采集处已 scrollIntoView(center)
         await self.send("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         await asyncio.sleep(0.15)
         await self.send(
@@ -112,7 +115,7 @@ class CDP:
         )
 
     async def click_element(self, selector):
-        position = await self.evaluate(f"(() => {{ const el = {selector}; if (!el) return null; const r = el.getBoundingClientRect(); return {{x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), disabled: el.disabled || el.getAttribute('aria-disabled') === 'true'}}; }})()")
+        position = await self.evaluate(f"(() => {{ const el = {selector}; if (!el) return null; el.scrollIntoView({{block: 'center'}}); const r = el.getBoundingClientRect(); return {{x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), disabled: el.disabled || el.getAttribute('aria-disabled') === 'true'}}; }})()")
         if not position:
             raise RuntimeError("element not found")
         if position.get("disabled"):
@@ -228,7 +231,7 @@ async def green_alt_buy_button(client):
         " const button = [...card.querySelectorAll('button')].find(b =>"
         " b.matches('[data-testid=\"green-alt-feedback-prefer_buy\"]') ||"
         f" (b.textContent || '').trim() === {json.dumps(BUY_THIS_TIME_TEXT)});"
-        " if (button) { const r = button.getBoundingClientRect();"
+        " if (button) { button.scrollIntoView({block: 'center'}); const r = button.getBoundingClientRect();"
         " return {x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)}; }"
         " } return null; })()"
     )
@@ -321,6 +324,14 @@ async def run_challenge_chain(client, args, record):
 
     before_buy = await client.evaluate("document.body.innerText.length")
     await client.click(button["x"], button["y"])
+    # 🔧 流式渲染期间卡片坐标易漂 — 点击后验证 ack, 未生效则重采坐标重试一次
+    for _ in range(3):
+        await asyncio.sleep(1.5)
+        if await client.evaluate(f"document.body.innerText.includes({json.dumps(BUY_ACK_TEXT)})"):
+            break
+        coords = await green_alt_buy_button(client)
+        if coords:
+            await client.click(coords["x"], coords["y"])
     follow_up_visible = await wait_message_text(client, PREFER_BUY_FOLLOW_UP_TEXT, args.challenge_timeout)
     if not follow_up_visible:
         tail = await client.evaluate("document.body.innerText.slice(-1200)")
