@@ -43,13 +43,19 @@ export async function requestSendMessage({
   locale,
   signal,
 }: SendMessageRequestArgs) {
+  // 🔧 QA11 BUG-A fix: 服务端 zod schema 限制 messages.max(50) — 长会话用户向上
+  //   翻页累积超 50 条后整包 400（间歇性: 刷新后只载 6 条历史所以「自愈」）。
+  //   修复: 上行前裁剪到最近 50 条（含当前用户消息, 恒在末尾）。
+  const MAX_API_MESSAGES = 50;
   const apiMessages = [
     ...messages.filter((m) => m.id !== userMsg.id),
     { ...userMsg, content: displayContent },
-  ].map((m) => ({
-    role: m.role === "action" ? ("user" as const) : m.role,
-    content: m.id === userMsg.id ? fullApiContent : m.content,
-  }));
+  ]
+    .slice(-MAX_API_MESSAGES)
+    .map((m) => ({
+      role: m.role === "action" ? ("user" as const) : m.role,
+      content: m.id === userMsg.id ? fullApiContent : m.content,
+    }));
 
   const currentActiveChallenge =
     activeChallenge || activeChallengeState || undefined;

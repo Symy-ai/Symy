@@ -140,8 +140,11 @@ export async function retryAiResponseImpl({
   let abortController: AbortController | null = null;
   try {
     setMessagesSync((prev) => [...prev, assistantMsg]);
+    // 🔧 QA11 BUG-A fix (与 send-message-request 同源): 服务端 zod messages.max(50)
+    //   — retry 路径同样带全量历史, 长会话重试必撞 400。裁剪到最近 50 条。
     const apiMessages = messagesRef.current
       .filter((m) => m.id !== assistantMsgId && !m.isError)
+      .slice(-50)
       .map((m) => ({ role: m.role, content: m.content }));
 
     // 🔧 H2 fix: 创建 AbortController, 传 signal 给 fetch (之前遗漏)

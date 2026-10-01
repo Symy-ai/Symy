@@ -20,6 +20,8 @@ DEFAULT_BASE_URL = "http://localhost:3000"
 DEFAULT_CDP_URL = "http://127.0.0.1:9225"
 CHALLENGE_TEXT = "再陪我看一看"
 BUY_THIS_TIME_TEXT = "这次想买"
+PREFER_BUY_FOLLOW_UP_TEXT = "这次我想买，帮我挑个靠谱的"
+CHALLENGE_BUY_TEXT = "我买了"
 
 
 def log(message):
@@ -216,6 +218,56 @@ async def wait_green_alt_buy_button(client, timeout):
     return False
 
 
+async def green_alt_buy_button(client):
+    # 🔧 返回坐标而非 DOM 节点 — Runtime.evaluate returnByValue 序列化 React fiber
+    #   挂载的元素会炸 'Object reference chain is too long'
+    return await client.evaluate(
+        "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
+        " for (const card of cards) {"
+        " const button = [...card.querySelectorAll('button')].find(b =>"
+        " b.matches('[data-testid=\"green-alt-feedback-prefer_buy\"]') ||"
+        f" (b.textContent || '').trim() === {json.dumps(BUY_THIS_TIME_TEXT)});"
+        " if (button) { const r = button.getBoundingClientRect();"
+        " return {x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)}; }"
+        " } return null; })()"
+    )
+
+
+
+
+async def wait_message_text(client, text, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if await client.evaluate(f"document.body.innerText.includes({json.dumps(text)})"):
+            return True
+        await asyncio.sleep(0.5)
+    return False
+
+
+async def challenge_banner_state(client):
+    # 🔧 只认最后一个横幅（历史消息里也有旧挑战横幅, Virtuoso 全在 DOM）
+    return await client.evaluate(
+        "(() => { const bs = [...document.querySelectorAll('button')].filter(b =>"
+        f" (b.textContent || '').includes({json.dumps(CHALLENGE_BUY_TEXT)}) ||"
+        " (b.getAttribute('aria-label') || '').includes('I bought it'));"
+        " const button = bs.length ? bs[bs.length - 1] : null;"
+        " if (!button) return {found: false};"
+        " const banner = button.closest('div, aside, section');"
+        " const amber = banner ? /amber-500/.test(banner.className || '') : false;"
+        " return {found: true, amber, text: banner ? banner.innerText.slice(0, 500) : null}; })()"
+    )
+
+
+async def wait_challenge_banner(client, timeout):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        state = await challenge_banner_state(client)
+        if state.get("found"):
+            return state
+        await asyncio.sleep(0.5)
+    return {"found": False}
+
+
 async def challenge_confirm_state(client):
     return await client.evaluate(
         "(() => { const button = [...document.querySelectorAll('button')]"
@@ -258,20 +310,41 @@ async def run_challenge_chain(client, args, record):
         return
     card_text = await client.evaluate(
         "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
-        " const card = cards.find(c => [...c.querySelectorAll('button')].some(b => (b.textContent || '').trim() === "
-        f"{json.dumps(BUY_THIS_TIME_TEXT)}));"
+        " const card = cards.find(c => [...c.querySelectorAll('button')].some(b =>"
+        " b.matches('[data-testid=\"green-alt-feedback-prefer_buy\"]') ||"
+        f" (b.textContent || '').trim() === {json.dumps(BUY_THIS_TIME_TEXT)}));"
         " return card ? card.innerText.slice(0, 500) : null; })()"
     )
+    button = await green_alt_buy_button(client)
     await record("challenge-chain-card", "PASS", {"button": BUY_THIS_TIME_TEXT, "cardText": card_text})
 
     before_buy = await client.evaluate("document.body.innerText.length")
+    await client.click(button["x"], button["y"])
+    follow_up_visible = await wait_message_text(client, PREFER_BUY_FOLLOW_UP_TEXT, args.challenge_timeout)
+    if not follow_up_visible:
+        tail = await client.evaluate("document.body.innerText.slice(-1200)")
+        await record(
+            "challenge-chain-follow-up",
+            "SUSPECT",
+            {"reason": "prefer buy follow-up message unavailable", "tail": tail},
+        )
+        return
+    await record("challenge-chain-follow-up", "PASS", {"text": PREFER_BUY_FOLLOW_UP_TEXT})
+
+    banner = await wait_challenge_banner(client, args.challenge_timeout)
+    if not banner.get("found"):
+        tail = await client.evaluate("document.body.innerText.slice(-1200)")
+        await record(
+            "challenge-chain-banner",
+            "SKIPPED-CHALLENGE",
+            {"reason": "challenge banner unavailable", "banner": banner, "tail": tail},
+        )
+        return
+    await record("challenge-chain-banner", "PASS", banner)
+
+    # 🔧 只点当前（最后一个）挑战横幅的「我买了」— 历史消息里也有旧横幅按钮
     await client.click_element(
-        "(() => { const cards = [...document.querySelectorAll('[data-testid=\"green-alt-card\"]')].reverse();"
-        " for (const card of cards) {"
-        " const button = [...card.querySelectorAll('button')].find(b => (b.textContent || '').trim() === "
-        f"{json.dumps(BUY_THIS_TIME_TEXT)});"
-        " if (button) return button;"
-        " } return null; })()"
+        f"(() => {{ const bs = [...document.querySelectorAll('button')].filter(b => (b.textContent || '').includes({json.dumps(CHALLENGE_BUY_TEXT)})); return bs.length ? bs[bs.length - 1] : null; }})()"
     )
     confirm = await wait_challenge_confirm(client, args.challenge_timeout)
     if not confirm.get("found") or not confirm.get("hasPrompt"):
@@ -293,7 +366,7 @@ async def run_challenge_chain(client, args, record):
     await record("challenge-chain-confirm", "PASS", confirm)
 
     await client.click_element(
-        f"(() => [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === {json.dumps(CHALLENGE_TEXT)}))"
+        f"(() => {{ const bs = [...document.querySelectorAll('button')].filter(b => (b.textContent || '').trim() === {json.dumps(CHALLENGE_TEXT)}); return bs.length ? bs[bs.length - 1] : null; }})()"
     )
     await asyncio.sleep(2)
     closed = not (await challenge_confirm_state(client)).get("found")
