@@ -29,6 +29,7 @@ export const maxDuration = 60;
 
 export const GET = withAuth(async ({ supabase, user }) => {
   const userId = user.id;
+  const requestId = Math.random().toString(36).substring(2, 10);
   const exportData: Record<string, unknown> = {
     exportInfo: {
       userId,
@@ -47,7 +48,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .maybeSingle();
     if (error) logger.warn('[Export] profiles query error:', error.message);
     exportData.profiles = data || null;
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] profiles fetch_failed', { section: 'profiles', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.profiles = { error: 'fetch_failed' };
   }
 
@@ -60,7 +62,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .maybeSingle();
     if (error) logger.warn('[Export] buddy_state query error:', error.message);
     exportData.buddy_state = data || null;
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] buddy_state fetch_failed', { section: 'buddy_state', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.buddy_state = { error: 'fetch_failed' };
   }
 
@@ -73,7 +76,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .order('sort_order', { ascending: true });
     if (error) logger.warn('[Export] dream_funds query error:', error.message);
     exportData.dream_funds = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] dream_funds fetch_failed', { section: 'dream_funds', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.dream_funds = { error: 'fetch_failed' };
   }
 
@@ -86,7 +90,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .order('created_at', { ascending: false });
     if (error) logger.warn('[Export] active_challenges query error:', error.message);
     exportData.active_challenges = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] active_challenges fetch_failed', { section: 'active_challenges', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.active_challenges = { error: 'fetch_failed' };
   }
 
@@ -100,7 +105,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .limit(1000);
     if (error) logger.warn('[Export] chat_messages query error:', error.message);
     exportData.chat_messages = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] chat_messages fetch_failed', { section: 'chat_messages', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.chat_messages = { error: 'fetch_failed' };
   }
 
@@ -114,7 +120,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .limit(1000);
     if (error) logger.warn('[Export] health_events query error:', error.message);
     exportData.health_events = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] health_events fetch_failed', { section: 'health_events', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.health_events = { error: 'fetch_failed' };
   }
 
@@ -128,7 +135,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .limit(1000);
     if (error) logger.warn('[Export] impulse_events query error:', error.message);
     exportData.impulse_events = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] impulse_events fetch_failed', { section: 'impulse_events', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.impulse_events = { error: 'fetch_failed' };
   }
 
@@ -142,7 +150,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .limit(500);
     if (error) logger.warn('[Export] user_embeddings query error:', error.message);
     exportData.user_embeddings = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] user_embeddings fetch_failed', { section: 'user_embeddings', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.user_embeddings = { error: 'fetch_failed' };
   }
 
@@ -156,7 +165,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .limit(500);
     if (error) logger.warn('[Export] email_receipts query error:', error.message);
     exportData.email_receipts = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] email_receipts fetch_failed', { section: 'email_receipts', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.email_receipts = { error: 'fetch_failed' };
   }
 
@@ -169,7 +179,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .order('created_at', { ascending: false });
     if (error) logger.warn('[Export] invitations query error:', error.message);
     exportData.invitations = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] invitations fetch_failed', { section: 'invitations', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.invitations = { error: 'fetch_failed' };
   }
 
@@ -182,7 +193,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .order('created_at', { ascending: false });
     if (error) logger.warn('[Export] butterfly_sessions query error:', error.message);
     exportData.butterfly_sessions = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] butterfly_sessions fetch_failed', { section: 'butterfly_sessions', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.butterfly_sessions = { error: 'fetch_failed' };
   }
 
@@ -195,7 +207,8 @@ export const GET = withAuth(async ({ supabase, user }) => {
       .order('created_at', { ascending: false });
     if (error) logger.warn('[Export] challenge_participants query error:', error.message);
     exportData.challenge_participants = data || [];
-  } catch (_err) {
+  } catch (err) {
+    logger.error('[Export] challenge_participants fetch_failed', { section: 'challenge_participants', requestId, userId, error: err instanceof Error ? err.message : String(err) });
     exportData.challenge_participants = { error: 'fetch_failed' };
   }
 
