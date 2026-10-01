@@ -1,0 +1,9 @@
+-- Owner TODO: apply after migration 146.
+-- Audit result: no current UPDATE policy lacks WITH CHECK; no migration added here.
+-- Column-level policy candidates for owner review:
+-- 1. public.email_connections.access_token / refresh_token
+-- 2. public.profiles.email
+-- 3. public.profiles.letta_agent_id
+-- Current permissive community SELECT policies are intentional product surfaces:
+-- public.daily_reflections, public.daily_reflection_votes.
+-- The older public.inward_* SELECT policies are not referenced by user-facing endpoints.
