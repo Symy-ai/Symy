@@ -105,7 +105,7 @@ export function buildGuardScopePromptLine(scope: GuardScope): string {
   }
   if (stricted.length > 0) {
     lines.push(
-      `[GUARD SCOPE: strict — the user chose stricter guarding for: ${stricted.join(', ')}. For these categories, after the alternative suggestion add one gentle "think once more" beat before the purchase. Still zero shame framing.]`,
+      `[GUARD SCOPE: strict — the user chose stricter guarding for: ${stricted.join(', ')}. For these categories, after the alternative suggestion add one gentle "sit with the user and look at the choice together" beat before the purchase. Still zero shame framing.]`,
     );
   }
   return lines.join('\n\n');

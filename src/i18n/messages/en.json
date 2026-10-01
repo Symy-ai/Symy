@@ -938,7 +938,7 @@
     "challengeChooseToBuy": "Bought anyway",
     "challengeBuyConfirm": "Sure?",
     "challengeBuyConfirmYes": "Yes",
-    "challengeBuyConfirmNo": "Wait",
+    "challengeBuyConfirmNo": "Sit with me a moment",
     "challengeSawItAction": "✓ Guarded",
     "challengeChoseToBuyAction": "✗ Bought anyway",
     "challengeCreatedAction": "🐘 Guardian engaged",
@@ -1311,7 +1311,7 @@
       "lineDurabilityNeutral": "I have no reliable durability data for either side, so I won't vouch for either — the one built to last is cheaper per year.",
       "chooseA": "Go with {side}",
       "chooseB": "Go with {side}",
-      "thinkBtn": "Sleep on it",
+      "thinkBtn": "Sit with me and look again",
       "reply": {
         "a": {
           "gentle": "Done — enjoy {side}, no second-guessing needed.",
@@ -1337,7 +1337,7 @@
       "verdictThink": "No rush on this one — real need or just a nice-to-have?",
       "buyBtn": "Buy it",
       "altBtn": "See swap",
-      "thinkBtn": "Sleep on it",
+      "thinkBtn": "Sit with me and look again",
       "reply": {
         "buy": {
           "gentle": "Sure — {item} it is. Enjoy it.",
