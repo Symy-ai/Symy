@@ -84,7 +84,7 @@ export function ChatInput({
       {/* Smart prompt chips — driven by guard state + session flags */}
       {showTopicPlaza && (
         <SmartPromptChips
-          hasSentMessage={false}
+          hasSentMessage={messagesCount > 0}
           buddyState={buddyState}
           healthEvents={healthEvents}
           hasHadInterceptInSession={hasHadInterceptInSession}

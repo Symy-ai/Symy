@@ -24,6 +24,7 @@ export interface SmartPromptChipsProps {
 }
 
 export function SmartPromptChips({
+  hasSentMessage,
   buddyState,
   healthEvents,
   hasHadInterceptInSession,
@@ -33,6 +34,11 @@ export function SmartPromptChips({
   const mounted = useMounted();
 
   const chips = useMemo(() => {
+    // 🔧 QA qa7 fix: hasSentMessage 之前由调用方硬编码 false 且 sessionStorage 无写入方 —
+    //   发过消息后 chips 永不消失。双保险: prop(调用方 messagesCount>0) + sessionStorage 标记。
+    if (hasSentMessage) {
+      return [];
+    }
     if (mounted && window.sessionStorage.getItem(SESSION_FIRST_MESSAGE_SENT) === 'true') {
       return [];
     }
@@ -84,7 +90,7 @@ export function SmartPromptChips({
         text: t('chat.smartPrompt.fallback', { defaultValue: 'What do you want to save today?' }),
       },
     ];
-  }, [buddyState, healthEvents, mounted, t]);
+  }, [buddyState, healthEvents, hasSentMessage, mounted, t]);
 
   const extraChip = useMemo(() => {
     if (hasHadInterceptInSession) {
