@@ -2528,7 +2528,8 @@
         "health-care": "Health care",
         "repair-care": "Repair & care",
         "celebration": "Celebration",
-        "pet-first-care": "First pet"
+        "pet-first-care": "First pet",
+        "other": "Other"
       }
     },
     "inventory": {

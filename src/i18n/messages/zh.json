@@ -2528,7 +2528,8 @@
         "health-care": "健康个护",
         "repair-care": "维修再利用",
         "celebration": "庆典礼赠",
-        "pet-first-care": "新手养宠"
+        "pet-first-care": "新手养宠",
+        "other": "其他"
       }
     },
     "inventory": {
