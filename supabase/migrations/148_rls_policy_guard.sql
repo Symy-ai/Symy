@@ -1,4 +1,4 @@
--- Owner TODO: apply after migration 147.
+-- Owner TODO: see PENDING-OWNER-DEPLOY.md (audit archive moved to doc/rls-audit-findings.md).
 -- Guard: keep the effective UPDATE policy set aligned with the RLS WITH CHECK rule.
 DO $$
 DECLARE
