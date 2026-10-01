@@ -3,14 +3,27 @@
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ChatTab } from '@/components/chat-tab';
 import { BuddyTab } from '@/components/buddy-tab';
-import { ButterflyTab } from '@/features/butterfly/components/butterfly-tab';
 import { DefenseTab } from '@/features/defense/components/defense-tab';
 import { ProfileTab } from '@/components/profile-tab';
 import { HomeTab } from '@/components/home-tab';
 import { MonitorTab } from '@/components/monitor-tab';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft } from 'lucide-react';
 import type { DreamFund } from '@/types/buddy-state';
 import type { ChallengeContext } from '@/types/challenge-context';
+
+const ButterflyTab = dynamic(
+  () => import('@/features/butterfly/components/butterfly-tab').then((module) => module.ButterflyTab),
+  {
+    loading: () => (
+      <div className="absolute inset-0 bg-surface-1 p-4">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="mt-4 h-[calc(100%-4.5rem)] w-full" />
+      </div>
+    ),
+  },
+);
 
 export interface AppTabContentProps {
   activeTab: string;
