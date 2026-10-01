@@ -947,7 +947,7 @@
     "challengeChooseToBuy": "还是买了",
     "challengeBuyConfirm": "确定？",
     "challengeBuyConfirmYes": "确定",
-    "challengeBuyConfirmNo": "再想想",
+    "challengeBuyConfirmNo": "再陪我看一看",
     "challengeSawItAction": "✓ 守住了",
     "challengeChoseToBuyAction": "✗ 还是买了",
     "challengeCreatedAction": "🐘 守护开启",
@@ -1320,7 +1320,7 @@
       "lineDurabilityNeutral": "两边耐用性本象没有可靠数据，不替任何一边背书——买耐用的那件，长期更省。",
       "chooseA": "选 {side}",
       "chooseB": "选 {side}",
-      "thinkBtn": "再想想",
+      "thinkBtn": "再陪我看一看",
       "reply": {
         "a": {
           "gentle": "好，就它啦～愿你和{side}都用得开心。",
@@ -1346,7 +1346,7 @@
       "verdictThink": "不急着定——这一项是真需要还是刚好想要？",
       "buyBtn": "就买",
       "altBtn": "看替代",
-      "thinkBtn": "再想想",
+      "thinkBtn": "再陪我看一看",
       "reply": {
         "buy": {
           "gentle": "好，{item}就它啦～用得开心。",
@@ -2486,7 +2486,7 @@
     "guardMatrix": {
       "title": "守护行动一致性",
       "desc": "哪些生活域你真的把守护变成了行动",
-      "empty": "还没有守护记录 — 从下一次「再想想」开始，域画像会慢慢长出来",
+      "empty": "还没有守护记录 — 从下一次「再陪我看一看」开始，域画像会慢慢长出来",
       "insufficient": "记录还少，再来几次就能看到你的域画像",
       "headline": "{domains} 个域 · {days} 天在场",
       "rowActions": "守 {guarded} · 替代 {alt} · 复用 {reuse}",
@@ -3005,7 +3005,7 @@
   "demo": {
     "quickReplies": {
       "boughtIt": "我买了",
-      "boughtImpulse": "没忍住，被诱导买了",
+      "boughtImpulse": "被诱导买了，本象陪你想办法",
       "resisted": "我守住门，没买",
       "dontNeed": "其实我不需要",
       "regret": "我有点后悔 😔",
