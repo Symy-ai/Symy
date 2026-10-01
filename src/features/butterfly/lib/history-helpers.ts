@@ -11,6 +11,13 @@
 import type { ButterflySession, StoryChapter, StoryTone, ButterflyChoice } from '../types';
 import { splitScenes } from '@/features/butterfly/hooks/player';
 
+export interface ButterflyShareTextInput {
+  decisionType: ButterflySession['decisionType'];
+  decisionDescription: string;
+  butterflyEffect?: string | null;
+  shareUrl: string;
+}
+
 /** A single scene extracted from a chapter's content */
 export interface HistoryScene {
   chapterIndex: number;
@@ -61,6 +68,28 @@ export function extractScenes(chapters: StoryChapter[]): HistoryScene[] {
  */
 export function getChoiceForChapter(session: ButterflySession, chapterIndex: number): ButterflyChoice | null {
   return session.choices.find(c => c.chapterIndex === chapterIndex && c.selectedOption) || null;
+}
+
+export function buildButterflyShareText({
+  decisionType,
+  decisionDescription,
+  butterflyEffect,
+  shareUrl,
+}: ButterflyShareTextInput): string {
+  const decisionLabel = decisionType === 'bought'
+    ? 'I bought'
+    : decisionType === 'resisted'
+      ? 'I didn\'t buy'
+      : 'I\'m considering';
+  const lines = [
+    '🎰 My butterfly-effect story on Symy',
+    '',
+    `${decisionLabel}: "${decisionDescription}"`,
+  ];
+
+  if (butterflyEffect) lines.push('', butterflyEffect);
+  lines.push('', `Read the full story: ${shareUrl}`);
+  return lines.join('\n');
 }
 
 /**

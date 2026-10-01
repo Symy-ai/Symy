@@ -34,6 +34,7 @@ import {
   extractScenes,
   getChoiceForChapter,
   getOptionLabel,
+  buildButterflyShareText,
 } from '../lib/history-helpers';
 
 // ============================================================
@@ -581,19 +582,12 @@ export function ButterflyHistoryDetail({
                 try {
                   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://symy.ai';
                   const shareUrl = `${origin}/?tab=butterfly&session=${session.id}`;
-                  const lines: string[] = [];
-                  lines.push('🎰 My butterfly-effect story on Symy');
-                  lines.push('');
-                  lines.push(`${isBought ? 'I bought' : session.decisionType === 'considering' ? 'I\'m considering' : 'I didn\'t buy'}: "${session.decisionDescription}"`);
-                  if (session.amount) lines.push(`Amount: $${session.amount.toFixed(2)}`);
-                  lines.push('');
-                  if (session.butterflyEffect) {
-                    lines.push(session.butterflyEffect);
-                  }
-                  lines.push('');
-                  lines.push(`Read the full story: ${shareUrl}`);
-
-                  const text = lines.join('\n');
+                  const text = buildButterflyShareText({
+                    decisionType: session.decisionType,
+                    decisionDescription: session.decisionDescription,
+                    butterflyEffect: session.butterflyEffect,
+                    shareUrl,
+                  });
                   // 🔧 2026-07-17 fix: 优先用 navigator.share (移动端原生分享), fallback 复制到剪贴板
                   if (typeof navigator !== 'undefined' && navigator.share) {
                     await navigator.share({ title: 'My Symy Story', text, url: shareUrl });

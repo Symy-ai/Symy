@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractScenes, getChoiceForChapter, getOptionLabel } from '../history-helpers';
+import { buildButterflyShareText, extractScenes, getChoiceForChapter, getOptionLabel } from '../history-helpers';
 import type { ButterflySession, StoryChapter, ButterflyChoice } from '../../types';
 
 describe('extractScenes', () => {
@@ -103,5 +103,20 @@ describe('getOptionLabel', () => {
   it('returns the optionId as fallback for unknown option', () => {
     const choice = { options: [] } as unknown as ButterflyChoice;
     expect(getOptionLabel(choice, 'unknown-id')).toBe('unknown-id');
+  });
+});
+
+describe('buildButterflyShareText', () => {
+  it('keeps share text free of private amounts', () => {
+    const text = buildButterflyShareText({
+      decisionType: 'resisted',
+      decisionDescription: 'A new phone',
+      butterflyEffect: 'I won an evening back.',
+      shareUrl: 'https://symy.ai/?tab=butterfly&session=session-1',
+    });
+
+    expect(text).toContain('I didn\'t buy: "A new phone"');
+    expect(text).toContain('Read the full story: https://symy.ai/?tab=butterfly&session=session-1');
+    expect(text).not.toMatch(/Amount:|\b(?:USD|CNY|RMB)\b|[$¥£]\s*\d+(?:\.\d+)?|\d+(?:\.\d+)?\s*(?:元|块)/i);
   });
 });
