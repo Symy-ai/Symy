@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { useI18n } from '@/i18n/provider';
+import { useMounted } from '@/hooks/use-mounted';
 import type { HealthEvent, BuddyState } from '@/types/buddy-state';
 import { getBadgeGoal } from '@/lib/badge-goal';
 import { ALL_BADGES } from '@/lib/badge-constants';
@@ -29,9 +30,10 @@ export function SmartPromptChips({
   onQuickReply,
 }: SmartPromptChipsProps) {
   const { t } = useI18n();
+  const mounted = useMounted();
 
   const chips = useMemo(() => {
-    if (typeof window !== 'undefined' && window.sessionStorage.getItem(SESSION_FIRST_MESSAGE_SENT) === 'true') {
+    if (mounted && window.sessionStorage.getItem(SESSION_FIRST_MESSAGE_SENT) === 'true') {
       return [];
     }
 
@@ -82,7 +84,7 @@ export function SmartPromptChips({
         text: t('chat.smartPrompt.fallback', { defaultValue: 'What do you want to save today?' }),
       },
     ];
-  }, [buddyState, healthEvents, t]);
+  }, [buddyState, healthEvents, mounted, t]);
 
   const extraChip = useMemo(() => {
     if (hasHadInterceptInSession) {

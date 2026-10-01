@@ -12,6 +12,7 @@
  */
 
 import { useState } from 'react';
+import { useMounted } from '@/hooks/use-mounted';
 import { ChevronDown, ChevronRight, Shield, Globe, CreditCard, Sparkles } from 'lucide-react';
 import { LOCALES, type Locale } from '@/i18n/config';
 import { SettingToggle, SettingLink } from '@/components/profile-parts/setting-components';
@@ -75,13 +76,13 @@ interface SettingsAdvancedSectionProps {
 }
 
 export function SettingsAdvancedSection({ isDemo, greenPrefEnabled, emailConnections, onNavigateMonitor, isEmailMonitorEnabled, onDisconnectEmail, showComingSoonToast, showPremiumToastMsg, locale, setLocale, onOpenGuardianStyleWizard, t }: SettingsAdvancedSectionProps) {
-  const [open, setOpen] = useState(readInitialAdvancedOpen);
+  const mounted = useMounted();
+  const [openOverride, setOpenOverride] = useState<boolean | null>(null);
+  const open = openOverride ?? (mounted && readInitialAdvancedOpen());
 
   const toggleOpen = () => {
-    setOpen((prev) => {
-      persistAdvancedOpen(!prev);
-      return !prev;
-    });
+    persistAdvancedOpen(!open);
+    setOpenOverride(!open);
   };
 
   return (

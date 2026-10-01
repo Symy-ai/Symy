@@ -10,6 +10,7 @@ import { useI18n } from '@/i18n/provider';
 import { GACHA_FEATURE_ENABLED } from '@/lib/feature-flags';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
+import { useMounted } from '@/hooks/use-mounted';
 
 // Google SVG icon
 function GoogleIcon({ className }: { className?: string }) {
@@ -27,9 +28,8 @@ export default function LoginPage() {
   const { t } = useI18n();
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
-  // 🔧 Logo UI fix: 用 typeof window 替代 mounted state (React 19 Compiler 兼容)
-  // 🔧 ARCH fix (Round 68): 移除 setMounted effect (react-hooks/set-state-in-effect warning)
-  const isDark = typeof window !== 'undefined' ? resolvedTheme === 'dark' : true;
+  const mounted = useMounted();
+  const isDark = !mounted || resolvedTheme === 'dark';
   const elephantSrc = isDark ? '/symy-elephant-dark.png' : '/symy-elephant.png';
 
   // Bug #29 fix: Read ?error= from URL

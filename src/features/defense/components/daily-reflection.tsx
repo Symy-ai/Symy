@@ -145,7 +145,7 @@ export function DailyReflection({ isDemo, onAuthPrompt }: DailyReflectionProps) 
 
       <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-cyan-500/10 border border-purple-500/20 p-4 mb-4">
         <p className="text-sm text-text-primary font-medium leading-relaxed">
-          {t(promptKey, { defaultValue: 'Take a moment to reflect.' })}
+          <span suppressHydrationWarning>{t(promptKey, { defaultValue: 'Take a moment to reflect.' })}</span>
         </p>
       </div>
 
