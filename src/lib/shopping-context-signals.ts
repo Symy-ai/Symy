@@ -106,7 +106,8 @@ export const SHOPPING_CONTEXT_SIGNALS: readonly ShoppingContextSignalEntry[] = [
     tier: 'implicit',
     wordZh: '想花点钱',
     wordEn: 'itching to spend',
-    zh: /想花(?:一)?点(?:钱)?|想花钱|手痒/,
+    // 🔧 第34轮修正: 「不想花钱」是否定语义非消费冲动(文档红线) — 负向后顾排除 不/没/别
+    zh: /(?<![不没别])想花(?:一)?点(?:钱)?|(?<![不没别])想花钱|手痒/,
     en: /\bitch(?:ing)? to spend\b|\bwanna spend\b|\bfeel like spending\b/,
     mood: 'celebratory',
   },
