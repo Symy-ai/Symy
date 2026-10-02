@@ -57,7 +57,7 @@ export const GREEN_ALT_ENTRIES_FURNITURE: readonly GreenAlternativeEntry[] = [
     id: "secondhand_furniture",
     triggers: {
       zh: ["买沙发", "书架", "餐桌", "衣柜", "床架", "二手家具"],
-      en: ["buy a sofa", "buy a couch", "buy a bookshelf", "buy a dining table", "buy a wardrobe", "secondhand furniture"],
+      en: ["buy a sofa", "buy a couch", "buy a bookshelf", "buy a dining table", "buy a wardrobe", "secondhand furniture", "new sofa", "new couch", "new wardrobe"],
     },
     why: {
       zh: "家具是二手市场最繁荣的品类: 搬家、换城市、换风格, 每天都有九成新的大件急着找下家。全新家具的「未拆封溢价」在家具上格外不值——木头不介意上一个主人。",
@@ -150,7 +150,7 @@ export const GREEN_ALT_ENTRIES_FURNITURE: readonly GreenAlternativeEntry[] = [
     id: "mattress_quality_over_cheap",
     triggers: {
       zh: ["买床垫", "便宜家具", "拼多多家具", "低价家具"],
-      en: ["buy a mattress", "cheap furniture", "budget mattress"],
+      en: ["buy a mattress", "cheap furniture", "budget mattress", "new mattress", "get a mattress"],
     },
     why: {
       zh: "耐用品的便宜常是「按年摊薄」后的贵: 一件三年就散架的低价货, 换两次的钱和麻烦, 多过一次买对的。耐用品每天用八小时 (床垫) 或用十年 (好桌椅), 单价高低的账要按使用年限摊开算。",

@@ -111,7 +111,7 @@ export const GREEN_ALT_ENTRIES_HOUSEHOLD: readonly GreenAlternativeEntry[] = [
     id: "small_appliance",
     triggers: {
       zh: ["小家电", "新家电", "空气炸锅", "破壁机"],
-      en: ["small appliance", "kitchen gadget", "air fryer", "blender"],
+      en: ["small appliance", "kitchen gadget", "air fryer", "blender", "new TV", "buy a TV", "robot vacuum", "Dyson vacuum", "get a blender"],
     },
     why: {
       zh: "功能单一的小家电是闲置率最高的品类之一：新鲜感过了，台面和柜子就被「只用过几次」的机器占满。",

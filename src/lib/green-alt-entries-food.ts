@@ -111,7 +111,7 @@ export const GREEN_ALT_ENTRIES_FOOD: readonly GreenAlternativeEntry[] = [
     id: "coffee_shop",
     triggers: {
       zh: ["买咖啡", "连锁咖啡", "想喝拿铁"],
-      en: ["coffee shop", "buy coffee", "latte run"],
+      en: ["coffee shop", "buy coffee", "latte run", "coffee machine", "espresso machine", "coffee maker", "get a coffee machine"],
     },
     why: {
       zh: "连锁咖啡的杯子看似纸做的，内层淋膜让空杯也很难回收，一天一杯一年就是几百个。",
