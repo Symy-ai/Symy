@@ -51,10 +51,14 @@ async function loadSnapshot(userId: string): Promise<ChatProfileSnapshot | null>
       logger.warn('[chat-profile-snapshot] read failed:', error.message);
       return null;
     }
+    // 行缺失(data=null)也返回 null — 与「查询失败」同一语义:
+    // daily-limit-guard 用 snapshot===null 判 fail-open, 行不存在
+    // 走 plan=null(免费限额)而非误放行。
+    if (!data) return null;
     return {
-      plan: (data?.plan as string | undefined) ?? null,
-      timezone: (data?.timezone as string | undefined) ?? null,
-      hourlyRate: (data?.hourly_rate as number | undefined) ?? null,
+      plan: (data.plan as string | undefined) ?? null,
+      timezone: (data.timezone as string | undefined) ?? null,
+      hourlyRate: (data.hourly_rate as number | undefined) ?? null,
     };
   } catch (err) {
     // safe to ignore: 快照失败消费方各自回退默认值 — 与原独立查询的失败语义一致
