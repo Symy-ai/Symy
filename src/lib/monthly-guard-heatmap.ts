@@ -32,7 +32,12 @@ export function buildCalendarCells(year: number, month: number): Cell[] {
   const now = new Date();
   const todayKey = dayKey(now);
 
-  for (let i = -startOffset; i < 42; i++) {
+  // 🔧 第42轮修复: 旧循环 for(i=-offset; i<42) 产出 42+offset 格 (43-48, 非7倍数)
+  //   → grid 7列渲染时末行断行。修正为整周数: ceil((offset+daysInMonth)/7)*7,
+  //   任意月份恒为 35 或 42 格。
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+  for (let i = -startOffset; i < totalCells - startOffset; i++) {
     const d = new Date(year, month, 1 + i);
     const inMonth = d.getMonth() === month && d.getFullYear() === year;
     cells.push({
