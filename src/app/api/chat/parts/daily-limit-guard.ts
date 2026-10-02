@@ -2,6 +2,7 @@
 import { checkRateLimit } from '@/lib/distributed-lock';
 import { logger } from '@/lib/logger';
 import type { AuthenticatedClient } from '@/lib/supabase-api';
+import { getChatProfileSnapshot } from './chat-profile-snapshot';
 
 export async function checkDailyChatLimit(
   hasAuth: boolean,
@@ -16,8 +17,11 @@ export async function checkDailyChatLimit(
   const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
   if (hasAuth && userId && supabase) {
     try {
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', userId).maybeSingle();
-      const isPremium = profile?.plan === 'premium';
+      // 🔧 apicache: 轮内共享快照替代独立查询 (与 timezone/hourly_rate 合并 1 次)
+      //   快照失败(null)保持 fail-open 原语义: 查询炸不误拦用户
+      const snapshot = await getChatProfileSnapshot(userId);
+      if (snapshot === null) return null;
+      const isPremium = snapshot.plan === 'premium';
       if (!isPremium) {
         const { allowed: dailyAllowed } = await checkRateLimit(`chat:daily:${userId}`, FREE_TIER_DAILY_CHAT_LIMIT, DAILY_WINDOW_MS);
         if (!dailyAllowed) {

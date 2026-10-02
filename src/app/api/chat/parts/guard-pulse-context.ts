@@ -74,7 +74,9 @@ export async function loadGuardPulseQueryData({
 }): Promise<GuardPulseQueryData> {
   if (!userId || !store) return { events: [], timezone: undefined };
   try {
-    const [eventsRes, profileRes] = await Promise.all([
+    // 🔧 apicache: timezone 改走轮内共享快照 — profiles 单次读取三列共享
+    const { getChatProfileSnapshot } = await import('./chat-profile-snapshot');
+    const [eventsRes, snapshot] = await Promise.all([
       store
         .from('health_events')
         .select('event_type, metadata, created_at')
@@ -82,11 +84,7 @@ export async function loadGuardPulseQueryData({
         .in('event_type', GUARD_PULSE_EVENT_TYPES)
         .order('created_at', { ascending: false })
         .limit(GUARD_PULSE_EVENT_LIMIT),
-      store
-        .from('profiles')
-        .select('timezone')
-        .eq('id', userId)
-        .maybeSingle(),
+      getChatProfileSnapshot(userId),
     ]);
     const rows = (eventsRes?.data || []) as EventRow[];
     const events = rows.map((r) => ({
@@ -94,10 +92,9 @@ export async function loadGuardPulseQueryData({
       metadata: r.metadata,
       createdAt: r.created_at,
     }));
-    const profile = profileRes?.data as { timezone?: unknown } | null;
     const timezone =
-      profile && typeof profile.timezone === 'string' && profile.timezone.length > 0
-        ? profile.timezone
+      snapshot?.timezone && snapshot.timezone.length > 0
+        ? snapshot.timezone
         : undefined;
     return { events, timezone };
   } catch (err) {

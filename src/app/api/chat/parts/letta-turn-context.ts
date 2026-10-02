@@ -112,7 +112,10 @@ export async function loadLettaTurnContext(input: LettaTurnContextInput) {
   const loadHourlyRate = async (): Promise<number> => {
     if (!userId) return 20;
     try {
-      const rate = await getUserHourlyRate(userId);
+      // 🔧 apicache: 轮内共享快照 (与 plan/timezone 合并 1 次 profiles 读取)
+      const { getChatProfileSnapshot } = await import('./chat-profile-snapshot');
+      const snapshot = await getChatProfileSnapshot(userId);
+      const rate = snapshot?.hourlyRate ?? (await getUserHourlyRate(userId));
       if (rate !== 20) {
         logger.info(`[Chat API] 💰 User hourly rate: $${rate}/hr`);
       }

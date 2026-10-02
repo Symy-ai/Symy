@@ -16,6 +16,11 @@ import {
   buildGuardPulseSseStream,
 } from '../guard-pulse-turn';
 import { aggregateGuardPulse } from '@/lib/guard-pulse';
+const chatProfileSnapshotMock = vi.fn();
+vi.mock('../chat-profile-snapshot', () => ({
+  getChatProfileSnapshot: (...args: unknown[]) => chatProfileSnapshotMock(...args),
+}));
+
 import {
   loadGuardPulseQueryData,
   GUARD_PULSE_EVENT_TYPES,
@@ -157,10 +162,12 @@ describe('loadGuardPulseQueryData — 装载契约 (stub store)', () => {
       [{ event_type: 'challenge_completed', metadata: null, created_at: '2026-09-08T12:00:00Z' }],
       { timezone: 'Asia/Kathmandu' },
     );
+    chatProfileSnapshotMock.mockResolvedValue({ plan: 'free', timezone: 'Asia/Kathmandu', hourlyRate: null });
     const { events, timezone } = await loadGuardPulseQueryData({ userId: 'u1', store });
     expect(events).toEqual([{ eventType: 'challenge_completed', metadata: null, createdAt: '2026-09-08T12:00:00Z' }]);
     expect(timezone).toBe('Asia/Kathmandu');
-    expect(calls.map((c) => c.table).sort()).toEqual(['health_events', 'profiles']);
+    // 🔧 apicache: timezone 走轮内快照 — store 只查 health_events
+    expect(calls.map((c) => c.table).sort()).toEqual(['health_events']);
   });
 
   it('事件类型白名单 = 拦截轮次 + 采纳轨道 (零 DDL, 复用既有表)', () => {
@@ -189,6 +196,7 @@ describe('loadGuardPulseQueryData — 装载契约 (stub store)', () => {
   });
 
   it('profile 无 timezone / 非字符串 → undefined (聚合层回退运行时本地)', async () => {
+    chatProfileSnapshotMock.mockResolvedValue({ plan: 'free', timezone: null, hourlyRate: null });
     const { store } = stubStore([], { timezone: 42 });
     const { timezone } = await loadGuardPulseQueryData({ userId: 'u1', store });
     expect(timezone).toBeUndefined();

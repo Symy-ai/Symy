@@ -9,37 +9,35 @@ vi.mock('@/lib/logger', () => ({
   logger: { warn: vi.fn() },
 }));
 
+const getChatProfileSnapshot = vi.fn();
+
+vi.mock('../chat-profile-snapshot', () => ({
+  getChatProfileSnapshot: (...args: unknown[]) => getChatProfileSnapshot(...args),
+}));
+
 import { checkDailyChatLimit } from '../daily-limit-guard';
 
-function supabase(plan?: string | Error) {
-  return {
-    from: vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          maybeSingle: vi.fn().mockImplementation(() => {
-            if (plan instanceof Error) return Promise.reject(plan);
-            return Promise.resolve({ data: plan ? { plan } : null });
-          }),
-        }),
-      }),
-    }),
-  } as unknown as Parameters<typeof checkDailyChatLimit>[2];
+function supabase() {
+  // 🔧 apicache: plan 改由 chat-profile-snapshot 提供 — supabase 仅作为透传参数
+  return {} as unknown as Parameters<typeof checkDailyChatLimit>[2];
 }
 
 describe('daily-limit-guard', () => {
   beforeEach(() => {
     checkRateLimit.mockReset();
+    getChatProfileSnapshot.mockReset();
   });
 
   it('skips premium users', async () => {
-    const client = supabase('premium');
-    expect(await checkDailyChatLimit(true, 'user-id', client)).toBeNull();
+    getChatProfileSnapshot.mockResolvedValue({ plan: 'premium', timezone: null, hourlyRate: null });
+    expect(await checkDailyChatLimit(true, 'user-id', supabase())).toBeNull();
     expect(checkRateLimit).not.toHaveBeenCalled();
   });
 
   it('returns the daily limit response for free users', async () => {
     checkRateLimit.mockResolvedValue({ allowed: false });
-    const response = await checkDailyChatLimit(true, 'user-id', supabase('free'));
+    getChatProfileSnapshot.mockResolvedValue({ plan: 'free', timezone: null, hourlyRate: null });
+    const response = await checkDailyChatLimit(true, 'user-id', supabase());
     expect(response?.status).toBe(429);
     await expect(response?.json()).resolves.toEqual({
       error: 'Daily chat limit reached. Maximum 50 messages per day. Upgrade to Premium for unlimited chatting, or come back tomorrow.',
@@ -50,14 +48,14 @@ describe('daily-limit-guard', () => {
   });
 
   it('fails open when profile lookup throws', async () => {
-    expect(await checkDailyChatLimit(true, 'user-id', supabase(new Error('boom')))).toBeNull();
+    getChatProfileSnapshot.mockResolvedValue(null);
+    expect(await checkDailyChatLimit(true, 'user-id', supabase())).toBeNull();
     expect(checkRateLimit).not.toHaveBeenCalled();
   });
 
   it('skips anonymous requests without querying profiles', async () => {
-    const client = supabase('free');
-    expect(await checkDailyChatLimit(false, undefined, client)).toBeNull();
-    expect(client?.from).not.toHaveBeenCalled();
+    expect(await checkDailyChatLimit(false, undefined, supabase())).toBeNull();
+    expect(getChatProfileSnapshot).not.toHaveBeenCalled();
     expect(checkRateLimit).not.toHaveBeenCalled();
   });
 });

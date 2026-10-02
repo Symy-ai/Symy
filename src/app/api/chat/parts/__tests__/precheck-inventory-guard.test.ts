@@ -75,6 +75,7 @@ const FROZEN_PARTS_MODULES = [
   'category-query-turn.ts',
   'chat-validation.ts',
   'cooldown-turn.ts',
+  'chat-profile-snapshot.ts',
   'compare-turn.ts',
   'commitment-turn.ts',
   'context-builder.ts',
