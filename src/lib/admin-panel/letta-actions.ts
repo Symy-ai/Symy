@@ -130,6 +130,15 @@ export const LETTA_ACTION_GROUPS: { group: string; icon: string; actions: LettaA
         ],
       },
       {
+        action: 'update_agent_persona',
+        label: '刷新 Agent 人设三件套',
+        description: '用最新三件套刷新 agent: system prompt (doc/AI_Prompt.md) + persona block + symy_tool_rules',
+        params: [
+          { key: 'agent_id', label: 'Agent ID', type: 'string', help: '可选，不填则全部 agent' },
+          { key: 'update_system', label: '更新 system prompt', type: 'boolean', help: '可选，默认 true' },
+        ],
+      },
+      {
         action: 'migrate_to_per_user',
         label: '迁移到 Per-User（批量）',
         description: '为所有没有 agent 的用户创建 agent（每批 BATCH_SIZE 个，需多次调用）',
