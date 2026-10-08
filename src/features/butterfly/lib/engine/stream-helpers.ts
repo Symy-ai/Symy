@@ -101,7 +101,9 @@ export function transformLettaStreamToStoryStream(
         controller.close();
       } catch (err) {
         // M2 fix: 释放上游 reader，防止资源泄漏
-        try { reader.cancel(); } catch { /* already cancelled */ }
+        // R131: cancel() 返回 Promise — 同步 try/catch 拦不住其 reject (上游已 errored 时
+        // 浮空 → unhandled rejection)。补 .catch 吞掉; 取消失败无需处理。
+        try { reader.cancel().catch(() => { /* upstream already errored — nothing to cancel */ }); } catch { /* already cancelled */ }
         // 🔧 ARCH fix (Round 19 H3-audit2 — controller.enqueue after error can throw):
         //    旧代码: catch 块内裸调 controller.enqueue + controller.close。
         //    若 controller 已被上游 close (consumer disconnect / timeout),
@@ -122,7 +124,7 @@ export function transformLettaStreamToStoryStream(
     //    → LLM 继续生成 token ($ cost leak, $0.04-0.17/chapter)
     //    修复: cancel 上游 reader, 让 for-await 循环抛 AbortError 走 catch 优雅退出
     cancel() {
-      try { reader.cancel(); } catch { /* reader may be locked or already cancelled */ }
+      try { reader.cancel().catch(() => { /* upstream already errored — nothing to cancel */ }); } catch { /* reader may be locked or already cancelled */ }
     },
   });
 }
