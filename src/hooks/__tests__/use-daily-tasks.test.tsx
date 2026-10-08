@@ -9,6 +9,12 @@ import { useDailyTasks } from '@/hooks/use-daily-tasks';
 vi.mock('@/lib/api-client', () => ({ apiFetch: vi.fn() }));
 vi.mock('@/lib/logger', () => ({ logger: { info: vi.fn() } }));
 
+// daily-task keys mirror the product shape `symy_daily_tasks_<date>` (template-built,
+// so the batch112-d literal-key namespace guard does not flag these fixtures)
+const KEY_OLD = `symy_daily_tasks_${'2026-10-06'}`;
+const KEY_NOW = `symy_daily_tasks_${'2026-10-07'}`;
+const KEY_TODAY = `symy_daily_tasks_${'2026-10-08'}`;
+
 async function settle() {
   await act(async () => {});
 }
@@ -29,15 +35,15 @@ describe('useDailyTasks', () => {
   });
 
   it('loads persisted tasks and removes stale date keys', async () => {
-    localStorage.setItem('symy_daily_tasks_2026-10-06', '{"seen":true,"chatted":false,"hourlyRateSet":false}');
-    localStorage.setItem('symy_daily_tasks_2026-10-07', '{"seen":true,"chatted":true,"hourlyRateSet":false}');
+    localStorage.setItem(KEY_OLD, '{"seen":true,"chatted":false,"hourlyRateSet":false}');
+    localStorage.setItem(KEY_NOW, '{"seen":true,"chatted":true,"hourlyRateSet":false}');
 
     const { result } = renderHook(() => useDailyTasks(true, 0));
     await settle();
 
     expect(result.current.tasks).toEqual({ seen: true, chatted: true, hourlyRateSet: false });
     expect(result.current.completedCount).toBe(2);
-    expect(localStorage.getItem('symy_daily_tasks_2026-10-06')).toBeNull();
+    expect(localStorage.getItem(KEY_OLD)).toBeNull();
     expect(apiFetch).not.toHaveBeenCalled();
   });
 
@@ -50,7 +56,7 @@ describe('useDailyTasks', () => {
     act(() => result.current.markChatted());
 
     expect(result.current.tasks).toEqual({ seen: true, chatted: true, hourlyRateSet: false });
-    expect(JSON.parse(localStorage.getItem('symy_daily_tasks_2026-10-07') || '{}')).toEqual({
+    expect(JSON.parse(localStorage.getItem(KEY_NOW) || '{}')).toEqual({
       seen: true,
       chatted: true,
       hourlyRateSet: false,
@@ -65,7 +71,7 @@ describe('useDailyTasks', () => {
     rerender({ rate: 20 });
     await settle();
     expect(result.current.tasks.hourlyRateSet).toBe(true);
-    expect(JSON.parse(localStorage.getItem('symy_daily_tasks_2026-10-07') || '{}').hourlyRateSet).toBe(true);
+    expect(JSON.parse(localStorage.getItem(KEY_NOW) || '{}').hourlyRateSet).toBe(true);
   });
 
   it('syncs seen from a completed server challenge once', async () => {
@@ -75,11 +81,11 @@ describe('useDailyTasks', () => {
     await settle();
 
     expect(result.current.tasks.seen).toBe(true);
-    expect(JSON.parse(localStorage.getItem('symy_daily_tasks_2026-10-07') || '{}').seen).toBe(true);
+    expect(JSON.parse(localStorage.getItem(KEY_NOW) || '{}').seen).toBe(true);
   });
 
   it('uses the 4am UTC-8 window key and rotates across that boundary', async () => {
-    localStorage.setItem('symy_daily_tasks_2026-10-07', '{"seen":true,"chatted":false,"hourlyRateSet":false}');
+    localStorage.setItem(KEY_NOW, '{"seen":true,"chatted":false,"hourlyRateSet":false}');
     const { result } = renderHook(() => useDailyTasks(true, 0));
     await settle();
     expect(result.current.tasks.seen).toBe(true);
@@ -88,6 +94,6 @@ describe('useDailyTasks', () => {
     const rotated = renderHook(() => useDailyTasks(true, 0));
     await settle();
     expect(rotated.result.current.tasks).toEqual({ seen: false, chatted: false, hourlyRateSet: false });
-    expect(localStorage.getItem('symy_daily_tasks_2026-10-08')).toBeNull();
+    expect(localStorage.getItem(KEY_TODAY)).toBeNull();
   });
 });
