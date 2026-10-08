@@ -218,28 +218,40 @@ describe('useChatActions — 非 200 / 流中断 → isError + onRetry 不重复
     expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
   });
 
-  it('流关闭零 token (idleTimeout) → streamInterrupted 兜底文案保留 + isError + onRetry, 不 saveMessage', async () => {
-    const { params, holder, result, saveMessage } = makeHarness();
-    fetchMock.mockResolvedValueOnce(sseResponse([]));
+  it('流挂起零字节 (真 idleTimeout) → streamInterrupted 兜底文案保留 + isError + onRetry, 不 saveMessage', async () => {
+    // 🔧 R71 fix: 旧断言「空流 close → idleTimeout 兜底」锁的是 bug 行为——
+    // 正常 done 的空流不再置 idleTimeout。真超时 = 流挂着永不发字节, 由 60s idle 窗口触发。
+    vi.useFakeTimers();
+    try {
+      const { params, holder, result, saveMessage } = makeHarness();
+      const stalled = new Response(
+        new ReadableStream<Uint8Array>({ start() { /* stall forever */ } }),
+        { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+      );
+      fetchMock.mockResolvedValueOnce(stalled);
 
-    await act(async () => {
-      await result.current.sendMessage('hi');
-    });
+      let sent: Promise<void> | null = null;
+      act(() => { sent = result.current.sendMessage('hi'); });
+      for (let i = 0; i < 130; i++) await vi.advanceTimersByTimeAsync(1000);
+      await act(async () => { await sent; });
 
-    const errMsg = holder.list.find((m) => m.isError);
-    expect(errMsg).toBeDefined();
-    expect(errMsg!.isError).toBe(true);
-    expect(typeof errMsg!.onRetry).toBe('function');
-    // batch80-a fix 回归 (/tmp/b79c-defects.md #1): finally 的 flushStreamUpdate 跳过
-    //   (idleFallbackDisplayed 守卫), 不再用空 accumulatedReply 覆盖兜底文案 —
-    //   气泡显示 streamInterrupted 文案而非空气泡 (isError/onRetry 保留, 重试可用)。
-    expect(errMsg!.content).toBe('chat.aiFallback.streamInterrupted');
-    // flush 跳过的结构证明: setMessagesSync 恰 3 次 (user 占位 + assistant 占位 + 兜底写入), 无第 4 次覆盖写
-    expect(params.setters.setMessagesSync).toHaveBeenCalledTimes(3);
-    // 错误路径不落库 assistant — 恰只有 userMsg
-    expect(saveMessage).toHaveBeenCalledTimes(1);
-    expect(saveMessage.mock.calls[0][0].role).toBe('user');
-    expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+      const errMsg = holder.list.find((m) => m.isError);
+      expect(errMsg).toBeDefined();
+      expect(errMsg!.isError).toBe(true);
+      expect(typeof errMsg!.onRetry).toBe('function');
+      // batch80-a fix 回归 (/tmp/b79c-defects.md #1): finally 的 flushStreamUpdate 跳过
+      //   (idleFallbackDisplayed 守卫), 不再用空 accumulatedReply 覆盖兜底文案 —
+      //   气泡显示 streamInterrupted 文案而非空气泡 (isError/onRetry 保留, 重试可用)。
+      expect(errMsg!.content).toBe('chat.aiFallback.streamInterrupted');
+      // flush 跳过的结构证明: setMessagesSync 恰 3 次 (user 占位 + assistant 占位 + 兜底写入), 无第 4 次覆盖写
+      expect(params.setters.setMessagesSync).toHaveBeenCalledTimes(3);
+      // 错误路径不落库 assistant — 恰只有 userMsg
+      expect(saveMessage).toHaveBeenCalledTimes(1);
+      expect(saveMessage.mock.calls[0][0].role).toBe('user');
+      expect(params.refs.sendMessageLockRef.current.inProgress).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('🔧 P0 demo retry 端点: guest 503 后点重试仍打 /api/chat/anonymous (不撞登录端点 503 死循环)', async () => {

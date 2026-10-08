@@ -408,6 +408,10 @@ export async function consumeAIStream(
   try {
     while (true) {
       let idleTimer: ReturnType<typeof setTimeout> | null = null;
+      // 🔧 R71 fix: 哨兵区分「idle timeout 赢了 race」vs「流正常 done」——
+      //    旧代码两种 done 都置 idleTimeout=true，正常空回复流会被误标为超时中断
+      //    （调用方 idleFallback 误触发，用户看到「流中断」而实际流是完整结束的）。
+      const IDLE_SENTINEL = Symbol('stream-idle-timeout');
       const readResult = await Promise.race([
         reader.read().then(result => {
           if (idleTimer) clearTimeout(idleTimer);
@@ -416,13 +420,16 @@ export async function consumeAIStream(
           if (idleTimer) clearTimeout(idleTimer);
           throw err;
         }),
-        new Promise<{ done: true; value: undefined }>((resolve) => {
-          idleTimer = setTimeout(() => resolve({ done: true, value: undefined }), STREAM_IDLE_TIMEOUT_MS);
+        new Promise<typeof IDLE_SENTINEL>((resolve) => {
+          idleTimer = setTimeout(() => resolve(IDLE_SENTINEL), STREAM_IDLE_TIMEOUT_MS);
         }),
       ]);
+      if (readResult === IDLE_SENTINEL) {
+        idleTimeout = true;
+        break;
+      }
       const { done, value } = readResult;
       if (done) {
-        idleTimeout = true;
         break;
       }
 

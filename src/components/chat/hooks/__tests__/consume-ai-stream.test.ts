@@ -138,3 +138,34 @@ describe('consumeAIStream reasoning/content separation', () => {
     await expect(consumed).rejects.toThrow('aborted');
   });
 });
+
+// 🔧 R71 fix 行为锁: idleTimeout 标志语义 — 正常 done 不置位 / 真超时置位
+describe('consumeAIStream idleTimeout semantics', () => {
+  it('normal stream completion does NOT set idleTimeout (even with zero tokens)', async () => {
+    // 空事件流立即 close —— 旧 bug: done=true 也置 idleTimeout=true, 调用方误显「流中断」兜底
+    const result = await consumeAIStream(
+      sseStream([]).getReader(),
+      new TextDecoder(),
+      {},
+    );
+    expect(result.idleTimeout).toBe(false);
+    expect(result.reply).toBe('');
+  });
+
+  it('a genuinely stalled stream sets idleTimeout after the idle window', async () => {
+    vi.useFakeTimers();
+    try {
+      // 永不 enqueue 也永不 close 的流 — 只有 idle timeout 能结束它
+      const stream = new ReadableStream<Uint8Array>({ start() { /* stall forever */ } });
+      const promise = consumeAIStream(stream.getReader(), new TextDecoder(), {});
+      const assertion = promise.then((result) => {
+        expect(result.idleTimeout).toBe(true);
+      });
+      // 逐拍推进到 60s idle 窗口（链式 timer: 每轮 read 重新起 60s timer）
+      for (let i = 0; i < 130; i++) await vi.advanceTimersByTimeAsync(1000);
+      await assertion;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
