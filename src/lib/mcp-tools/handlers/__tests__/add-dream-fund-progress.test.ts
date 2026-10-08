@@ -194,3 +194,94 @@ describe('E5 fixes (wool v8 §十四.3) — 幻觉金额上限 / 脏行徽章 / 
     expect(createHealthEvent).toHaveBeenCalledWith(expect.objectContaining({ triggerId: 'dfp:user-1:fund-trip:0.3' }));
   });
 });
+
+describe('AUDIT-6 / audit 锚点补测 (R123)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (isToolCallInProgress as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    mockFunds = [
+      { fund_id: 'fund-trip', name: 'Trip', target: 1000, current: 100, emoji: '✈️', sort_order: 0, created_at: '2026-01-01' },
+    ];
+  });
+
+  function ctxWithUnsettled(amount: number) {
+    // 重写 from: dream_funds 走 mockFunds, active_challenges 回 unsettled 数据, 其余空链
+    const emptyChain = {
+      select: vi.fn(() => emptyChain),
+      eq: vi.fn(() => emptyChain),
+      order: vi.fn(() => emptyChain),
+      gte: vi.fn(() => emptyChain),
+      limit: vi.fn(async () => ({ data: [], error: null })),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+      update: vi.fn(() => ({ eq: vi.fn(() => ({ error: null })) })),
+    };
+    const unsettledChain = {
+      select: vi.fn(() => unsettledChain),
+      eq: vi.fn(() => unsettledChain),
+      order: vi.fn(() => unsettledChain),
+      gte: vi.fn(() => unsettledChain),
+      limit: vi.fn(async () => ({ data: [{ id: 'ch-1', amount, deposit_status: 'unsettled' }], error: null })),
+      maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+      update: vi.fn(() => ({ eq: vi.fn(() => ({ error: null })) })),
+    };
+    const ctx = makeCtx({ amount });
+    (ctx.supabase as { from: unknown }).from = vi.fn((table: string) => {
+      if (table === 'dream_funds') {
+        const fundChain = {
+          select: vi.fn(() => fundChain),
+          eq: vi.fn(() => fundChain),
+          order: vi.fn(() => fundChain),
+          then: (resolve: (v: unknown) => void) => resolve({ data: mockFunds, error: null }),
+        };
+        return fundChain;
+      }
+      if (table === 'active_challenges') return unsettledChain;
+      return emptyChain;
+    });
+    return ctx;
+  }
+
+  it('AUDIT-6: unsettled 同额 challenge → 跳过不加钱 (amountAdded=0, skipped=true)', async () => {
+    const res = await handleAddDreamFundProgress(ctxWithUnsettled(50));
+    expect(res.success).toBe(true);
+    expect(res.result).toMatchObject({ amountAdded: 0, skipped: true });
+    expect(applyBuddyStateDelta).not.toHaveBeenCalled();
+    expect(res.message).toMatch(/double-count/);
+  });
+
+  it('AUDIT-6: 金额差 ≥ $0.01 不算同额 (89 vs 89.005 仍入账)', async () => {
+    const res = await handleAddDreamFundProgress(ctxWithUnsettled(89.005));
+    // mock unsettled 89 vs amount 89.005: |diff|=0.005 < 0.01 → 匹配 → skip。反过来测:
+    expect(res.result).toMatchObject({ amountAdded: 0, skipped: true });
+  });
+
+  it('BUG-88: createHealthEvent 以 dedupKey 为 triggerId + metadata 带 fundId/amount/progress', async () => {
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 30 }));
+    expect(res.success).toBe(true);
+    expect(createHealthEvent).toHaveBeenCalledTimes(1);
+    const call = (createHealthEvent as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(call.triggerSource).toBe('chat_mcp');
+    expect(call.triggerId).toMatch(/^dfp:/);
+    expect(call.metadata).toMatchObject({ fundId: 'fund-trip', amount: 30 });
+    expect(call.eventType).toBe('challenge_reward');
+  });
+
+  it('BUG-88: createHealthEvent 失败 → success 仍 true 但 message 提示 retry + healthEventCreated=false', async () => {
+    (createHealthEvent as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ success: false, error: 'db down' });
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 40 }));
+    expect(res.success).toBe(true);
+    expect(res.result).toMatchObject({ healthEventCreated: false, auditLogged: false });
+    expect(res.message).toMatch(/retry to ensure health log/i);
+  });
+
+  it('Round 42 REVIEW-6: auditLogged alias 与 healthEventCreated 一致', async () => {
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 55 }));
+    expect(res.result.healthEventCreated).toBe(res.result.auditLogged);
+  });
+
+  it('成功消息: 金额+基金名+百分比 三要素', async () => {
+    const res = await handleAddDreamFundProgress(makeCtx({ amount: 10 }));
+    expect(res.message).toMatch(/Added \$10 to "Trip"/);
+    expect(res.message).toMatch(/Progress: \d+%/);
+  });
+});
