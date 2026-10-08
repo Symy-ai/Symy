@@ -245,7 +245,7 @@ export function EmailConnectionCard({
                     setImapAuthCode('');
                     setShowIMAPForm(false);
                   } catch {
-                    // 保留输入, use-email-monitor 已 setToast 提示错误
+                    // safe to ignore: 连接失败时保留表单输入供用户修改重试; 错误提示由 use-email-monitor 统一 setToast, 此处无需再处理
                   }
                 }
               }}
