@@ -515,3 +515,37 @@ describe("green-alternatives 文案红线", () => {
     }
   });
 });
+
+// ============================================================
+// 🔧 R78: 跨域顺序纪律锁 — 词库扩容后新碰撞对的实命中固化
+// (2026-10-08 扫描器新报 8 对, 全部被「更具体域在前」的数组顺序保护)
+// ============================================================
+describe("green-alternatives 跨域顺序纪律 (R78)", () => {
+  const precedenceCases: Array<{ query: string; expected: string; note: string }> = [
+    { query: "第一次买狗玩具", expected: "pet_toy_single_start", note: "新手具体词条优先于耐用品泛词条" },
+    { query: "第一次养狗狗玩具先买一件", expected: "pet_toy_single_start", note: "同上 (更长句式)" },
+    { query: "第一次养宠物用品", expected: "pet_supply_reuse_borrow", note: "新手领养优先于二手装备泛词条" },
+    { query: "第一次买猫粮先买小包", expected: "pet_food_starter_small", note: "新手小包优先于囤货算账" },
+    { query: "幼猫粮囤", expected: "pet_food_starter_small", note: "幼猫算新手场景, 不是 bulk 囤货" },
+    { query: "第一次买狗粮先买小包", expected: "pet_food_starter_small", note: "同猫粮" },
+    { query: "给孩子买衣服", expected: "kids_clothes_pass_on", note: "parenting 域前移保护 (R42 已知模式)" },
+    { query: "买网课", expected: "activate_before_buy", note: "subscription 域先激活旧卡语义" },
+  ];
+
+  it("歧义短句命中更具体的词条 (顺序纪律实命中)", () => {
+    for (const c of precedenceCases) {
+      const hit = suggestAlternative(c.query, "zh");
+      expect(hit, `"${c.query}" 应命中 ${c.expected} (${c.note})`).not.toBeNull();
+      expect(hit!.id, `"${c.query}" (${c.note})`).toBe(c.expected);
+    }
+  });
+
+  it("PET_FIRST_CARE 域数组序先于 PETS 域 (结构锁)", () => {
+    // 域顺序是上面命中的保护机制 — 任何重排/新域插入都会在这里先红
+    const firstCare = GREEN_ALTERNATIVES.findIndex((e) => e.id === "pet_toy_single_start");
+    const pets = GREEN_ALTERNATIVES.findIndex((e) => e.id === "pet_toy_durable");
+    expect(firstCare).toBeGreaterThanOrEqual(0);
+    expect(pets).toBeGreaterThanOrEqual(0);
+    expect(firstCare, "PET_FIRST_CARE 必须排在 PETS 前").toBeLessThan(pets);
+  });
+});
