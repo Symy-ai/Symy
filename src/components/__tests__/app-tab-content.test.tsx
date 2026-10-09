@@ -196,7 +196,7 @@ describe('AppTabContent', () => {
         { eventType: 'challenge_failed' },
         { eventType: 'manual' },
       ] as never,
-      stats: { moneySaved: 10, daysStreak: 1, totalEvents: 5 },
+      stats: { moneySaved: 10, daysStreak: 1, totalEvents: 5, impulseInterventions: 2 },
     });
     expect(screen.getByTestId('profile-tab').getAttribute('data-is-active')).toBe('true');
     expect(screen.getByTestId('profile-tab').getAttribute('data-streak')).toBe('1');

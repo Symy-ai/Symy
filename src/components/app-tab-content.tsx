@@ -10,8 +10,11 @@ import { MonitorTab } from '@/components/monitor-tab';
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChevronLeft } from 'lucide-react';
-import type { DreamFund } from '@/types/buddy-state';
+import type { DreamFund, BuddyState } from '@/types/buddy-state';
 import type { ChallengeContext } from '@/types/challenge-context';
+import type { ImpulseEvent } from '@/lib/impulse-detector';
+import type { Tab } from '@/components/tab-bar';
+import type { DailyTasks } from '@/hooks/use-daily-tasks';
 
 const ButterflyTab = dynamic(
   () => import('@/features/butterfly/components/butterfly-tab').then((module) => module.ButterflyTab),
@@ -29,14 +32,14 @@ export interface AppTabContentProps {
   activeTab: string;
   tabDir: 'left' | 'right';
   impulseContext: { platform: string; amount: number; reasons: string[]; time: string } | undefined;
-  buddyState: any;
+  buddyState: BuddyState;
   chatContextMessage: string | undefined;
   challengeContext: ChallengeContext | undefined;
   isDemo: boolean;
   sharedSessionId: string | null;
-  appStatus: any;
-  events: any[];
-  stats: any;
+  appStatus: 'stable' | 'alert' | 'success';
+  events: ImpulseEvent[];
+  stats: { totalEvents: number; impulseInterventions: number; moneySaved: number; daysStreak: number };
   isHomeDataLoading: boolean;
   previousTab: string;
   userId?: string;
@@ -44,31 +47,31 @@ export interface AppTabContentProps {
   buddyTabLoading: boolean;
   handleContextConsumed: () => void;
   forceRefresh: () => void;
-  handleBuddyNavigateChat: (...args: any[]) => void;
+  handleBuddyNavigateChat: (context?: { type: 'challenge' | 'healing' | 'default'; message?: string; challengeContext?: ChallengeContext }) => void;
   handleBuddyRevive: () => void;
-  handleBuddyAddTokens: (...args: any[]) => void;
-  handleBuddyToast: (...args: any[]) => void;
-  handleChallengePassed: (...args: any[]) => void;
-  handleNavigateChat: (...args: any[]) => void;
+  handleBuddyAddTokens: (amount: number, reason: 'survival' | 'growth' | 'pleasure') => void;
+  handleBuddyToast: (message: string, type?: 'success' | 'info') => void;
+  handleChallengePassed: (challenge: { challengeId: string; itemName: string; amount: number }) => void;
+  handleNavigateChat: (context?: { type: 'challenge' | 'healing' | 'default'; message?: string; challengeContext?: ChallengeContext }) => void;
   handleNavigateMonitor: () => void;
   handleNavigateFamily: () => void;
   showAuthPrompt: (feature: string) => void;
-  handleMonitorTalkToAI: (...args: any[]) => void;
-  handleImpulseAlert: (...args: any[]) => void;
-  switchTab: (...args: any[]) => void;
+  handleMonitorTalkToAI: (context: { platform: string; amount: number; reasons: string[]; time: string }) => void;
+  handleImpulseAlert: (score: number) => void;
+  switchTab: (tab: Tab) => void;
   setSharedSessionId: (id: string | null) => void;
   setShowInsightsOverlay: (show: boolean) => void;
-  setActiveTab: (...args: any[]) => void;
+  setActiveTab: (tab: Tab) => void;
   createDreamFund: (fund: Omit<DreamFund, 'id'>) => string;
   updateDreamFund: (fundId: string, updates: Partial<Omit<DreamFund, 'id'>>) => void;
   deleteDreamFund: (fundId: string) => void;
   reorderDreamFunds: (newOrder: string[]) => Promise<void>;
   markDailyChatted: () => void;
-  dailyTasks: any;
+  dailyTasks: DailyTasks;
   dailyTasksCompleted: number;
   useHealingKit: () => Promise<'success' | 'already_used' | 'error'>;
   showInsightsOverlay: boolean;
-  t: (...args: any[]) => string;
+  t: (key: string, values?: Record<string, string | number> & { defaultValue?: string }) => string;
 }
 
 export function AppTabContent({
@@ -258,7 +261,7 @@ export function AppTabContent({
         <div className="absolute inset-0 z-10 bg-surface-1 flex flex-col animate-tab-in">
           <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-glass-border">
             <button
-              onClick={() => setActiveTab(previousTab)}
+              onClick={() => setActiveTab(previousTab as Tab)}
               className="text-text-secondary hover:text-text-primary text-sm flex items-center gap-1 transition-colors cursor-pointer select-none active:opacity-70"
             >
               {t('common.back')}
