@@ -60,6 +60,9 @@ function renderTimers(queryClient: QueryClient, isLoaded = true, userId = 'u-1')
 describe('useBuddyTimers', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // 🔧 R184 fix: 日期敏感腐化 — new Date() 须与 FIXED_NOW 对齐 (否则跨日后
+    // checkStreakBonus 的 today ≠ 测试写入的 streak-day key, bonus 意外触发)
+    vi.setSystemTime(FIXED_NOW);
     vi.spyOn(Date, 'now').mockReturnValue(FIXED_NOW);
     window.localStorage.clear();
     vi.mocked(apiFetch).mockReset().mockResolvedValue({ version: 8 });
