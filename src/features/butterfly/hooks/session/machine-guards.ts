@@ -8,8 +8,15 @@
  * 高内聚低耦合: guards 逻辑内聚到此文件, machine-services 只 import。
  */
 
-import type { ButterflyMachineContext, ButterflyMachineEvent } from './butterfly-machine';
+import type { ButterflyMachineContext, ButterflyMachineEvent, SubmitChoiceResult } from './butterfly-machine';
+
+/**
+ * Guard 事件 = 用户事件 ∪ XState v5 actor 结果包装 (onDone → { output }, onError → { error })。
+ * guards 在完成/错误转移里读 event.output / event.error — 宽形交叉, 具体窄化由各 guard 自行判空。
+ */
+type GuardEvent = Partial<ButterflyMachineEvent> & { output?: unknown; error?: unknown };
 import { AuthExpiredError } from './auth-expired-error';
+import type { ButterflyChoice, ButterflySession } from '@/features/butterfly/types';
 import { logger } from '@/lib/logger';
 
 export const MachineGuards = {
@@ -46,52 +53,52 @@ export const MachineGuards = {
   //   activeSessionHasPendingChoice 返回 true → machine 进 choosing 而非 complete
   //   → player 卡在 choosing, isLoading 可能不正确, 按钮 disabled
   //   根因修复: 若 session.status='completed', 直接返回 false (让 activeSessionCompleted 接管)
-  activeSessionHasPendingChoice: ({ event }: { event: any }) => {
-    const session = event.output;
+  activeSessionHasPendingChoice: ({ event }: { event: GuardEvent }) => {
+    const session = event.output as ButterflySession | null;
     if (!session) return false;
     // 🔧 P0 fix: completed session 不进 choosing (即使有未选 choice)
     if (session.status === 'completed') return false;
-    return !!session.choices.find((c: any) => !c.selectedOption);
+    return !!session.choices.find((c: ButterflyChoice) => !c.selectedOption);
   },
 
   // V17: 活跃会话 status=completed → complete
-  activeSessionCompleted: ({ event }: { event: any }) => {
-    const session = event.output;
+  activeSessionCompleted: ({ event }: { event: GuardEvent }) => {
+    const session = event.output as ButterflySession | null;
     if (!session) return false;
     return session.status === 'completed';
   },
 
   // V17: 活跃会话 status=active + 有 outline → streaming
-  activeSessionStreaming: ({ event }: { event: any }) => {
-    const session = event.output;
+  activeSessionStreaming: ({ event }: { event: GuardEvent }) => {
+    const session = event.output as ButterflySession | null;
     if (!session) return false;
     return session.status === 'active' && !!session.outline;
   },
 
   // submitChoice preloaded 分支 → streaming（无 choice）
   // ⚠️ XState v5 onDone: event.output 是 SubmitChoiceResult
-  isSubmitPreloadedStream: ({ event }: { event: any }) => {
-    const result = event.output;
+  isSubmitPreloadedStream: ({ event }: { event: GuardEvent }) => {
+    const result = event.output as SubmitChoiceResult | null;
     if (!result || result.type !== 'preloaded') return false;
     return !result.choice;
   },
 
   // submitChoice preloaded 分支 → choosing（有 choice）
-  isSubmitPreloadedChoice: ({ event }: { event: any }) => {
-    const result = event.output;
+  isSubmitPreloadedChoice: ({ event }: { event: GuardEvent }) => {
+    const result = event.output as SubmitChoiceResult | null;
     if (!result || result.type !== 'preloaded') return false;
     return !!result.choice;
   },
 
   // submitChoice stream 分支
-  isSubmitStream: ({ event }: { event: any }) => {
-    const result = event.output;
+  isSubmitStream: ({ event }: { event: GuardEvent }) => {
+    const result = event.output as SubmitChoiceResult | null;
     return !!result && result.type === 'stream';
   },
 
   // submitChoice complete 分支（409 reload 发现已完成）
-  isSubmitComplete: ({ event }: { event: any }) => {
-    const result = event.output;
+  isSubmitComplete: ({ event }: { event: GuardEvent }) => {
+    const result = event.output as SubmitChoiceResult | null;
     return !!result && result.type === 'complete';
   },
 
@@ -116,9 +123,9 @@ export const MachineGuards = {
   hasPendingChoice: ({ context }: { context: ButterflyMachineContext }) => !!context.pendingChoice,
 
   // 🔧 ARCH fix (Round 13 BUG-8): 检查 onError event.error 是否为 AuthExpiredError
-  isAuthExpiredError: ({ event }: { event: any }) => {
-    const err = event?.error;
-    return err instanceof AuthExpiredError || (err?.name === 'AuthExpiredError');
+  isAuthExpiredError: ({ event }: { event: GuardEvent }) => {
+    const err = event?.error as { name?: string } | undefined;
+    return err instanceof AuthExpiredError || err?.name === 'AuthExpiredError';
   },
 
   // 🔧 ARCH fix (Round 12 XSTATE-15): 删除 isContinuePreloadedStream/Choice/Stream 死代码 guards
@@ -156,8 +163,8 @@ export const MachineGuards = {
   // 🔧 2026-07-17 (speed fix): 后端一次生成 3 章完整内容, session 直接 completed
   //   检查 generateOutlineService onDone 返回的 session 是否已是 completed 状态
   //   + chapters 满 3 章 → 跳过 streaming, 直接进 complete 状态
-  isSessionAlreadyComplete: ({ event }: { event: any }) => {
-    const session = event?.output;
+  isSessionAlreadyComplete: ({ event }: { event: GuardEvent }) => {
+    const session = event?.output as ButterflySession | null;
     if (!session) return false;
     return session.status === 'completed' && Array.isArray(session.chapters) && session.chapters.length >= 3;
   },
