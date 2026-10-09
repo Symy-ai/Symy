@@ -64,6 +64,7 @@ function typedAssignObject(
 // Actions（纯 assign）
 // ============================================================
 
+/** XState v5 onDone 包装事件 — actions 在完成转移中读 event.output */
 export const MachineActions = {
   // ── createSession 开始 ──
   // ← createSession line 1007-1012
@@ -91,11 +92,12 @@ export const MachineActions = {
   // ── createSession 完成，收到 session ──
   // ← createSession line 1029-1032 (setSession + setUIState streaming)
   // ⚠️ XState v5 onDone: event.output 是 service 返回值
-  assignCreatedSession: typedAssign(({ event }: any) => {
+  assignCreatedSession: typedAssign(({ event }) => {
     // 🔧 ARCH fix (Round 8 AUDIT-3 P0 #4): XState v5 onDone 事件是 DoneInvokeEvent,
     // 不是 ButterflyMachineEvent。typedAssign 的类型擦除是已知 XState v5 限制。
     // 长期方案: 升级到 XState v6 (推断改进) 或用 setup() pattern 重新组织 machine。
-    const session = event.output;
+    // XState v5 onDone: event 实为 DoneInvokeEvent, output 是 service 返回值 (类型层联合不含 — v5 已知限制)
+    const session = (event as unknown as { output?: import('@/features/butterfly/types').ButterflySession | null }).output;
     if (!session) return {};
     return {
       session,
@@ -105,8 +107,8 @@ export const MachineActions = {
 
   // 🔧 2026-07-17 (speed fix): 后端一次生成 3 章, session 已 completed
   //   直接把 session + chapters 填入 context, 跳过 streaming
-  assignCompleteStorySession: typedAssign(({ event }: any) => {
-    const session = event.output;
+  assignCompleteStorySession: typedAssign(({ event }) => {
+    const session = (event as unknown as { output?: import('@/features/butterfly/types').ButterflySession | null }).output;
     if (!session) return {};
     return {
       session,
