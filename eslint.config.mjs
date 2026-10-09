@@ -36,6 +36,10 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
     // 已开启的规则 (warn 级别, 不阻塞 build):
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrorsIgnorePattern": "^_" }],
     "no-unused-vars": "off", // TS 版本接管
+    // 🔧 2026-10-10 (eslint-config-next 16.2.10→16.4.0): 新规则引入 10 处存量
+    //    window.location.href 内部导航告警。暂关 — 迁移到 useRouter().push() 是
+    //    行为级改动 (loading 态/整页刷新语义), 独立重构轮处理, 不混入依赖升级。
+    "@next/next/no-location-assign-relative-destination": "off",
     "prefer-const": "warn",
 
     // 🔧 ARCH fix (Round 58): 开启零成本安全规则 (不会产生 false positive)
