@@ -8,6 +8,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Sparkles, ArrowRight, LogIn, UserPlus, Shield, Zap, Heart } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
 
@@ -95,6 +96,7 @@ const FEATURE_CONTEXT: Record<string, {
 };
 
 export function AuthPromptModal({ visible, feature = 'general', onClose }: AuthPromptModalProps) {
+  const router = useRouter();
   const [isClosing, setIsClosing] = useState(false);
   const { t } = useI18n();
   const context = FEATURE_CONTEXT[feature] || FEATURE_CONTEXT.general;
@@ -199,7 +201,7 @@ export function AuthPromptModal({ visible, feature = 'general', onClose }: AuthP
         <div className="space-y-2.5">
           <button
             onClick={() => {
-              window.location.href = '/auth/signup';
+              router.push('/auth/signup');
             }}
             className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-bold hover:from-emerald-400 hover:to-green-500 transition-all active:scale-95 btn-shimmer shadow-lg shadow-emerald-500/20"
           >
@@ -210,7 +212,7 @@ export function AuthPromptModal({ visible, feature = 'general', onClose }: AuthP
 
           <button
             onClick={() => {
-              window.location.href = '/auth/login';
+              router.push('/auth/login');
             }}
             className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-glass-fill border border-glass-border text-text-secondary text-sm font-medium hover:bg-glass-fill-strong hover:text-text-primary transition-all active:scale-95"
           >

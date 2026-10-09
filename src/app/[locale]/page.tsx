@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { ChallengeContext } from '@/types/challenge-context';
 import { TabBar, type Tab } from '@/components/tab-bar';
 import { TAB_ORDER, TAB_URL_WHITELIST, isTabId, type TabId } from '@/lib/tab-registry';
@@ -49,6 +49,7 @@ import { LandingPage } from '@/components/landing-page';
 import { moneyToFreedomLabel } from '@/lib/freedom-time';
 
 export default function WeMeApp() {
+  const router = useRouter();
   const { user, loading } = useAuth();
   const { t, locale } = useI18n();
   const hasEverHadUserRef = useRef(false);
@@ -642,7 +643,7 @@ export default function WeMeApp() {
                 </div>
                 {/* 注册链接 — 低调, 不与首屏主按钮竞争 */}
                 <button
-                  onClick={() => window.location.href = '/auth/signup'}
+                  onClick={() => router.push('/auth/signup')}
                   className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors cursor-pointer flex-shrink-0 underline decoration-dotted"
                 >
                   {t('ahaMoment.signUpLink', { defaultValue: '注册 →' })}

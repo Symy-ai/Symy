@@ -9,6 +9,7 @@
  */
 
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminError({
   error,
@@ -17,6 +18,7 @@ export default function AdminError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const router = useRouter();
   useEffect(() => {
     console.error('[Admin Error Boundary]', error);
   }, [error]);
@@ -38,7 +40,7 @@ export default function AdminError({
             Try Again
           </button>
           <button
-            onClick={() => window.location.href = '/admin'}
+            onClick={() => router.push('/admin')}
             className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             Back to Dashboard

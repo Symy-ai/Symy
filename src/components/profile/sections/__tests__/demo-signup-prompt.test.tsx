@@ -3,6 +3,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
+const navMock = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => navMock,
+}));
 vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({
     t: (key: string, opts?: Record<string, unknown>) =>
@@ -36,14 +40,8 @@ describe('DemoSignupPrompt — 注册引导', () => {
   });
 
   it('CTA 按钮点击跳注册页', () => {
-    const hrefSpy = vi.fn();
-    Object.defineProperty(window, 'location', {
-      configurable: true,
-      value: { ...window.location, set href(v: string) { hrefSpy(v); } },
-    });
     render(<DemoSignupPrompt />);
     fireEvent.click(screen.getAllByRole('button')[0]);
-    expect(hrefSpy).toHaveBeenCalledWith('/auth/signup');
-    delete (window as { location?: unknown }).location;
+    expect(navMock.push).toHaveBeenCalledWith('/auth/signup');
   });
 });

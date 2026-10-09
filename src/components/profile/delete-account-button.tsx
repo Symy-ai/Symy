@@ -29,6 +29,7 @@ export function DeleteAccountButton({ isDemo, t }: DeleteAccountButtonProps) {
     if (!confirm(t('profile.deleteAccountConfirm', { defaultValue: 'Are you sure you want to delete your account? This action cannot be undone. All your data will be permanently removed.' }))) return;
     try {
       await apiFetchVoid('/api/user/delete-account', { method: 'POST' });
+      // 删除账号后整页刷新: 清空全部已删账号的 client 态 (刻意语义)
       window.location.href = '/';
     } catch (err) {
       // safe to ignore: shows alert to user; error is logged by apiFetchVoid

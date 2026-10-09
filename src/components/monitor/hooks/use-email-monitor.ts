@@ -216,6 +216,7 @@ export function useEmailMonitor(
     if (!user?.id) return;
     setIsConnecting(true);
     try {
+      // OAuth 出口跳转 (离开 app 到 Gmail 授权) — 非页面导航, 保留 location.href
       window.location.href = '/api/email/connect';
     } catch (err) {
       logger.error('Connect Gmail error:', err);

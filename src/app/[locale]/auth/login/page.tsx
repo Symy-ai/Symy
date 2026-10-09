@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient, isSupabaseConfigured } from '@/lib/supabase-browser';
+import { useRouter } from 'next/navigation';
 import { symyEvents } from '@/lib/posthog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -25,6 +26,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function LoginPage() {
+  const router = useRouter();
   const { t } = useI18n();
   const locale = useLocale();
   const { resolvedTheme } = useTheme();
@@ -160,7 +162,8 @@ export default function LoginPage() {
     } else {
       symyEvents.userLoggedIn({ method: 'password' });
       setMessage(t('auth.login.loginSuccess'));
-      window.location.href = '/';
+      router.push('/');
+      router.refresh(); // 确保服务端组件重取 user 态 (等价原整页刷新语义)
     }
     setLoading(false);
   };

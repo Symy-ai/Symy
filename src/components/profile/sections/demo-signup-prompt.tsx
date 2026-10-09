@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/i18n/provider';
 import { FeaturePreviewSection } from '../feature-preview-section';
 
@@ -10,6 +11,7 @@ import { FeaturePreviewSection } from '../feature-preview-section';
  * (原为 profile-tab.tsx 内联 JSX — File Split Wave 1 纯搬运, 行为零变化)
  */
 export function DemoSignupPrompt() {
+  const router = useRouter();
   const { t } = useI18n();
   return (
     <div className="h-full overflow-y-auto px-4 py-6 space-y-6 custom-scrollbar">
@@ -45,13 +47,13 @@ export function DemoSignupPrompt() {
           ))}
         </div>
         <button
-          onClick={() => window.location.href = '/auth/signup'}
+          onClick={() => router.push('/auth/signup')}
           className="w-full flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 text-white text-sm font-bold hover:from-cyan-400 hover:to-purple-500 transition-all active:scale-95 btn-shimmer shadow-lg shadow-cyan-500/20"
         >
           {t('profile.signUpFreeBtn')}
         </button>
         <button
-          onClick={() => window.location.href = '/auth/login'}
+          onClick={() => router.push('/auth/login')}
           className="w-full flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-glass-fill border border-glass-border text-text-secondary text-sm font-medium hover:bg-glass-hover hover:text-text-primary transition-all active:scale-95 mt-2"
         >
           {t('profile.alreadyHaveAccount')}

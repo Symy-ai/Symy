@@ -4,6 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { AuthPromptModal } from '../auth-prompt-modal';
 
+const navMock = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useRouter: () => navMock,
+}));
 vi.mock('@/i18n/provider', () => ({
   useI18n: () => ({
     t: (key: string) => key,
@@ -64,26 +68,15 @@ describe('AuthPromptModal', () => {
   it('signup CTA navigates to /auth/signup', () => {
     render(<AuthPromptModal visible onClose={vi.fn()} />);
     const signupBtn = screen.getByText('authPrompt.createFreeAccount').closest('button') as HTMLElement;
-    // happy-dom: window.location.href 赋值即导航 — spy 拦截
-    const hrefSetter = vi.fn();
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { ...window.location, set href(v: string) { hrefSetter(v); } },
-    });
     fireEvent.click(signupBtn);
-    expect(hrefSetter).toHaveBeenCalledWith('/auth/signup');
+    expect(navMock.push).toHaveBeenCalledWith('/auth/signup');
   });
 
   it('login CTA navigates to /auth/login', () => {
     render(<AuthPromptModal visible onClose={vi.fn()} />);
     const loginBtn = screen.getByText('authPrompt.alreadyHaveAccount').closest('button') as HTMLElement;
-    const hrefSetter = vi.fn();
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { ...window.location, set href(v: string) { hrefSetter(v); } },
-    });
     fireEvent.click(loginBtn);
-    expect(hrefSetter).toHaveBeenCalledWith('/auth/login');
+    expect(navMock.push).toHaveBeenCalledWith('/auth/login');
   });
 
   it('close button: 200ms fade then onClose (BUG-149 timer tracked)', () => {

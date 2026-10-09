@@ -316,7 +316,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       //   新代码: 跳转到 '/auth/login?from=signout' → login 页显示 "You've been signed out" toast
       //   需求: PM3-P1-3 验收标准 "Sign out 后跳转 login 页"
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login?from=signout';
+        // sign-out 整页刷新是刻意语义: 清空全部 client 态 (Supabase session/cache)
+          window.location.href = '/auth/login?from=signout';
       }
     }
   }, [configured]);
