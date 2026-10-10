@@ -37,10 +37,14 @@ vi.mock('@/lib/supabase-admin', () => ({
                 order: () => ({ limit: () => rowsQueryMock('stats') }),
               };
             }
+            // thenable builder (近似 PostgrestFilterBuilder): range 后仍可 eq 再 await
+            const makeBuilder = (apply: () => unknown): Record<string, unknown> => ({
+              range: (a: number, b: number) => makeBuilder(() => rowsQueryMock('list', a, b)),
+              eq: () => makeBuilder(apply),
+              then: (r: (v: unknown) => unknown) => Promise.resolve(apply()).then(r),
+            });
             return {
-              order: () => ({
-                range: (a: number, b: number) => rowsQueryMock('list', a, b),
-              }),
+              order: () => makeBuilder(() => rowsQueryMock('list', 0, -1)),
             };
           },
         };
@@ -108,5 +112,35 @@ describe('GET /api/admin/audit', () => {
     headCountMock.mockResolvedValue({ count: null, error: { message: 'boom' } });
     const res = await GET(req('action=stats'));
     expect(res.status).toBe(500);
+  });
+
+  it('stats 行查询失败 → 500 (与 count 失败同语义)', async () => {
+    rowsQueryMock.mockResolvedValue({ data: null, error: { message: 'rls' } });
+    const res = await GET(req('action=stats'));
+    expect(res.status).toBe(500);
+  });
+
+  it('list 查询失败 → 500 + 不泄露 error.message', async () => {
+    rowsQueryMock.mockResolvedValue({ data: null, count: null, error: { message: 'internal leak' } });
+    const res = await GET(req());
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to fetch audit logs');
+    expect(JSON.stringify(body)).not.toContain('internal leak');
+  });
+
+  it('page=0/负数 → 收敛 1; limit=0 → 收敛 1 (边界防负 range)', async () => {
+    rowsQueryMock.mockResolvedValue({ data: [], count: 0, error: null });
+    const res = await GET(req('page=0&limit=0'));
+    expect(res.status).toBe(200);
+    expect(rowsQueryMock).toHaveBeenCalledWith('list', 0, 0); // page1 limit1 → [0,0]
+  });
+
+  it('route/actor 过滤 → 链上 eq 双挂 (需过滤参数透传)', async () => {
+    rowsQueryMock.mockResolvedValue({ data: [], count: 0, error: null });
+    const res = await GET(req('route=%2Fapi%2Fadmin%2Fvip&actor=admin%40symy.ai'));
+    expect(res.status).toBe(200);
+    // list 链 mock 的 range 前有 eq — 本例锚 200 + 无异常 (eq 链在 mock 中透传)
+    expect(rowsQueryMock).toHaveBeenCalled();
   });
 });
