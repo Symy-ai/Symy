@@ -19,8 +19,12 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   // 🔧 SEC-1 fix: 验证 next 参数以防止 open redirect
   // BUG-159 fix: 同时阻止 /api/ 路径重定向，防止认证后被导向内部 API
+  // 🔧 R356 fix: 协议相对 URL (//evil.com) 也拦截 — startsWith('/') 单查挡不住双斜线形态
   const nextParam = searchParams.get('next') ?? '/';
-  const next = (nextParam.startsWith('/') && !nextParam.startsWith('/api/')) ? nextParam : '/';
+  const next =
+    nextParam.startsWith('/') && !nextParam.startsWith('//') && !nextParam.startsWith('/api/')
+      ? nextParam
+      : '/';
 
   // 🔧 forgot-password fix: 检测 type=recovery (Supabase 密码重置邮件回调)
   //   旧代码: 只处理 email verification, 密码重置链接会落到 next=/, 用户被重定向到首页但没改密码
