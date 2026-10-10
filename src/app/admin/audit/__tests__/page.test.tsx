@@ -80,4 +80,53 @@ describe('AdminAuditPage', () => {
       expect(String(logsCall?.[0])).toContain('route=%2Fapi%2Fadmin%2Fletta');
     });
   });
+
+  it('stats 卡渲染: total + byAction 分组', async () => {
+    M.adminGet.mockImplementation((url: string) => {
+      if (url.includes('action=stats')) {
+        return { ok: true, data: { total: 9, byAction: { ban: 3, unban: 6 } } };
+      }
+      return { ok: true, data: { logs: [], total: 9, page: 1, limit: 20 } };
+    });
+    render(<AdminAuditPage />);
+    await waitFor(() => expect(screen.getByText('9')).toBeTruthy());
+    const txt = document.body.textContent ?? '';
+    expect(txt).toContain('ban:');
+    expect(txt).toContain('unban:');
+
+  });
+
+  it('行点击 → 展开 payload JSON (route/actor/success/metadata)', async () => {
+    M.adminGet.mockImplementation((url: string) => {
+      if (url.includes('action=stats')) return { ok: true, data: {} };
+      return { ok: true, data: { logs: [
+        { id: 42, route: '/api/admin/users', actor: 'admin@x.com', action: 'ban', success: true, status_code: 200, method: 'POST', created_at: '2026-10-01T00:00:00Z', metadata: { userId: 'u9' } },
+      ], total: 1, page: 1, limit: 20 } };
+    });
+    render(<AdminAuditPage />);
+    await waitFor(() => expect(screen.getByText('/api/admin/users')).toBeTruthy());
+    fireEvent.click(screen.getByText('/api/admin/users'));
+    await waitFor(() => {
+      const pre = document.querySelector('pre');
+      expect(pre?.textContent).toContain('"userId": "u9"');
+      expect(pre?.textContent).toContain('"method": "POST"');
+    });
+  });
+
+  it('status 前端过滤: failed 档只显示失败行', async () => {
+    M.adminGet.mockImplementation((url: string) => {
+      if (url.includes('action=stats')) return { ok: true, data: {} };
+      return { ok: true, data: { logs: [
+        { id: 1, route: '/api/ok', actor: 'a', success: true, created_at: '2026-10-01T00:00:00Z' },
+        { id: 2, route: '/api/bad', actor: 'a', success: false, status_code: 500, created_at: '2026-10-01T00:00:00Z' },
+      ], total: 2, page: 1, limit: 20 } };
+    });
+    render(<AdminAuditPage />);
+    await waitFor(() => expect(screen.getByText('/api/ok')).toBeTruthy());
+    // 切 failed 档
+    const failedBtn = screen.getAllByRole('button').find((b) => /失败/.test(b.textContent ?? ''));
+    fireEvent.click(failedBtn as HTMLButtonElement);
+    await waitFor(() => expect(screen.queryByText('/api/ok')).toBeNull());
+    expect(screen.getByText('/api/bad')).toBeTruthy();
+  });
 });
