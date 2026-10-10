@@ -269,7 +269,7 @@ export function SymyLedger({ buddyState, config: _config, isDemo, onToast, _onCh
                   {!isDemo && prevStreak !== null && prevStreak > 1 && buddyState.tokens >= 50 && (
                     <div className="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
                       <p className="text-[11px] text-amber-400 font-medium mb-2">
-                        {t('buddy.streakRedeemTitle', { defaultValue: 'Streak broken?', n: prevStreak })}
+                        {t('buddy.streakRedeemTitle', { defaultValue: 'Streak broken?' })}
                       </p>
                       <p className="text-[10px] text-text-tertiary mb-2">
                         {t('buddy.streakRedeemDesc', { n: prevStreak })}

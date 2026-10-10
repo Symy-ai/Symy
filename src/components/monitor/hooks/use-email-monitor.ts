@@ -245,10 +245,10 @@ export function useEmailMonitor(
         const hint = (data.hint as string) || '';
         const errorMsg = (data.error as string) || t('monitor.toast.unknownError');
         logger.error('IMAP connect error:', errorMsg, hint ? `\nHint: ${hint}` : '');
-        setToast({ message: t('monitor.toast.connectionFailed', { msg: `${errorMsg}${hint ? ' — ' + hint : ''}` }), type: 'info' });
+        setToast({ message: t('monitor.toast.connectionFailed'), type: 'info' });
       } else {
         logger.error('Connect IMAP error:', err);
-        setToast({ message: t('monitor.toast.connectionFailed', { msg: t('monitor.toast.unknownError') }), type: 'info' });
+        setToast({ message: t('monitor.toast.connectionFailed'), type: 'info' });
       }
     } finally {
       setIsConnecting(false);

@@ -434,7 +434,7 @@
     "freedomFutureValue": "{years} 年后变成 ",
     "freedomFutureValueNote": "按 7% 年化收益估算",
     "freedomCompoundInfoLabel": "复利假设说明",
-    "freedomCompoundInfo": "基于 7% 年化收益（标普 500 长期平均），未扣除通胀。实际收益会有波动。",
+    "freedomCompoundInfo": "基于 {rate} 年化收益（标普 500 长期平均）、按 {years} 年计算，未扣除通胀。实际收益会有波动。",
     "freedomFundFraction": "相当于",
     "challengeImpulseFadesHint": "90% 的冲动在 10 分钟内会消散。停下来，让 Symy 守住这扇门。",
     "challengeLib": {
@@ -667,7 +667,7 @@
     "progress": "进度",
     "notUnlockedYet": "尚未解锁",
     "dreamFundMinError": "最低 $100",
-    "dreamFundMaxError": "最高 $2,147,483,647",
+    "dreamFundMaxError": "最高 {max}",
     "dreamFundTargetHint": "最低 $100",
     "syncErrorRefresh": "检测到同步问题 — 请刷新以避免丢失更改",
     "challengeCheckFailed": "无法检查进行中的挑战。请重试。",
@@ -1300,7 +1300,7 @@
         "brokenNote": "中断不是句号。我们看看下次从哪里开始，本象陪你。",
         "insufficientBody": "这 {days} 天里还没有守护记录落进来，本象不敢替你宣布结果——你自己的感觉才算数。",
         "restartBtn": "再守 {days} 天",
-        "restartAck": "新的一程开始啦——本象记下了，继续陪你 🐘"
+        "restartAck": "新的 {days} 天一程开始啦——本象记下了，继续陪你 🐘"
       },
       "share": {
         "pill": "绿色承诺",
@@ -3312,7 +3312,7 @@
       "badge": "绿色优选"
     },
     "guardianStory": {
-      "title": "守护故事",
+      "title": "为你守住：{item}（{amount}）≈ {hours} 自由时间",
       "altSuggestion": "试试更绿色的替代方案"
     }
   },

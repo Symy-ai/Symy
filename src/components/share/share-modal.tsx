@@ -282,12 +282,11 @@ export function ShareModal({
                         defaultValue: 'Join me as a green guardian. Buy less. Live more.',
                       })
                   : t('share.interceptMedal.shareText', {
-                    item: medal.itemTitle,
                     hours: hoursLabel,
                     defaultValue: `I skipped an impulse buy and won back ${hoursLabel}. With Symy — for me and the planet. Buy less. Live more.`,
                   })
     );
-  }, [medal.savedCents, medal.itemTitle, effectiveRate, locale, selectedId, streakDays, interceptCount, badgeCard, challengeCard, weeklyCard, guardRank, inviteCard, t]);
+  }, [medal.savedCents, effectiveRate, locale, selectedId, streakDays, interceptCount, badgeCard, challengeCard, weeklyCard, guardRank, inviteCard, t]);
 
   const handleShare = useCallback(async () => {
     if (!dataUrl || sharing) return;

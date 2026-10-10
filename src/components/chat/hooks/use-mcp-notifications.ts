@@ -73,7 +73,7 @@ export function useMcpNotifications({
         notifications.push({
           id: nextId('mcp'),
           message: t('chat.mcpNotifications.toolFailed', {
-            tool: r.name,
+            toolName: r.name,
             defaultValue: `Tool '${r.name}' failed: ${r.message || 'unknown error'}`,
           }),
           type: 'penalty',

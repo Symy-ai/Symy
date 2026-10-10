@@ -409,7 +409,7 @@
     "freedomFutureValue": "In {years} years, becomes ",
     "freedomFutureValueNote": "at 7% annual return",
     "freedomCompoundInfoLabel": "Compound interest assumptions",
-    "freedomCompoundInfo": "Based on 7% annual return (S&P 500 long-term average), not adjusted for inflation. Actual returns vary.",
+    "freedomCompoundInfo": "Based on {rate} annual return (S&P 500 long-term average) over {years} years, not adjusted for inflation. Actual returns vary.",
     "freedomFundFraction": "becomes",
     "challengeImpulseFadesHint": "90% of impulses fade within 10 minutes. Pause and let Symy guard the gate.",
     "challengeLib": {
@@ -642,7 +642,7 @@
     "progress": "Progress",
     "notUnlockedYet": "Not unlocked yet",
     "dreamFundMinError": "Minimum $100",
-    "dreamFundMaxError": "Maximum $2,147,483,647",
+    "dreamFundMaxError": "Maximum {max}",
     "dreamFundTargetHint": "Min $100",
     "syncErrorRefresh": "Sync issue detected — please refresh to avoid losing changes.",
     "challengeCheckFailed": "Couldn't check active challenges. Please try again.",
@@ -1291,7 +1291,7 @@
         "brokenNote": "A pause isn't a full stop — we'll see where to pick up next time. I'm with you.",
         "insufficientBody": "No guard moments landed these {days} days, so I won't declare a result for you — only how you feel counts.",
         "restartBtn": "Another {days} days",
-        "restartAck": "A new stretch begins — written down, and I'm still with you 🐘"
+        "restartAck": "A new {days}-day stretch begins — written down, and I'm still with you 🐘"
       },
       "share": {
         "pill": "Green Promise",
@@ -3312,7 +3312,7 @@
       "badge": "Green Pick"
     },
     "guardianStory": {
-      "title": "Guardian Story",
+      "title": "Saved for you: {item} ({amount}) ≈ {hours} of freedom",
       "altSuggestion": "Try a greener alternative"
     }
   },

@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { GuardianStoryNotification, TikTokShopNotification } from '@/lib/demo-data';
 import { formatFreedomTime } from '@/lib/freedom-time';
+import { formatCurrency } from '@/lib/format';
 import { getScoreColor, getScoreLabel } from '@/lib/impulse-detector';
 import { Clock, Zap, Radio, Leaf } from 'lucide-react';
 import { useI18n } from '@/i18n/provider';
@@ -66,7 +67,7 @@ export function NotificationCard({ notification, impulseScore, isNew }: Notifica
             <p className="mt-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
               🐘 {t('notification.guardianStory.title', {
                 item: notification.item,
-                amount: notification.amount.toFixed(2),
+                amount: formatCurrency(notification.amount),
                 hours: formatFreedomTime(guardianStory.savedHours, locale),
               })}
             </p>
