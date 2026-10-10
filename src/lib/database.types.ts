@@ -4,7 +4,7 @@
  * Auto-generated from Supabase PostgREST OpenAPI spec.
  * Source: https://fcgpxrujhnqramggupjm.supabase.co/rest/v1/
  *
- * ⚠️ DO NOT EDIT MANUALLY — run `python3 scripts/gen-types-from-api.py` to regenerate.
+ * ⚠️ DO NOT EDIT MANUALLY — run `supabase gen types typescript --project-id <PROJECT_REF> > src/lib/database.types.ts` to regenerate (CI: db-types-check.yml).
  *
  * Generated: 2026-07-11T09:29:44.559282
  * Tables: 22
