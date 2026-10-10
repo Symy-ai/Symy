@@ -9,7 +9,7 @@
  * POST /api/admin/cultivation?action=assess_all        — 批量评估（⚠️）
  */
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { adminGet, adminPost } from '@/lib/admin-panel/api-client';
 import type { CultivationStats, CultivationProfile } from '@/lib/admin-panel/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,6 +64,12 @@ export default function AdminCultivationPage() {
     setStats(res.ok && res.data ? res.data : null);
     setStatsLoading(false);
   }
+
+  // BUG-6: 挂载即拉统计 (statsLoading 初始 true 但此前无挂载拉取 → 永久骨架屏, 同 R404 embeddings)
+  useEffect(() => {
+    loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadProfile(e: FormEvent) {
     e.preventDefault();
