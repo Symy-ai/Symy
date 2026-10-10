@@ -4,7 +4,7 @@
  * (b138 §3.2 最大性能收益点的行为锁)
  */
 import { describe, it, expect, vi } from 'vitest';
-import { cleanup, render } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { ChatRecap } from '../chat-recap';
 
@@ -38,5 +38,23 @@ describe('b138 批D: memo 边界 render 计数回归', () => {
     // 深度行为验证走 e2e)。冒烟锁: 组件可正常渲染。
     expect(renderSpy.mock.calls.length).toBeGreaterThanOrEqual(1);
     cleanup();
+  });
+
+  it('ChatRecap 交互契约: Continue 带 continuePrompt / Dismiss 触发 / data-testid', () => {
+    const onContinue = vi.fn();
+    const onDismiss = vi.fn();
+    render(
+      <ChatRecap
+        topic={{ summaryZh: '上次聊了耳机', summaryEn: 'headphones', continuePromptZh: '继续聊耳机', continuePromptEn: 'continue headphones' } as never}
+        onContinue={onContinue}
+        onDismiss={onDismiss}
+      />,
+    );
+    expect(screen.getByTestId('chat-recap')).toBeTruthy();
+    expect(screen.getByText(/上次聊了耳机/)).toBeTruthy(); // zh locale
+    fireEvent.click(screen.getByText('chat.recapContinue')); // t mock 直通 key
+    expect(onContinue).toHaveBeenCalledWith('继续聊耳机'); // continuePrompt zh
+    fireEvent.click(screen.getByLabelText('chat.recapDismiss'));
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });

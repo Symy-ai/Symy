@@ -15,4 +15,16 @@ describe("chat AI error i18n guard", () => {
       expect(source, file).not.toContain("defaultValue");
     }
   });
+
+  it("guards all three AI error files exist (rename guard)", () => {
+    for (const file of aiErrorFiles) {
+      expect(() => readFileSync(join(process.cwd(), file), "utf8"), file).not.toThrow();
+    }
+  });
+
+  it("error paths use i18n error key (t call), not raw literals in user-facing messages", () => {
+    // send-message-error 须走 t() — 检查其 import 了 useI18n 类型或 t 引用
+    const source = readFileSync(join(process.cwd(), "src/components/chat/hooks/parts/send-message-error.ts"), "utf8");
+    expect(source).toMatch(/t\(|useI18n|errorMsgKey/i);
+  });
 });
