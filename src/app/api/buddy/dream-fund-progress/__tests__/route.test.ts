@@ -182,6 +182,117 @@ describe('POST /api/buddy/dream-fund-progress', () => {
     expect(deleteEqSpy).toHaveBeenCalled();
   });
 
+  it('INSERT 非 23505 错误 → 500 (dedup gate 基础设施故障, 非 dedup 命中)', async () => {
+    const adminSupabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: null, error: { code: '42P01', message: 'table missing' } })),
+          })),
+        })),
+      })),
+      rpc: vi.fn(),
+    };
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ supabase: adminSupabase });
+    const ctx = mockAuthedContext();
+    const res = await POST(ctx);
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe('Failed to deposit');
+    expect(adminSupabase.rpc).not.toHaveBeenCalled();
+  });
+
+  it('admin client unavailable → 500 (不进入 INSERT/RPC)', async () => {
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ supabase: null });
+    const ctx = mockAuthedContext();
+    const res = await POST(ctx);
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe('Admin client unavailable');
+  });
+
+  it('auto fund 选择: 第一个未满的非 Savings 基金', async () => {
+    const rpcSpy = vi.fn(async () => ({ data: { vitality: 50 }, error: null }));
+    const adminSupabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: { id: 'he-1' }, error: null })),
+          })),
+        })),
+        update: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) })) })),
+      })),
+      rpc: rpcSpy,
+    };
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ supabase: adminSupabase });
+    // fund 列表: savings 已满 + df-1 未满 → auto 应选 df-1
+    const ctx = mockAuthedContext({
+      supabase: {
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                contains: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+                })),
+              })),
+              order: vi.fn(async () => ({
+                data: [
+                  { fund_id: 'df-savings', current: 1000, target: 1000 }, // Savings 满
+                  { fund_id: 'df-1', current: 0, target: 1000 },          // 第一个未满非 Savings
+                ],
+                error: null,
+              })),
+            })),
+          })),
+        })),
+      },
+    });
+    const res = await POST(ctx);
+    expect(res.status).toBe(200);
+    expect(rpcSpy).toHaveBeenCalledWith('apply_buddy_state_delta', expect.objectContaining({ p_dream_fund_id: 'df-1' }));
+    const json = await res.json();
+    expect(json.fundId).toBe('df-1');
+  });
+
+  it('auto fund 选择: 全满 → 回落 df-savings', async () => {
+    const rpcSpy = vi.fn(async () => ({ data: { vitality: 50 }, error: null }));
+    const adminSupabase = {
+      from: vi.fn(() => ({
+        insert: vi.fn(() => ({
+          select: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: { id: 'he-1' }, error: null })),
+          })),
+        })),
+        update: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(async () => ({ error: null })) })) })),
+      })),
+      rpc: rpcSpy,
+    };
+    (createAdminClient as ReturnType<typeof vi.fn>).mockReturnValue({ supabase: adminSupabase });
+    const ctx = mockAuthedContext({
+      supabase: {
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                contains: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+                })),
+              })),
+              order: vi.fn(async () => ({
+                data: [{ fund_id: 'df-1', current: 1000, target: 1000 }], // 全满
+                error: null,
+              })),
+            })),
+          })),
+        })),
+      },
+    });
+    const res = await POST(ctx);
+    expect(res.status).toBe(200);
+    expect(rpcSpy).toHaveBeenCalledWith('apply_buddy_state_delta', expect.objectContaining({ p_dream_fund_id: 'df-savings' }));
+  });
+
   it('successfully deposits — INSERT → RPC → UPDATE', async () => {
     const updateEqSpy = vi.fn(async () => ({ error: null }));
     const healthEventsBuilder = {
