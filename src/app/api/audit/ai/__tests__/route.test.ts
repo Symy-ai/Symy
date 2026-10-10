@@ -77,6 +77,40 @@ describe('GET /api/audit/ai', () => {
     expect(body.filter.user_id).toBe('victim');
   });
 
+  it('admin 查询失败 → 500 不假成功', async () => {
+    verifyAdminAuthMock.mockReturnValue({ authorized: true });
+    const failing = {
+      select: () => failing,
+      order: () => failing,
+      range: () => failing,
+      eq: () => failing,
+      then: (resolve: (v: unknown) => unknown) => resolve({ data: null, error: { message: 'rls' }, count: 0 }),
+    };
+    adminFromMock.mockReturnValue(failing);
+    const res = await GET(makeQuery());
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Query failed');
+    expect(JSON.stringify(body)).not.toContain('rls');
+  });
+
+  it('普通用户查询失败 → 500 不假成功', async () => {
+    verifyAdminAuthMock.mockReturnValue({ authorized: false });
+    const failing = {
+      select: () => failing,
+      order: () => failing,
+      range: () => failing,
+      eq: () => failing,
+      then: (resolve: (v: unknown) => unknown) => resolve({ data: null, error: { message: 'conn reset' }, count: 0 }),
+    };
+    userFromMock.mockReturnValue(failing);
+    const res = await GET(makeQuery());
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Query failed');
+    expect(JSON.stringify(body)).not.toContain('conn reset');
+  });
+
   it('未认证 → 401', async () => {
     verifyAdminAuthMock.mockReturnValue({ authorized: false });
     userCtx = { supabase: null, user: null, error: 'no auth', json: (d, init) => NextResponse.json(d, init) };
