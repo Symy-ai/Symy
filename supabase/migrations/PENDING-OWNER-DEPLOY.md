@@ -53,3 +53,13 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_email_receipts_user_status_received 
 EXPLAIN ANALYZE SELECT * FROM active_challenges WHERE user_id = '<某uuid>' AND status = 'passed' ORDER BY completed_at DESC LIMIT 50;
 ```
 应出现 `Index Scan using idx_active_challenges_user_status_completed`。
+
+## Vercel env 空值（2026-10-11 R506 审计发现，非迁移）
+
+### DATABASE_URL / PAYLOAD_SECRET（Payload CMS 面）
+- **现状**：Vercel production/preview 均**空值**。Payload postgresAdapter `connectionString: process.env.DATABASE_URL || ''`。
+- **影响**：/cms 线上返回登录壳（200），但任何实际 CMS 操作（登录验证/posts 读写）都连不上 DB——Payload 面是僵尸壳。R466 已修 LETTA/SERVICE_ROLE 空值，这 2 个漏网。
+- **修法**（owner）：Vercel → Settings → Environment Variables 补：
+  - DATABASE_URL = Supabase pooler 连接串（`postgresql://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`，transaction mode）
+  - PAYLOAD_SECRET = 随机 32+ 字符
+- **注意**：payload.config.ts `push: false`——Payload 不会自动建表。配好 DATABASE_URL 后首启须跑 `npx payload migrate:create` 系列或 `push: true` 一次性建 payload 表系（users/posts 两 collection 的表在 DB 里不存在）。
