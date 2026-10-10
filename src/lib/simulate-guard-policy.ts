@@ -137,10 +137,9 @@ function simulate(
     if (!event || event.eventType !== 'challenge_completed') continue;
     const date = event.createdAt instanceof Date ? event.createdAt : new Date(String(event.createdAt ?? ''));
     if (!Number.isFinite(date.getTime()) || date > now || date < cutoff) continue;
-    const key = typeof event.triggerId === 'string' && event.triggerId ? event.triggerId : null;
-    if (key && seen.has(key)) continue;
-    if (key) seen.add(key);
-    else seen.add(`anonymous-${date.getTime()}`);
+    const key = typeof event.triggerId === 'string' && event.triggerId ? event.triggerId : `anonymous-${date.getTime()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
 
     const resolved = resolveGuardCategory(event.metadata);
     if (resolved === 'other') continue;
