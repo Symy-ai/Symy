@@ -27,7 +27,9 @@ echo "🔍 Running pre-commit checks..."
 #    → "JavaScript heap out of memory" → commit 失败 → 开发者被迫 git commit --no-verify 绕过
 #    (失去 lint 门禁)。根因修复: 给 tsc 提供与 package.json build 一致的 3072MB 堆。
 echo "  → TypeScript type check..."
-NODE_OPTIONS='--max-old-space-size=3072' npx tsc --noEmit
+# 🔧 2026-10-11 (v17-A): react 19.3/next 16.4 升级后 tsc 内存需求涨破 3072MB → V8 native crash
+#    (core dumped, commit 被 Abort)。对齐 CI ci-checks.yml 的 4096MB。
+NODE_OPTIONS='--max-old-space-size=4096' npx tsc --noEmit
 if [ $? -ne 0 ]; then
   echo "❌ TypeScript type check failed. Fix errors before committing."
   echo "   Skip with: git commit --no-verify"
