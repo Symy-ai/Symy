@@ -11,7 +11,7 @@ vi.mock('@/lib/supabase-api', () => ({
   createAuthenticatedClient: vi.fn(),
 }));
 
-import { POST, PATCH } from '../route';
+import { GET, POST, PATCH } from '../route';
 import { createAuthenticatedClient } from '@/lib/supabase-api';
 /* eslint-disable require-await -- test mocks use async for API consistency */
 
@@ -62,6 +62,96 @@ function authedMock() {
 describe('POST /api/buddy/dream-funds', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('GET supabase error → 500 不假成功 (Round 11 API-3 锚)', async () => {
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      ...authedMock(),
+      supabase: {
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              order: vi.fn(() => ({
+                limit: vi.fn(async () => ({ data: null, error: { message: 'rls denied' } })),
+              })),
+            })),
+          })),
+        })),
+      },
+    } as never);
+    const res = await GET(new NextRequest('http://localhost/api/buddy/dream-funds'));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to load dream funds. Please refresh.');
+    expect(JSON.stringify(body)).not.toContain('rls denied');
+  });
+
+  it('POST insert error → 503 (fake success 根因修复锚, Round 7 H7)', async () => {
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      ...authedMock(),
+      supabase: {
+        from: vi.fn(() => ({
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+              order: vi.fn(() => ({ data: [], error: null })),
+            })),
+          })),
+          insert: vi.fn(() => ({
+            select: vi.fn(() => ({
+              maybeSingle: vi.fn(async () => ({ data: null, error: { message: 'table missing' } })),
+            })),
+          })),
+        })),
+      },
+    } as never);
+    const res = await POST(makeRequest({ name: 'Test', target: 1000 }));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to create dream fund. Please try again.');
+    expect(JSON.stringify(body)).not.toContain('table missing');
+  });
+
+  it('PATCH update error → 500 + 错误不外泄', async () => {
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      ...authedMock(),
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'dream_funds') {
+            let call = 0;
+            return {
+              select: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    maybeSingle: vi.fn(async () => {
+                      call += 1;
+                      // 第 1 次: existing 查询 (current, target); 第 2 次: update 后 select
+                      return call === 1
+                        ? { data: { current: 500, target: 1000 }, error: null }
+                        : { data: null, error: { message: 'write failed' } };
+                    }),
+                  })),
+                })),
+              })),
+              update: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn(() => ({
+                      maybeSingle: vi.fn(async () => ({ data: null, error: { message: 'write failed' } })),
+                    })),
+                  })),
+                })),
+              })),
+            };
+          }
+          return {};
+        }),
+      },
+    } as never);
+    const res = await PATCH(makeRequest({ fund_id: 'df-test', target: 2000 }, 'PATCH'));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(JSON.stringify(body)).not.toContain('write failed');
   });
 
   it('returns 401 when not authenticated', async () => {
