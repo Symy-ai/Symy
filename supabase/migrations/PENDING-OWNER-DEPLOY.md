@@ -15,9 +15,11 @@
 - **为什么**：收件箱高频查询（每次进 email 面）同模式全表扫。
 - **影响/回滚**：同 145（索引名 `idx_email_receipts_user_status_received`）。
 
-### 148_rls_policy_guard.sql
-- **目的**：DB 级守卫——任何 UPDATE 策略缺 `WITH CHECK` 时部署直接失败（铁律「UPDATE必带WITH CHECK」的机器锁）
-- **为什么**：RLS 审计确认当前零违规；此守卫防未来 migration 引入违规策略。
+### 148_rls_policy_guard.sql（2026-10-11 更新）
+- **目的**：①backfill 修复 5 处 UPDATE policy 缺 WITH CHECK（10-01 审计漏检勘误，见 doc/rls-audit-findings.md）②DB 级守卫——任何 UPDATE 策略缺 `WITH CHECK` 时部署直接失败
+- **为什么**：USING-only UPDATE policy = 用户可改 user_id 转移行所有权（提权模式）。守卫已扩 storage schema。
+- **影响**：`ALTER POLICY ... WITH CHECK` 五条（幂等语义同 CREATE，policy 已存在）+ DO 守卫块。若线上 policy 名与本文件不一致会报错——报错即说明线上结构漂移，须先核对。
+- **回滚**：`ALTER POLICY ... WITH CHECK` 无独立回滚（可 `ALTER POLICY ... WITH CHECK (true)` 放开，不建议）。
 - **影响**：无 DDL 变更（只读 pg_policies 的 DO 块断言），零风险。
 - **回滚**：不需要（无状态变更）。
 
