@@ -34,4 +34,5 @@ WHERE description LIKE '%→ ?%'
 -- 验证: 查询剩余仍含 "?" 的行 (应该为 0 或仅剩无 new_vitality 的行)
 -- SELECT count(*) FROM public.health_events WHERE description LIKE '%→ ?%';
 
-COMMENT ON MIGRATION '090_fix_p0_2_health_event_descriptions' IS 'P0-2 根因修复: 用 new_vitality 列回填 description 中的 "?" 占位符';
+-- 迁移备注: P0-2 根因修复 — 用 new_vitality 列回填 description 中的 "?" 占位符
+-- (原为非法的 COMMENT ON MIGRATION 语句, PG 无此语法, 本地重放 2026-10-11 R501 发现)

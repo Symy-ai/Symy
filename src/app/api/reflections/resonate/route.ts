@@ -27,7 +27,7 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const { count: todayVoteCount } = await supabase
-      .from('daily_reflection_votes' as never)
+      .from('daily_reflection_votes')
       .select('reflection_id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .gte('created_at', todayStart.toISOString());
@@ -36,7 +36,8 @@ export const POST = withAuth(async ({ supabase, user, request }) => {
       return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
     }
 
-    const { data, error } = await supabase.rpc('increment_resonates' as never, { target } as never);
+    // 🔧 R501: database.types.ts 补 increment_resonates 签名后摘除 as never 强转
+    const { data, error } = await supabase.rpc('increment_resonates', { target });
 
     if (error) {
       console.warn('[Reflections] resonate failed:', error.message);

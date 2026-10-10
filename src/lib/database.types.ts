@@ -1674,6 +1674,17 @@ export interface Database {
         };
         Returns: Json;
       };
+      increment_resonates: {
+        Args: { target: string };
+        Returns: boolean;
+      };
+      apply_deposit_batch: {
+        Args: {
+          p_funds: Database["public"]["CompositeTypes"]["deposit_fund_item"][];
+          p_user_id: string;
+        };
+        Returns: Json;
+      };
       mark_proactive_message_read: {
         Args: {
           p_user_id?: string;
@@ -1733,6 +1744,12 @@ export interface Database {
       };
     };
     Enums: Record<string, never>;
-    CompositeTypes: {};
+    CompositeTypes: {
+      deposit_fund_item: {
+        fund_id: string;
+        amount: number;
+        token_delta: number;
+      };
+    };
   };
 }
