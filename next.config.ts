@@ -20,38 +20,6 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
   reactStrictMode: true,
-  // 🔐 v14-G 安全头 (2026-10-11 R480): CSP 以 Report-Only 先行观察一周再转强制;
-  // 其余硬头立即生效。Vercel 平台已自动给 HSTS, 此处不重复。
-  // eslint-disable-next-line require-await -- Next.js headers() API 要求 async 签名
-  async headers() {
-    const csp = [
-      "default-src 'self'",
-      // Next.js 内联引导脚本 + styled-jsx 需要 unsafe-inline (无 nonce 基建)
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us.i.posthog.com https://*.posthog.com https://browser.sentry-cdn.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https://*.supabase.co",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://*.ingest.sentry.io https://*.sentry.io",
-      // frames: 无第三方嵌入需求
-      "frame-ancestors 'none'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "upgrade-insecure-requests",
-    ].join('; ');
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'Content-Security-Policy-Report-Only', value: csp },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
-        ],
-      },
-    ];
-  },
   // 🔧 头像压缩 fix: sharp 有 native binary, 必须设为 serverExternalPackages
   serverExternalPackages: ['sharp'],
   // 🔧 2026-07-15 (ARCH-11 #22): next/image for avatar + butterfly illustrations
