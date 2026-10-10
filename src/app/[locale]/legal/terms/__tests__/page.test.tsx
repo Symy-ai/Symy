@@ -41,4 +41,31 @@ describe('TermsPage 渲染', () => {
     const html = renderToString(await TermsPage({ params: Promise.resolve({ locale: 'en' }) } as never));
     expect(html).toContain('Not Financial, Legal, or Medical Advice');
   });
+
+  it('全 16 节标题完整性扫描 (zh)', async () => {
+    const html = renderToString(await TermsPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    const sections = ['1. 条款的接受', '2. 服务说明', '3. 非财务、法律或医疗建议', '4. 用户账户与资格', '5. 用户数据与隐私', '6. 可接受的使用', '7. AI 生成的内容', '8. 邮件监控（可选功能）', '9. 高级订阅（推出时）', '10. 知识产权', '11. 责任限制', '12. 赔偿', '13. 账户终止', '14. 条款的变更', '15. 适用法律与争议', '16. 联系我们'];
+    for (const sec of sections) expect(html).toContain(sec);
+  });
+
+  it('§8 邮件监控: 可选+加密+不出售+可断开 (数据功能红线)', async () => {
+    const html = renderToString(await TermsPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('如果您选择连接邮箱账户'); // 可选
+    expect(html).toContain('加密'); // 传输+静态加密
+    expect(html).toContain('不会阅读与购物无关的邮件'); // 范围限定
+    expect(html).toContain('也不会出售或与第三方分享邮件内容'); // 不出售
+    expect(html).toContain('随时在设置中断开'); // 可撤销
+  });
+
+  it('§9 Premium 防超卖: 「推出时」限定+免费层保留', async () => {
+    const html = renderToString(await TermsPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('高级订阅（推出时）'); // 未上线不承诺
+    expect(html).toContain('免费层级的功能仍可免费使用'); // 免费层保留
+  });
+
+  it('§7 AI 生成内容免责在位', async () => {
+    const html = renderToString(await TermsPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('7. AI 生成的内容');
+    expect(html).toContain('不保证 AI 生成内容的准确性'); // AI 内容免责核心语
+  });
 });
