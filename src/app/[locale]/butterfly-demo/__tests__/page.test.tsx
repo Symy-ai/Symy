@@ -83,4 +83,31 @@ describe('ButterflyDemoPage', () => {
       title: '我的标题',
     })));
   });
+
+  it('isGenerating 防重入 → 生成中所有按钮 disabled (double-click 守卫)', async () => {
+    const pending: Array<(v: { success: boolean; error?: string }) => void> = [];
+    M.gen.mockImplementationOnce(() => new Promise((resolve) => { pending.push(resolve); }));
+    render(<ButterflyDemoPage />);
+    const presetBtns = await waitFor(() => screen.getAllByRole('button').filter((b) => /presetSceneTitles/.test(b.textContent ?? '') || /🌱|🌑|🎰|⚖️/.test(b.textContent ?? '')));
+    const preset = presetBtns[0] as HTMLButtonElement;
+    const genBtn = screen.getAllByRole('button').find((b) => /customGenerate|generate/i.test(b.textContent ?? '')) as HTMLButtonElement;
+    fireEvent.click(preset);
+    // 生成挂起中: 按钮双 disabled
+    await waitFor(() => expect(preset.disabled).toBe(true));
+    expect(genBtn.disabled).toBe(true);
+    pending[0]?.({ success: false, error: 'x' });
+    // 释放后恢复
+    await waitFor(() => expect(genBtn.disabled).toBe(false));
+  });
+
+  it('成功生成 → 图片置顶插入 (最新在前) + 选中', async () => {
+    M.gen.mockResolvedValueOnce({ success: true, imageUrl: 'https://cdn/first.png', prompt: 'p1', imageBase64: '' });
+    M.gen.mockResolvedValueOnce({ success: true, imageUrl: 'https://cdn/second.png', prompt: 'p2', imageBase64: '' });
+    render(<ButterflyDemoPage />);
+    const presetBtns = await waitFor(() => screen.getAllByRole('button').filter((b) => /presetSceneTitles/.test(b.textContent ?? '') || /🌱|🌑|🎰|⚖️/.test(b.textContent ?? '')));
+    fireEvent.click(presetBtns[0]);
+    await waitFor(() => expect(document.querySelector('img')?.getAttribute('src')).toContain('first.png'));
+    fireEvent.click(presetBtns[0]);
+    await waitFor(() => expect(document.querySelector('img')?.getAttribute('src')).toContain('second.png'));
+  });
 });
