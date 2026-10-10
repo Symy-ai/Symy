@@ -2,6 +2,8 @@ import { defineConfig } from 'vitest/config';
 import { resolve } from 'path';
 
 export default defineConfig({
+  // 🔧 R399: vitest 环境不装 tailwind PostCSS 插件链 — 内联空 postcss 配置替代 postcss.config.mjs (仅测 JS 行为, 样式不测)
+  css: { postcss: { plugins: [] } },
   test: {
     globals: true,
     environment: 'node',
@@ -26,6 +28,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      // 🔧 R399: vitest 环境无 tailwind PostCSS 插件 — css import 打到空 stub (测 viewport/子树即可, 样式内容不测)
+      '\.css$': resolve(__dirname, 'src/test/style-stub.css'),
     },
   },
 });
