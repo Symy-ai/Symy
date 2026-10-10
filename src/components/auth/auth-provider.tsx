@@ -317,6 +317,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       //   需求: PM3-P1-3 验收标准 "Sign out 后跳转 login 页"
       if (typeof window !== 'undefined') {
         // sign-out 整页刷新是刻意语义: 清空全部 client 态 (Supabase session/cache)
+          // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 整页刷新清空 client 态 (刻意语义)
           window.location.href = '/auth/login?from=signout';
       }
     }

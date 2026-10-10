@@ -30,6 +30,7 @@ export function DeleteAccountButton({ isDemo, t }: DeleteAccountButtonProps) {
     try {
       await apiFetchVoid('/api/user/delete-account', { method: 'POST' });
       // 删除账号后整页刷新: 清空全部已删账号的 client 态 (刻意语义)
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- 删账后整页刷新清 client 态 (刻意语义)
       window.location.href = '/';
     } catch (err) {
       // safe to ignore: shows alert to user; error is logged by apiFetchVoid
