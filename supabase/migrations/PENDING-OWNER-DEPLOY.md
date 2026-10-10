@@ -15,6 +15,12 @@
 - **为什么**：收件箱高频查询（每次进 email 面）同模式全表扫。
 - **影响/回滚**：同 145（索引名 `idx_email_receipts_user_status_received`）。
 
+### 149_increment_resonates_search_path.sql（2026-10-11 R477，v13-C 产出）
+- **目的**：`increment_resonates` (136) SECURITY DEFINER 补 `SET search_path = ''`（CVE-2024-7348 防御）
+- **为什么**：无 search_path 的 SECURITY DEFINER 函数内非限定引用可被恶意 schema 劫持。v13-C 审计确认这是唯一漏网（其余 RPC 终态全带）。
+- **影响**：函数体与 136 逐行相同仅加安全设置；`REVOKE ... FROM anon` 一并补上（136 只 GRANT authenticated 未显式 REVOKE anon）。幂等。
+- **回滚**：无独立回滚（逻辑不变仅加固）。
+
 ### 148_rls_policy_guard.sql（2026-10-11 更新）
 - **目的**：①backfill 修复 4 处 UPDATE policy 缺 WITH CHECK（10-01 审计漏检勘误，见 doc/rls-audit-findings.md；avatars 已由 114 修复不在集内）②DB 级守卫——任何 UPDATE 策略缺 `WITH CHECK` 时部署直接失败
 - **为什么**：USING-only UPDATE policy = 用户可改 user_id 转移行所有权（提权模式）。守卫已扩 storage schema。
