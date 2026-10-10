@@ -84,4 +84,26 @@ describe('GET /api/invite/public-stats', () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ found: false });
   });
+
+  it('guardDays 向下取整 + freedomHours 走 moneyToHours 换算', async () => {
+    profileEq.mockReturnValue({ maybeSingle: maybeSingle.mockResolvedValueOnce({ data: { id: 'u1', display_name: 'Bo' }, error: null }) });
+    buddyStateEq.mockReturnValue({ maybeSingle: buddyStateMaybeSingle.mockResolvedValueOnce({ data: { streak: 9.81, total_saved: 250, tokens: 1 }, error: null }) });
+    challengeSelect.mockImplementation(() => ({ eq: challengeEq, count: 5, error: null }));
+    challengeEq.mockImplementation(() => ({ eq: vi.fn(() => ({ count: 5, error: null })) }));
+
+    const response = await GET(request());
+    const body = await response.json();
+    expect(body.guardDays).toBe(9); // 9.81 → floor 9
+    expect(body.freedomHours).toBe(10); // 250 / 25 (DEFAULT_HOURLY_RATE) = 10
+  });
+
+  it('buddy_state 查询失败 → 统一 notFound (防枚举, 不泄露内部错误)', async () => {
+    profileEq.mockReturnValue({ maybeSingle: maybeSingle.mockResolvedValueOnce({ data: { id: 'u1', display_name: 'Cy' }, error: null }) });
+    buddyStateEq.mockReturnValue({ maybeSingle: buddyStateMaybeSingle.mockResolvedValueOnce({ data: null, error: { message: 'rls' } }) });
+    challengeSelect.mockImplementation(() => ({ eq: challengeEq, count: 3, error: null }));
+    challengeEq.mockImplementation(() => ({ eq: vi.fn(() => ({ count: 3, error: null })) }));
+
+    const response = await GET(request());
+    await expect(response.json()).resolves.toEqual({ found: false }); // 内部错误与 unknown ref 不可区分
+  });
 });
