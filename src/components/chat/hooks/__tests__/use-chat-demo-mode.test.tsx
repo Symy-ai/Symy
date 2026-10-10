@@ -64,6 +64,35 @@ describe('useChatDemoMode', () => {
     const secondUpdater = setMessagesSync.mock.calls[1][0];
     expect(apply(secondUpdater, firstHistory)).toBe(firstHistory);
   });
+
+  it('demo→auth 过渡: isDemo true→false 清空全部消息 (BUG-40/66 跨用户隔离锚)', () => {
+    const setMessagesSync = vi.fn();
+    const initial = makeArgs('en', setMessagesSync);
+    const { rerender } = renderHook(({ args }) => useChatDemoMode(args), { initialProps: { args: initial.args } });
+
+    // demo 中已有消息 (含 user-/ai- 前缀非 demo-)
+    const authArgs = { ...makeArgs('en', setMessagesSync).args, isDemo: false, messages: [{ id: 'user-1', role: 'user', content: 'x', timestamp: new Date() }] as never };
+    rerender({ args: authArgs });
+
+    const clearCall = setMessagesSync.mock.calls.find((c) => Array.isArray(c[0]) && (c[0] as ChatMessage[]).length === 0);
+    expect(clearCall).toBeTruthy(); // setMessagesSync([]) 全清
+  });
+
+  it('返回契约: refs 三件 + DEMO_FREE_MESSAGES=3', () => {
+    const { args } = makeArgs('en');
+    const { result } = renderHook(() => useChatDemoMode(args));
+    expect(result.current.demoReplyTimerRef).toHaveProperty('current');
+    expect(result.current.demoAuthTimerRef).toHaveProperty('current');
+    expect(result.current.demoMsgCountRef).toHaveProperty('current', 0);
+    expect(result.current.DEMO_FREE_MESSAGES).toBe(3);
+  });
+
+  it('auth 态 (非 demo): 不预填充不清空', () => {
+    const setMessagesSync = vi.fn();
+    const { args } = makeArgs('en', setMessagesSync);
+    renderHook(() => useChatDemoMode({ ...args, isDemo: false }));
+    expect(setMessagesSync).not.toHaveBeenCalled();
+  });
 });
 
 function apply(
