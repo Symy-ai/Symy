@@ -29,7 +29,6 @@ import {
   LogOut,
   Menu,
   ExternalLink,
-  Github,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
@@ -213,7 +212,7 @@ function AdminShell({ children }: { children: ReactNode }) {
             </Button>
             <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
               <a href="https://github.com/Symy-ai/WeAreAllMe" target="_blank" rel="noreferrer">
-                <Github className="mr-1.5 h-3.5 w-3.5" />
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 <span className="hidden sm:inline">GitHub</span>
               </a>
             </Button>
