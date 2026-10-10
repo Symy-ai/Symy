@@ -79,4 +79,36 @@ describe('ForgotPasswordPage', () => {
     // 回到表单 (若有 back 链接则模拟; 无则直接验证 cooldown 状态挡住重放)
     expect(M.resetPasswordForEmail).toHaveBeenCalledTimes(1); // 冷却期无新调用
   });
+
+  it('Back to sign in 链接: 输入 email 后带 ?email= 透传 (login 联动)', () => {
+    render(<ForgotPasswordPage />);
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'back@x.com' } });
+    const back = screen.getByText('Back to sign in').closest('a');
+    expect(back?.getAttribute('href')).toBe('/zh/auth/login?email=back%40x.com');
+  });
+
+  it('成功 → 换邮箱回到表单 → Wait 60s 冷却态 + 倒计时逐秒递减', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      render(<ForgotPasswordPage />);
+      fireEvent.change(screen.getByRole('textbox'), { target: { value: 'cd@x.com' } });
+      fireEvent.submit(screen.getByRole('button').closest('form') as HTMLFormElement);
+      await vi.waitFor(() => expect(screen.getByText(/check your inbox/i)).toBeTruthy());
+      // 换邮箱 → 回表单, 冷却仍在
+      fireEvent.click(screen.getByText('Use a different email'));
+      const btn = await vi.waitFor(() => {
+        const b = screen.getByRole('button', { name: /Wait 60s/ });
+        expect((b as HTMLButtonElement).disabled).toBe(true);
+        return b as HTMLButtonElement;
+      });
+      // 推进 2s → 倒计时递减
+      await vi.advanceTimersByTimeAsync(2100);
+      await vi.waitFor(() => expect(btn.textContent).toMatch(/Wait 5[78]s/));
+      // 冷却内提交 → 不发新请求
+      fireEvent.submit(btn.closest('form') as HTMLFormElement);
+      expect(M.resetPasswordForEmail).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
