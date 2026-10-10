@@ -22,6 +22,9 @@ vi.mock('@/lib/admin-audit', () => ({
 const profileMock = vi.fn();
 const countMock = vi.fn(); // (table) => {count,error}
 const buddyMock = vi.fn();
+const deleteUserMock = vi.fn();
+const storageListMock = vi.fn();
+const storageRemoveMock = vi.fn();
 vi.mock('@/lib/supabase-admin', () => ({
   createAdminClient: () => ({
     supabase: {
@@ -39,12 +42,19 @@ vi.mock('@/lib/supabase-admin', () => ({
           throw new Error('unexpected ' + t);
         },
       }),
+      auth: { admin: { deleteUser: (id: string) => deleteUserMock(id) } },
+      storage: {
+        from: (_bucket: string) => ({
+          list: () => storageListMock(),
+          remove: (paths: string[]) => storageRemoveMock(paths),
+        }),
+      },
     },
     error: null,
   }),
 }));
 
-import { GET } from '../route';
+import { GET, DELETE } from '../route';
 
 function req(id: string) {
   return new NextRequest(`http://localhost/api/admin/users/${id}`);
@@ -101,5 +111,38 @@ describe('GET /api/admin/users/[id]', () => {
     profileMock.mockResolvedValue({ data: null, error: { message: 'boom' } });
     const res = await GET(req(UUID), ctx(UUID));
     expect(res.status).toBe(500);
+  });
+
+  describe('DELETE /api/admin/users/[id] — GDPR 删除链', () => {
+    beforeEach(() => {
+      deleteUserMock.mockResolvedValue({ error: null });
+      storageListMock.mockResolvedValue({ data: [], error: null });
+      storageRemoveMock.mockResolvedValue({ data: [], error: null });
+    });
+
+    it('deleteUser 失败 → 500 不外泄 message', async () => {
+      deleteUserMock.mockResolvedValue({ error: { message: 'auth admin 500' } });
+      const res = await DELETE(req(UUID), ctx(UUID));
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body.error).toBe('Failed to delete user');
+      expect(JSON.stringify(body)).not.toContain('auth admin 500');
+    });
+
+    it('成功 → 200 + id 回显 (级联由 DB ON DELETE CASCADE 保证)', async () => {
+      const res = await DELETE(req(UUID), ctx(UUID));
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.success).toBe(true);
+      expect(body.id).toBe(UUID);
+      expect(deleteUserMock).toHaveBeenCalledWith(UUID);
+    });
+
+    it('avatar 清理失败 → non-blocking 继续 (仍 200)', async () => {
+      storageListMock.mockRejectedValue(new Error('storage down'));
+      const res = await DELETE(req(UUID), ctx(UUID));
+      expect(res.status).toBe(200);
+      expect(deleteUserMock).toHaveBeenCalledWith(UUID);
+    });
   });
 });
