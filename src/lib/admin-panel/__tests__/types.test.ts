@@ -46,4 +46,51 @@ describe('admin-panel types 第十六用', () => {
     expect(overview.agents).toHaveLength(1);
     expect(overview.poolStatus).toBeNull(); // 容器未起时 null 态合法
   });
+
+  it('LettaOverview: agentCount 与 mcpServers 契约', () => {
+    const o: import('../types').LettaOverview = {
+      agents: [{ id: 'a1', name: 'n', model: 'm' }],
+      agentCount: 1,
+      mcpServers: [{ id: 's1', name: 'srv', server_url: 'http://x', server_type: 'stdio' }],
+    };
+    expect(o.agentCount).toBe(o.agents.length);
+    expect(o.mcpServers[0].server_url).toMatch(/^http/);
+  });
+
+  it('AgentPoolStatus: 必键 available/poolSize + 索引签名容忍额外键', () => {
+    const pool = {
+      available: 3,
+      poolSize: 5,
+      customExtra: 'x',
+    } satisfies import('../types').AgentPoolStatus;
+    expect(pool.poolSize - pool.available).toBe(2);
+    expect((pool as Record<string, unknown>).customExtra).toBe('x');
+  });
+
+  it('UserBatchAction: action 白名单四值 + set_plan 带 plan', () => {
+    const ban: import('../types').UserBatchAction = { action: 'ban', userIds: ['u1'], bannedUntil: '2030-01-01', reason: 'spam' };
+    const plan: import('../types').UserBatchAction = { action: 'set_plan', userIds: ['u2'], plan: 'premium' };
+    const unban: import('../types').UserBatchAction = { action: 'unban', userIds: ['u3'] };
+    const reset: import('../types').UserBatchAction = { action: 'reset_onboarding', userIds: ['u4'] };
+    expect([ban.action, plan.action, unban.action, reset.action]).toEqual(['ban', 'set_plan', 'unban', 'reset_onboarding']);
+    expect(plan.plan).toBe('premium');
+    expect(ban.reason).toBe('spam');
+  });
+
+  it('AuditLog: P0 审计契约 (actor/route/success/metadata)', () => {
+    const log: import('../types').AuditLog = {
+      id: 1,
+      created_at: '2026-10-01T00:00:00Z',
+      route: '/api/admin/users',
+      method: 'POST',
+      actor: 'admin',
+      action: 'ban',
+      success: true,
+      status_code: 200,
+      metadata: { userId: 'u1' },
+    };
+    expect(log.route).toContain('/api/admin/');
+    expect(typeof log.success).toBe('boolean');
+    expect(log.metadata).toBeTypeOf('object');
+  });
 });
