@@ -18,9 +18,11 @@ vi.mock('@/lib/distributed-lock', () => ({
   acquireLock: (...a: unknown[]) => acquireLockMock(...a),
   releaseLock: (...a: unknown[]) => releaseLockMock(...a),
 }));
+const detectMock = vi.hoisted(() => vi.fn().mockReturnValue({ host: 'imap.qq.com', port: 993, secure: true, name: 'QQ Mail' }));
+const validEmailMock = vi.hoisted(() => vi.fn().mockReturnValue(true));
 vi.mock('@/lib/email/imap-config', () => ({
-  detectIMAPProvider: vi.fn().mockReturnValue({ host: 'imap.qq.com', port: 993, secure: true, name: 'QQ Mail' }),
-  isValidEmail: vi.fn().mockReturnValue(true),
+  detectIMAPProvider: detectMock,
+  isValidEmail: validEmailMock,
 }));
 vi.mock('@/lib/email/receipt-parser', () => ({
   parseReceipt: vi.fn(),
@@ -110,5 +112,29 @@ describe('POST /api/email/imap-connect — 入口契约', () => {
     const res = await POST(ctx({ email: 'x@qq.com', authCode: 'pwd' }));
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(releaseLockMock).toHaveBeenCalled();
+  });
+
+  it('非法 email 格式 → 400 Invalid email address', async () => {
+    validEmailMock.mockReturnValueOnce(false);
+    const res = await POST(ctx({ email: 'not-an-email', authCode: 'pwd' }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('Invalid email address');
+  });
+
+  it('不支持的 provider → 400 白名单明示 (163/126/qq/gmail/outlook)', async () => {
+    detectMock.mockReturnValueOnce(null);
+    const res = await POST(ctx({ email: 'x@exotic.mail', authCode: 'pwd' }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toContain('Unsupported email provider');
+  });
+
+  it('连接保存失败 → 500 不泄露 Supabase details (BUG-289 修复锚)', async () => {
+    // 深链 Proxy insert().select().maybeSingle() → data:null → 500
+    const res = await POST(ctx({ email: 'x@qq.com', authCode: 'pwd' }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to save email connection');
+    // BUG-289: 不带 details 字段
+    expect('details' in body).toBe(false);
   });
 });
