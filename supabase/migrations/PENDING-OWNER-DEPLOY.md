@@ -65,6 +65,10 @@ EXPLAIN ANALYZE SELECT * FROM active_challenges WHERE user_id = '<某uuid>' AND 
 - **注意**：payload.config.ts `push: false`——Payload 不会自动建表。配好 DATABASE_URL 后首启须跑 `npx payload migrate:create` 系列或 `push: true` 一次性建 payload 表系（users/posts 两 collection 的表在 DB 里不存在）。
 
 ### 其余 11 个真空值（2026-10-11 R507 全扫分类，owner 知悉即可）
+
+> ⚠️ R508 行为探测勘误：`vercel env pull` 的 `=""` 输出对 sensitive 变量不可全信。
+> 线上行为实测：ADMIN_API_KEY **有值**（admin API 返回 "Invalid key" 而非 "not configured"）。
+> 以下分类以「代码语义」为准；线上是否有值以行为探测为准。
 - **非缺口（代码 fallback 语义吸收）×6**：ADMIN_ALLOWED_ACTORS（白名单空=actor 可选+warn）、EMBEDDING_API_BASE/API_KEY/BASE_URL/MODEL（admin-settings required:false → degraded 状态显示）、AGNES_API_KEY（EMBEDDING_API_KEY 的 alternate 链）、BUTTERFLY_ILLUSTRATION_ENABLED + COMMUNITY_STATS_MULTIPLIER（feature-flags 有默认值）。
 - **fail-closed 功能锁 ×3（线上 admin/cron 面锁死，非漏洞）**：ADMIN_API_KEY 空=verifyAdminAuth 恒拒+error log（admin API 全锁）；ADMIN_EMAILS 空=邮箱白名单恒空（create-weekly-challenges-auth 恒拒）；CRON_SECRET 空=cron 路由恒拒。若需要启用对应功能面，在 Vercel env 补值即可。
 - DATABASE_URL 见上节（Payload 面）。
