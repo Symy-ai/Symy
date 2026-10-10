@@ -14,7 +14,7 @@ vi.mock('@/lib/logger', () => ({
 const logUnauthorizedMock = vi.fn();
 vi.mock('@/lib/admin-audit', () => ({
   logUnauthorizedAdminAttempt: (...a: unknown[]) => logUnauthorizedMock(...a),
-  withAdminAudit: (h: unknown) => h,
+  withAdminAudit: (_req: unknown, _auth: unknown, h: () => unknown) => h(),
 }));
 vi.mock('@/lib/embed-backfill', () => ({
   backfillImpulseEvents: vi.fn(),
@@ -24,7 +24,20 @@ vi.mock('@/lib/embed-backfill', () => ({
 
 const countMock = vi.fn(); // head+count 链
 const rowsMock = vi.fn(); // user_stats 行查询
+const profilesRowsMock = vi.fn(); // backfill_all profiles 链
 const adminFromMock = vi.fn((t: string) => {
+  if (t === 'profiles') {
+    return {
+      select: () => ({
+        order: () => ({
+          limit: () => profilesRowsMock(),
+        }),
+        eq: () => ({
+          maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        }),
+      }),
+    };
+  }
   expect(t).toBe('user_embeddings');
   return {
     select: (cols: string, opts?: Record<string, unknown>) => {
@@ -42,7 +55,8 @@ vi.mock('@/lib/supabase-admin', () => ({
   createAdminClient: () => ({ supabase: { from: adminFromMock }, error: null }),
 }));
 
-import { GET } from '../route';
+import { GET, POST } from '../route';
+import { backfillImpulseEvents, backfillEmailReceipts, backfillChatMessages } from '@/lib/embed-backfill';
 
 function req(q = '') {
   return new NextRequest('http://localhost/api/admin/embeddings' + (q ? '?' + q : ''));
@@ -91,6 +105,41 @@ describe('GET /api/admin/embeddings', () => {
       total: 3,
       by_source_type: { impulse_event: 2, chat_message: 1 },
     });
+  });
+
+  it('POST backfill_all: 无用户 → 200 + No users + total 0', async () => {
+    profilesRowsMock.mockResolvedValue({ data: [], error: null });
+    const res = await POST(req('action=backfill_all'));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.total).toBe(0);
+    expect(body.message).toBe('No users to backfill');
+  });
+
+  it('POST backfill_all: 批处理 3 用户 → results 3 + backfill 三链全调 + nextCursor=null (不满批)', async () => {
+    profilesRowsMock.mockResolvedValue({
+      data: [{ id: 'u1' }, { id: 'u2' }, { id: 'u3' }],
+      error: null,
+    });
+    const res = await POST(req('action=backfill_all'));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.total_users).toBe(3);
+    expect(body.results).toHaveLength(3);
+    expect(body.hasMore).toBe(false);
+    expect(body.nextCursor).toBeNull();
+    expect(backfillImpulseEvents).toHaveBeenCalledTimes(3);
+    expect(backfillEmailReceipts).toHaveBeenCalledTimes(3);
+    expect(backfillChatMessages).toHaveBeenCalledTimes(3);
+  });
+
+  it('POST backfill_all: profiles 查询失败 → 500', async () => {
+    profilesRowsMock.mockResolvedValue({ data: null, error: { message: 'timeout' } });
+    const res = await POST(req('action=backfill_all'));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Failed to fetch profiles');
+    expect(JSON.stringify(body)).not.toContain('timeout');
   });
 
   it('count 查询失败 → 500', async () => {
