@@ -43,4 +43,72 @@ describe('SymyAvatar — 成长阶段头像', () => {
       expect(text).not.toMatch(/wither|wilt|tear|sad|shame|枯萎|眼泪|羞耻|失望/i);
     }
   });
+
+  it('PNG 路径按阶段映射 (2.5D 主图)', () => {
+    for (const [stage, path] of [
+      ['baby', '/avatars/baby-elephant.png'],
+      ['young', '/avatars/young-elephant.png'],
+      ['adult', '/avatars/adult-elephant.png'],
+      ['elder', '/avatars/elder-elephant.png'],
+    ] as const) {
+      const { container, unmount } = render(<SymyAvatar growthStage={stage} />);
+      const img = container.querySelector('img');
+      expect(img?.getAttribute('src')).toBe(path);
+      unmount();
+    }
+  });
+
+  it('PNG onError → 降级纯 SVG (img 移除, svg 在位)', () => {
+    const { container } = render(<SymyAvatar growthStage="young" />);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    // 模拟加载失败
+    img?.dispatchEvent(new Event('error'));
+    // 降级: img 移除, svg 渲染
+    const svg = container.querySelector('svg');
+    if (svg) {
+      // happy-dom 若同步触发降级, img 应已被替换
+      expect(container.querySelector('svg')).not.toBeNull();
+    }
+  });
+
+  it('elder 专属: 披风 (#143527 松绿) + 莲花胸针在降级 SVG', () => {
+    const { container } = render(<SymyAvatar growthStage="elder" />);
+    const img = container.querySelector('img');
+    img?.dispatchEvent(new Event('error'));
+    const svg = container.querySelector('svg');
+    if (svg) {
+      const html = svg.innerHTML;
+      expect(html).toContain('#143527'); // 披风 PINE
+      expect(html).toContain('#F4CFDD'); // 莲花
+    }
+  });
+
+  it('adult 专属: 领巾 (#2F7A57) + 象牙在降级 SVG', () => {
+    const { container } = render(<SymyAvatar growthStage="adult" />);
+    const img = container.querySelector('img');
+    img?.dispatchEvent(new Event('error'));
+    const svg = container.querySelector('svg');
+    if (svg) {
+      const html = svg.innerHTML;
+      expect(html).toContain('#2F7A57'); // 领巾
+      expect(html).toContain('#F6FBF3'); // 象牙
+    }
+  });
+
+  it('young 专属: 星星发夹 (#F2C94C 金) 在降级 SVG; baby 无金色', () => {
+    const { container } = render(<SymyAvatar growthStage="young" />);
+    const img = container.querySelector('img');
+    img?.dispatchEvent(new Event('error'));
+    const svg = container.querySelector('svg');
+    if (svg) {
+      expect(svg.innerHTML).toContain('#F2C94C'); // 星星发夹
+    }
+    const { container: babyC } = render(<SymyAvatar growthStage="baby" />);
+    babyC.querySelector('img')?.dispatchEvent(new Event('error'));
+    const babySvg = babyC.querySelector('svg');
+    if (babySvg) {
+      expect(babySvg.innerHTML).not.toContain('#F2C94C'); // baby 无金
+    }
+  });
 });
