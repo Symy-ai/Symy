@@ -83,7 +83,7 @@ Use Node.js 22 (see [`.nvmrc`](.nvmrc)). Fill the required variables in `.env.lo
 npm run test
 ```
 
-The snapshot baseline is 6,925 Vitest tests across 581 files.
+The snapshot baseline is 10,458 Vitest tests across 1,107 files.
 
 ## Contributing
 
