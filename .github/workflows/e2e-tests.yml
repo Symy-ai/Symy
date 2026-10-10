@@ -82,7 +82,9 @@ jobs:
           # 🔧 2026-07-15 (CRITICAL-14 修复): 移除硬编码 fallback 凭据
           #   此前 commit 68a7651a 起邮箱/密码明文在 git 历史中
           #   修复: 必须配置 GitHub secrets E2E_EMAIL/E2E_PASSWORD, 否则 workflow fail-closed
-          E2E_BASE_URL: https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app
+          # 🔧 R512: 旧域名 we-me-mvp 残留清理 (R492 双修的漏网第三处)
+          #   we-me-mvp alias 是同一 Vercel 项目, 功能不测错站但规范统一 symy 域名
+          E2E_BASE_URL: https://symy-git-main-spark-huang-s-projects.vercel.app
         run: npx playwright test --reporter=line
 
       - name: 上传测试报告 artifacts
