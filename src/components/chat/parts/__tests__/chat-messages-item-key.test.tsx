@@ -46,4 +46,49 @@ describe('ChatMessages item identity', () => {
 
     expect(screen.getByTestId('virtuoso').textContent).toBe('stable-message-id');
   });
+
+  it('空数组不炸 (computeItemKey 不被调用)', () => {
+    expect(() =>
+      render(
+        <ChatMessages
+          messages={[]}
+          isLoading={false}
+          isLoadingHistory={false}
+          isLoadingMore={false}
+          hasMore={false}
+          firstItemIndex={100}
+          mcpNotifications={[] as McpNotification[]}
+          virtuosoRef={{ current: null }}
+          onLoadMore={() => {}}
+          onDeleteMessage={() => {}}
+          onSendMessage={() => {}}
+        />,
+      ),
+    ).not.toThrow();
+  });
+
+  it('assistant 角色消息同键直通 (id 唯一性与角色无关)', () => {
+    const message: ChatMessage = {
+      id: 'ai-msg-42',
+      role: 'assistant',
+      content: 'Hi there',
+      timestamp: new Date(),
+    };
+    render(
+      <ChatMessages
+        messages={[message]}
+        isLoading={false}
+        isLoadingHistory={false}
+        isLoadingMore={false}
+        hasMore={false}
+        firstItemIndex={100}
+        mcpNotifications={[] as McpNotification[]}
+        virtuosoRef={{ current: null }}
+        onLoadMore={() => {}}
+        onDeleteMessage={() => {}}
+        onSendMessage={() => {}}
+      />,
+    );
+    expect(screen.getByTestId('virtuoso').textContent).toBe('ai-msg-42');
+  });
 });

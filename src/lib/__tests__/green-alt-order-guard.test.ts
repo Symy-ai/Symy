@@ -32,4 +32,33 @@ describe('green-alt 词表顺序纪律守卫 (子串错配防护)', () => {
     const r = suggestAlternative(query, 'zh');
     expect(r?.id).toBe(expectedId);
   });
+
+});
+
+describe('suggestAlternative 输入与输出契约', () => {
+  it('空/异常输入一律 null (不抛)', () => {
+    expect(suggestAlternative('', 'zh')).toBeNull();
+    expect(suggestAlternative('   ', 'zh')).toBeNull();
+    expect(suggestAlternative(null as never, 'zh')).toBeNull();
+    expect(suggestAlternative(undefined as never, 'zh')).toBeNull();
+  });
+
+  it('en locale → en 文案 (同条目双语出口)', () => {
+    const zh = suggestAlternative('我想买个手机壳', 'zh');
+    const en = suggestAlternative('我想买个手机壳', 'en');
+    expect(zh?.id).toBe('phone_case');
+    expect(en?.id).toBe('phone_case');
+    // en 出口文案与 zh 不同 (双语分轨)
+    if (zh && en) expect(en.message).not.toBe(zh.message); // en 拼接含空格, zh 无
+  });
+
+  it('normalizeQuery: 大小写+多空格归一后命中', () => {
+    // en trigger 小写化匹配 — 大写 query 应命中
+    const r = suggestAlternative('I Want To Buy A PHONE CASE', 'en');
+    expect(r).not.toBeNull();
+  });
+
+  it('未命中品类 → null', () => {
+    expect(suggestAlternative('今天天气真好啊', 'zh')).toBeNull();
+  });
 });
