@@ -19,9 +19,20 @@ vi.mock('@/lib/supabase-api', () => ({
   createAuthenticatedClient: async () => authResult,
 }));
 
-// 深链 supabase 自愈 Proxy (imap-connect 模板)
+// 可控深链 supabase: email_connections 表按 scenario 返回, 其余自愈 Proxy (imap-connect 模板)
+let connectionsPayload: { data: unknown; error: unknown } = { data: [], error: null };
 const proxySupabase = {
-  from: vi.fn(() => {
+  from: vi.fn((table: string) => {
+    if (table === 'email_connections') {
+      const terminal = Promise.resolve(connectionsPayload);
+      const proxy: Record<string, unknown> = new Proxy({}, {
+        get(_t, prop) {
+          if (prop === 'then') return terminal.then.bind(terminal);
+          return () => proxy;
+        },
+      });
+      return proxy;
+    }
     const terminal = Promise.resolve({ data: null, error: null });
     const proxy: Record<string, unknown> = new Proxy({}, {
       get(_t, prop) {
@@ -46,6 +57,7 @@ function req(body: unknown = {}) {
 describe('POST /api/email/resync — 入口契约', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    connectionsPayload = { data: [], error: null };
     acquireLockMock.mockResolvedValue(true);
     authResult = {
       supabase: proxySupabase,
@@ -78,5 +90,37 @@ describe('POST /api/email/resync — 入口契约', () => {
   it('daysBack 越界(500) → zod 400 拒绝 (BUG-114 DoS 防护)', async () => {
     const res = await POST(req({ daysBack: 500 }));
     expect(res.status).toBe(400);
+  });
+
+  it('无 active 连接 → 400 提示先连邮箱 (ARCH Round 11 H5: 200→400)', async () => {
+    connectionsPayload = { data: [], error: null };
+    const res = await POST(req());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('No active email connection');
+  });
+
+  it('OAuth 连接 → 400 指引走 /api/email/scan (resync 只管 IMAP)', async () => {
+    connectionsPayload = { data: [{ id: 'c1', user_id: 'u-1', email_address: 'a@gmail.com', provider: 'google', access_token: 'tok', refresh_token: 'r', token_expiry: null, scopes: null, status: 'active', last_sync_at: null, last_history_id: null }], error: null };
+    const res = await POST(req());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('/api/email/scan');
+  });
+
+  it('IMAP 凭证缺失 → 500 服务端问题 (解密失败非用户错, ARCH Round 11 H5)', async () => {
+    connectionsPayload = { data: [{ id: 'c1', user_id: 'u-1', email_address: null, provider: 'imap_qq', access_token: null, refresh_token: null, token_expiry: null, scopes: null, status: 'active', last_sync_at: null, last_history_id: null }], error: null };
+    const res = await POST(req());
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toContain('credentials incomplete or decryption failed');
+  });
+
+  it('不支持的邮箱 provider → 400 明示 unsupported (detectIMAPProvider 白名单)', async () => {
+    connectionsPayload = { data: [{ id: 'c1', user_id: 'u-1', email_address: 'user@unknown-mail.example', provider: 'imap_unknown', access_token: 'tok', refresh_token: null, token_expiry: null, scopes: null, status: 'active', last_sync_at: null, last_history_id: null }], error: null };
+    const res = await POST(req());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Unsupported email provider');
   });
 });
