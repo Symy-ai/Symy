@@ -46,4 +46,43 @@ describe('FreedomPreview — 三维度实时预览', () => {
     // closing question 由 i18n defaultValue 兜底渲染（mock 直通 key）
     expect(container.textContent).toContain('空气炸锅');
   });
+
+  it('小时格式边界: 250/25=10h 整数显示; 240/25=9.6h 一位小数', () => {
+    const { container: c10 } = render(<FreedomPreview amount={250} />);
+    expect(c10.textContent).toContain('10 小时');
+    const { container: c96 } = render(<FreedomPreview amount={240} />);
+    expect(c96.textContent).toContain('9.6 小时');
+  });
+
+  it('未来值大额走 M 档 ($1M+)', () => {
+    const { container } = render(<FreedomPreview amount={1_000_000} />);
+    // 1M × 3.87 ≈ 3.9M
+    expect(container.textContent).toMatch(/\$3\.9M/);
+  });
+
+  it('基金进度: 第一个未达成基金 remaining/amount → 1/X 分母', () => {
+    const { container } = render(
+      <FreedomPreview
+        amount={100}
+        dreamFunds={[
+          { id: 'f1', name: 'Emergency', emoji: '🚨', current: 1000, target: 1000 }, // 已达成跳过
+          { id: 'f2', name: 'Japan Trip', emoji: '🗾', current: 300, target: 1000 }, // 剩 700 → 1/7
+          { id: 'f3', name: 'Unused', emoji: '💤', current: 0, target: 5000 },
+        ] as never}
+      />,
+    );
+    expect(container.textContent).toContain('Japan Trip');
+    expect(container.textContent).toMatch(/1\s*\/\s*7/);
+  });
+
+  it('role=status aria-live=polite (读屏实时播报)', () => {
+    const { container } = render(<FreedomPreview amount={100} />);
+    const el = container.querySelector('[role="status"]');
+    expect(el?.getAttribute('aria-live')).toBe('polite');
+  });
+
+  it('closing question: 无 itemName → zh 回落「它」', () => {
+    const { container } = render(<FreedomPreview amount={100} />);
+    expect(container.textContent).toContain('你愿意用 4.0 小时 换它吗');
+  });
 });
