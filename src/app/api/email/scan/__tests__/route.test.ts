@@ -1,13 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
-vi.mock('@/lib/with-auth', () => ({
-  withAuth: vi.fn((handler: (ctx: unknown) => unknown) => handler),
-}));
+vi.mock('@/lib/with-auth', () => ({ withAuth: vi.fn((handler: (ctx: unknown) => unknown) => handler) }));
 
+const acquireLockMock = vi.hoisted(() => vi.fn(() => Promise.resolve(true)));
+const releaseLockMock = vi.hoisted(() => vi.fn(() => Promise.resolve()));
 vi.mock('@/lib/distributed-lock', () => ({
-  acquireLock: vi.fn(() => Promise.resolve(true)),
-  releaseLock: vi.fn(() => Promise.resolve()),
+  acquireLock: acquireLockMock,
+  releaseLock: releaseLockMock,
 }));
 
 vi.mock('@/lib/crypto-helpers', () => ({
@@ -101,5 +101,75 @@ describe('POST /api/email/scan', () => {
     expect(updateSpy).toHaveBeenCalledWith(
       expect.objectContaining({ status: 'expired', error_message: 'Token refresh failed' }),
     );
+  });
+
+  it('锁被占 → 429 + 空 receipts + 不触 supabase (180s TTL 防并发双扫)', async () => {
+    acquireLockMock.mockResolvedValueOnce(false);
+    const { supabase } = setupSupabase();
+    const request = new NextRequest('http://localhost/api/email/scan', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+
+    const response = await POST({ user: { id: 'user-1' }, supabase, request });
+    const json = (await response.json()) as { error: string; receipts: unknown[]; scanned: number; newReceipts: number };
+
+    expect(response.status).toBe(429);
+    expect(json.error).toContain('already in progress');
+    expect(json.receipts).toEqual([]);
+    // 锁拒绝路径不走 finally? 走 — releaseLock 仍调用
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it('无 active 连接 → 400 提示先连接 (connError 分支)', async () => {
+    const { supabase } = setupSupabase();
+    // email_connections 查询返回 error
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => builder),
+      update: vi.fn(() => builder),
+      then: (resolve: (v: unknown) => unknown) =>
+        Promise.resolve({ data: null, error: 'conn error' }).then(resolve),
+    };
+    (supabase.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
+      if (table === 'email_connections') return builder;
+      const p = { select: vi.fn(() => p), eq: vi.fn(() => p), maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })) };
+      return p;
+    });
+    const request = new NextRequest('http://localhost/api/email/scan', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+
+    const response = await POST({ user: { id: 'user-1' }, supabase, request });
+    const json = (await response.json()) as { error: string };
+
+    expect(response.status).toBe(400);
+    expect(json.error).toContain('No active email connection');
+  });
+
+  it('daysBack 越界 (0) → 400 Validation failed (zod issues 透传)', async () => {
+    const { supabase } = setupSupabase();
+    const request = new NextRequest('http://localhost/api/email/scan', {
+      method: 'POST',
+      body: JSON.stringify({ daysBack: 0 }),
+    });
+
+    const response = await POST({ user: { id: 'user-1' }, supabase, request });
+    const json = (await response.json()) as { error: string; details: unknown[] };
+
+    expect(response.status).toBe(400);
+    expect(json.error).toBe('Validation failed');
+    expect(json.details.length).toBeGreaterThan(0);
+  });
+
+  it('finally 必 releaseLock (锁不泄漏 — 401 过后锁也释放)', async () => {
+    const { supabase } = setupSupabase();
+    const request = new NextRequest('http://localhost/api/email/scan', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    await POST({ user: { id: 'user-1' }, supabase, request });
+    expect(releaseLockMock).toHaveBeenCalledWith('email-scan:user-1');
   });
 });
