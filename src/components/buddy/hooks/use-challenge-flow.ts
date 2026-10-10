@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { apiFetch, ApiError } from '@/lib/api-client';
 import { useI18n } from '@/i18n/provider';
+import { formatCurrency } from '@/lib/format';
 import { logger } from '@/lib/logger';
 import { useChallengeLimit } from '@/hooks/use-challenge-limit';
 // ChallengeContext 单一 source of truth
@@ -47,11 +48,13 @@ export function useChallengeFlow({ isDemo, userId, onNavigateChat, onToast, puls
 
     //   旧文案: "I want to buy X for $Y. Challenge me!" (工具哲学, 命令 AI)
     //   新文案: "I'm moved by X · $Y · Let me see it" (镜子哲学, 邀请守护)
-    // 🔧 F2 fix: 根据 locale 本地化用户消息 (旧代码硬编码英文)
+    // 🔧 R529 fix: 金额经 formatCurrency 格式化 (locale 感知 $/¥ + 千位分隔),
+    //   旧代码 `$${amount.toFixed(2)}` 硬编码美元符, zh 界面混血;
+    //   且 en/zh 模板缺 {amount} 占位符 = 死亡参数 (开源初始导入带病)
     const mirrorMsg = t('chat.mirrorMessage', {
       defaultValue: `I'm thinking of buying ${trimmedName} — Symy, what's your take?`,
       item: trimmedName,
-      amount: `$${amount.toFixed(2)}`,
+      amount: formatCurrency(amount),
     });
 
     // Demo 模式不调 API，直接用临时 challengeId

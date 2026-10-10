@@ -32,6 +32,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '@/i18n/provider';
 import { apiFetch } from '@/lib/api-client';
+import { formatCurrency } from '@/lib/format';
 import { logger } from '@/lib/logger';
 import { SAVINGS_FUND_TARGET } from '@/lib/buddy-defaults';
 
@@ -354,7 +355,7 @@ export function DepositDialog({ challengeId, savedAmount, fundName, fundEmoji, f
             {/* 🔧 DM-1 fix (final): $ 符号由代码控制 (amount 参数传 `$${amount}`), 不依赖 i18n messages 格式
                旧代码 .replace('{amount}', '$' + ...) 无效 — ICU 插值后 {amount} 已被替换, .replace 不匹配
                新代码: t() 调用时 amount 参数 = `$` + 金额, ICU 插值后直接显示 `$20.00` */}
-            {t('chat.deposit.title', { amount: `$${savedAmount.toFixed(2)}`, defaultValue: `You saw it. $${savedAmount.toFixed(2)} stays.` })}
+            {t('chat.deposit.title', { amount: formatCurrency(savedAmount), defaultValue: `You saw it. ${formatCurrency(savedAmount)} stays.` })}
           </h2>
           <p className="text-xs text-text-tertiary">
             {t('chat.deposit.subtitle', { defaultValue: 'Where does it go?' })}
@@ -374,7 +375,7 @@ export function DepositDialog({ challengeId, savedAmount, fundName, fundEmoji, f
           {loading === 'deposit'
             ? t('chat.deposit.processing', { defaultValue: 'Seeing...' })
             : t('chat.deposit.depositButton', {
-                amount: `$${savedAmount.toFixed(2)}`,
+                amount: formatCurrency(savedAmount),
                 fundName: fundEmoji && fundName ? `${fundEmoji} ${fundName}` : (fundName || t('chat.deposit.yourFund', { defaultValue: 'your fund' })),
                 defaultValue: `✅ {amount} → {fundName}`,
               })

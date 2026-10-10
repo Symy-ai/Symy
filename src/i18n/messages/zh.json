@@ -933,7 +933,7 @@
       "standard": "标准",
       "quickPass": "快速"
     },
-    "mirrorMessage": "我想买个 {item}，Symy，你的建议是什么？",
+    "mirrorMessage": "我想买个 {item}（{amount}），Symy，你的建议是什么？",
     "rewardGoldenTitle": "✨ 金色守护",
     "rewardGoldenSubtitle": "小象为你欢呼——奖励加成！",
     "rewardItemTitle": "额外奖励",

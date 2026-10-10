@@ -25,6 +25,7 @@
 import type { ChatMessage } from '@/components/chat-bubble';
 import type { useI18n } from '@/i18n/provider';
 import type { ActiveChallenge } from './use-challenge-actions';
+import { formatCurrency } from '@/lib/format';
 import { extractProductCards } from '@/lib/product-tool-result';
 // 🔧 A1 移植 (commerce-agents "UI 组件即工具"): 结构化卡片通道的边界复检
 import { parseStructuredCards } from '@/lib/structured-cards';
@@ -302,7 +303,8 @@ export function handleToolEvent(parsed: SseToolEvent, params: HandleToolEventPar
       onToast(
         getElephantPhrase('saw_it', locale, {
           ...elephantGenericVars(locale),
-          ...(savedAmount ? { amount: `$${savedAmount.toFixed(2)}` } : {}),
+          // 🔧 R529: formatCurrency 替代 `$${}` 硬编码 (locale 感知)
+          ...(savedAmount ? { amount: formatCurrency(savedAmount) } : {}),
         }),
         'success'
       );

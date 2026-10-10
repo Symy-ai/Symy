@@ -1497,7 +1497,7 @@
     },
     "lifeMinutes": "{minutes} minutes",
     "lifeHours": "{hours} hours",
-    "mirrorMessage": "I'm thinking of buying {item} — Symy, what's your take?",
+    "mirrorMessage": "I'm thinking of buying {item} for {amount} — Symy, what's your take?",
     "rewardCardSubtitle": "Extra tokens for you.",
     "rewardCardTitle": "🃏 Bonus card",
     "rewardGoldenSubtitle": "Symy cheered — bonus rewards!",
