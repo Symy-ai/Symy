@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ButterflyHistoryList } from '../butterfly-history-list';
 import type { UseButterflyHistoryReturn } from '../../hooks/use-butterfly-history';
@@ -98,5 +98,56 @@ describe('ButterflyHistoryList', () => {
     const h = history({ error: 'boom' } as Partial<UseButterflyHistoryReturn>);
     render(<ButterflyHistoryList history={h} isLight={false} onBack={vi.fn()} onStartNew={vi.fn()} />);
     expect(screen.getByText(/加载失败/)).toBeTruthy();
+  });
+
+  it('N37: 搜索覆盖多字段 — platform/chapter 标题命中, 无结果区分文案', () => {
+    const s1 = session({
+      id: 's-1',
+      decisionDescription: 'Coffee machine',
+      platform: 'taobao',
+      chapters: [{ id: 'c1', title: '第一章：清晨的咖啡香', content: '...', choices: [] } as never],
+      status: 'completed',
+    });
+    const s2 = session({ id: 's-2', decisionDescription: 'Headphones', status: 'completed' });
+    const h = history({ sessions: [s1, s2], total: 2 });
+    render(<ButterflyHistoryList history={h} isLight={false} onBack={vi.fn()} onStartNew={vi.fn()} />);
+
+    // 平台命中
+    const search = screen.getByPlaceholderText('butterfly.historySearchPlaceholder');
+    fireEvent.change(search, { target: { value: 'taobao' } });
+    expect(screen.getByText(/Coffee machine/)).toBeTruthy();
+    expect(screen.queryByText(/Headphones/)).toBeNull();
+
+    // 章节标题命中 (N37)
+    fireEvent.change(search, { target: { value: '咖啡香' } });
+    expect(screen.getByText(/Coffee machine/)).toBeTruthy();
+
+    // 无结果文案 (区别于空历史)
+    fireEvent.change(search, { target: { value: 'zzz-none' } });
+    expect(screen.getByText('没有匹配的故事')).toBeTruthy();
+  });
+
+  it('task4: bookmarked 过滤只显收藏故事 + 计数徽章', () => {
+    const s1 = session({ id: 's-1', decisionDescription: 'Bookmarked one', isBookmarked: true, status: 'completed' });
+    const s2 = session({ id: 's-2', decisionDescription: 'Plain one', status: 'completed' });
+    const h = history({ sessions: [s1, s2], total: 2 });
+    render(<ButterflyHistoryList history={h} isLight={false} onBack={vi.fn()} onStartNew={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Bookmarked'));
+    expect(screen.getByText(/Bookmarked one/)).toBeTruthy();
+    expect(screen.queryByText(/Plain one/)).toBeNull();
+  });
+
+  it('NEW-Y: 删除走两步确认 — 点删除钮先弹确认层, 确认才调 deleteSession', async () => {
+    const deleteSession = vi.fn().mockResolvedValue(true);
+    const s1 = session({ id: 's-del', decisionDescription: 'To be deleted', status: 'completed' });
+    const h = history({ sessions: [s1], total: 1, deleteSession });
+    render(<ButterflyHistoryList history={h} isLight={false} onBack={vi.fn()} onStartNew={vi.fn()} />);
+
+    // 行内删除按钮 (aria-label 锚)
+    fireEvent.click(screen.getByLabelText('delete'));
+    // 确认弹层出现 → 点确认 (butterfly.deleteConfirm 锚) 才调 deleteSession
+    fireEvent.click(screen.getByText('Delete'));
+    await waitFor(() => expect(deleteSession).toHaveBeenCalledWith('s-del'));
   });
 });
