@@ -10,7 +10,7 @@
  * GET  /api/admin/embeddings/test                               — Embedding API 连通测试
  */
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { adminGet, adminPost } from '@/lib/admin-panel/api-client';
 import type { EmbeddingStats } from '@/lib/admin-panel/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,6 +51,11 @@ export default function AdminEmbeddingsPage() {
     setStats(res.ok && res.data ? res.data : null);
     setStatsLoading(false);
   }
+
+  useEffect(() => {
+    loadStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadUserStats(e: FormEvent) {
     e.preventDefault();
