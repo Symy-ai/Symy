@@ -110,4 +110,62 @@ describe('AdminUsersPage', () => {
     await waitFor(() => expect(M.adminPost).toHaveBeenCalledWith('/api/admin/users', { action: 'unban', userIds: ['u1'] }));
     await waitFor(() => expect(screen.getByText(/操作完成（1 个用户）/)).toBeTruthy());
   });
+
+  it('plan 过滤 → plan=premium 参', async () => {
+    M.adminGet.mockResolvedValue(usersRes());
+    render(<AdminUsersPage />);
+    await vi.waitFor(() => expect(screen.getByText(/共/)).toBeTruthy());
+    const planSelect = document.querySelectorAll('select')[0] as HTMLSelectElement;
+    fireEvent.change(planSelect, { target: { value: 'premium' } });
+    await vi.waitFor(() => {
+      const call = M.adminGet.mock.calls.find((c) => String(c[0]).includes('plan=premium'));
+      expect(call).toBeTruthy();
+    });
+  });
+
+  it('status 过滤 → banned=true 参 (banned ↔ true 映射锚)', async () => {
+    M.adminGet.mockResolvedValue(usersRes());
+    render(<AdminUsersPage />);
+    await vi.waitFor(() => expect(M.adminGet.mock.calls.length).toBeGreaterThanOrEqual(1));
+    const statusSelect = document.querySelectorAll('select')[1] as HTMLSelectElement;
+    fireEvent.change(statusSelect, { target: { value: 'banned' } });
+    await vi.waitFor(() => {
+      const call = M.adminGet.mock.calls.find((c) => String(c[0]).includes('banned=true'));
+      expect(call).toBeTruthy();
+    });
+  });
+
+  it('勾选后 → 已选计数 + 批量封禁 POST {action:ban, userIds, banned_until, reason}', async () => {
+    M.adminGet.mockResolvedValue(usersRes([
+      { id: 'u1', email: 'ban@x.com', banned: false },
+    ]));
+    M.adminPost.mockResolvedValueOnce({ ok: true });
+    render(<AdminUsersPage />);
+    await vi.waitFor(() => expect(screen.getByText('ban@x.com')).toBeTruthy());
+    const cb = document.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    fireEvent.click(cb);
+    await vi.waitFor(() => expect(screen.getByText(/已选 1 个用户/)).toBeTruthy());
+    const banBtn = screen.getAllByRole('button').find((b) => /批量封禁/.test(b.textContent ?? ''));
+    fireEvent.click(banBtn as HTMLButtonElement);
+    // 两步流: 弹窗内确认封禁才 POST
+    await waitFor(() => expect(screen.getByText('确认封禁')).toBeTruthy());
+    fireEvent.click(screen.getByText('确认封禁'));
+    await waitFor(() => {
+      const call = M.adminPost.mock.calls.find((c) => c[0] === '/api/admin/users');
+      expect(call?.[1]).toMatchObject({ action: 'ban', userIds: ['u1'] });
+    });
+  });
+
+  it('分页 → 下一页 page=2 参', async () => {
+    M.adminGet.mockResolvedValue({ ok: true, data: { users: [{ id: 'u1', email: 'p@x.com' }], total: 30, page: 1, totalPages: 2 } });
+    render(<AdminUsersPage />);
+    await vi.waitFor(() => expect(screen.getByText('p@x.com')).toBeTruthy());
+    const next = screen.getAllByRole('button').find((b) => /下一页/.test(b.textContent ?? ''));
+    expect(next).toBeTruthy();
+    fireEvent.click(next as HTMLButtonElement);
+    await vi.waitFor(() => {
+      const call = M.adminGet.mock.calls.find((c) => /page=2/.test(String(c[0])));
+      expect(call).toBeTruthy();
+    });
+  });
 });
