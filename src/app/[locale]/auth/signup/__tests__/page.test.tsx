@@ -97,4 +97,34 @@ describe('SignupPage', () => {
       options: { redirectTo: 'http://localhost:3000/zh/auth/callback' },
     })));
   });
+
+  it('P1-A03: 未勾 ToS/Privacy → submit 按钮硬 disabled (GDPR 敏感数据同意门)', () => {
+    render(<SignupPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.placeholders.emailExample'), { target: { value: 'a@b.com' } });
+    fillPw('password6', 'password6');
+    // 勾选框未勾
+    const submitBtn = screen.getByRole('button', { name: /auth.signup.signUp/ }) as HTMLButtonElement;
+    expect(submitBtn.disabled).toBe(true);
+    // 勾上 → 解锁
+    const checkbox = screen.getByRole('checkbox') as HTMLInputElement;
+    fireEvent.click(checkbox);
+    expect(submitBtn.disabled).toBe(false);
+  });
+
+  it('P2-7: 实时 email 校验 — "test@" 无域名 → emailInvalid 提示', async () => {
+    render(<SignupPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.placeholders.emailExample'), { target: { value: 'test@' } });
+    await waitFor(() => expect(screen.getByText(/Please enter a valid email address/)).toBeTruthy());
+  });
+
+  it('P1-A03: ToS/Privacy 链接双锚 → /zh/legal/{terms,privacy} (新窗口)', () => {
+    render(<SignupPage />);
+    const links = screen.getAllByRole('link');
+    const terms = links.find((l) => l.getAttribute('href') === '/zh/legal/terms') as HTMLAnchorElement;
+    const privacy = links.find((l) => l.getAttribute('href') === '/zh/legal/privacy') as HTMLAnchorElement;
+    expect(terms).toBeTruthy();
+    expect(privacy).toBeTruthy();
+    expect(terms.target).toBe('_blank');
+    expect(terms.rel).toContain('noopener');
+  });
 });
