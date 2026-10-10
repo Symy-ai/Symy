@@ -70,4 +70,22 @@ describe('SilentMomentOverlay — 沉默时刻仪式', () => {
     act(() => { for (let i = 0; i < 10; i++) vi.advanceTimersByTime(45); });
     expect(onComplete).not.toHaveBeenCalled();
   });
+
+  it('bought 路径快进全链 → onComplete 恰好一次 (与 saw 对称)', () => {
+    const onComplete = renderOverlay('bought');
+    act(() => { for (let i = 0; i < 140; i++) vi.advanceTimersByTime(45); });
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it('卸载后 timer 全清: unmount 后 onComplete 不再触发 (timer 泄漏守卫)', () => {
+    const onComplete = vi.fn();
+    const { unmount } = render(
+      <SilentMomentOverlay outcome="saw" amount={88} hoursOfLife={3.5} onComplete={onComplete} />,
+    );
+    // 半途卸载
+    act(() => { for (let i = 0; i < 30; i++) vi.advanceTimersByTime(45); });
+    unmount();
+    act(() => { for (let i = 0; i < 500; i++) vi.advanceTimersByTime(45); });
+    expect(onComplete).not.toHaveBeenCalled();
+  });
 });
