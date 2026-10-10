@@ -172,10 +172,14 @@ describe('SymyLedger', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Share my progress/ }));
 
-    await waitFor(() => expect(screen.getByTestId('share-card-modal')).toBeTruthy());
+    // R510 竞态修复: 旧断言 waitFor(getByTestId('share-card-modal')) 在首渲染即满足
+    // (组件恒渲染 modal, mock 无条件打 testid), 与 apiFetch 微任务竞速 — CI 慢机必挂。
+    // 改为等待真终态 (spy 收到截断后的 aiQuote)。
     expect(apiFetchMock).toHaveBeenCalledWith('/api/chat/history?limit=50&mode=challenge');
-    expect(shareCardSpy).toHaveBeenCalledWith(expect.objectContaining({
-      aiQuote: 'You resisted the shiny lens. That choice protects your future.',
-    }));
+    await waitFor(() => expect(shareCardSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        aiQuote: 'You resisted the shiny lens. That choice protects your future.',
+      }),
+    ));
   });
 });
