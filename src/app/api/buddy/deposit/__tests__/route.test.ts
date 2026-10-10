@@ -216,6 +216,81 @@ describe('POST /api/buddy/deposit', () => {
     expect(res.status).toBe(404);
   });
 
+  it('CAS claim 失败 (supabase error) → 500 不假成功', async () => {
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      ...authedMock(),
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'dream_funds') {
+            return authedMock().supabase.from('dream_funds');
+          }
+          // active_challenges: SELECT 正常; CAS UPDATE 返回 error
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: { id: 'challenge-123', user_id: 'user-123', amount: 100, challenge_type: 'impulse', status: 'active', deposit_status: 'unsettled' }, error: null })),
+                })),
+              })),
+            })),
+            update: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn(() => Promise.resolve({ data: null, error: { message: 'rls denied' } })),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }),
+        rpc: vi.fn(async () => ({ error: null })),
+      },
+    } as never);
+    const res = await POST(makeRequest({ action: 'deposit', challengeId: 'challenge-123' }));
+    expect(res.status).toBe(500);
+    const json = await res.json();
+    expect(json.error).toBe('Failed to claim deposit');
+    expect(JSON.stringify(json)).not.toContain('rls denied');
+  });
+
+  it('CAS claim 拒绝 (data 空, 已 settled) → 409 + depositStatus 回显', async () => {
+    vi.mocked(createAuthenticatedClient).mockResolvedValueOnce({
+      ...authedMock(),
+      supabase: {
+        from: vi.fn((table: string) => {
+          if (table === 'dream_funds') {
+            return authedMock().supabase.from('dream_funds');
+          }
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  maybeSingle: vi.fn(async () => ({ data: { id: 'challenge-123', user_id: 'user-123', amount: 100, challenge_type: 'impulse', status: 'active', deposit_status: 'deposited' }, error: null })),
+                })),
+              })),
+            })),
+            update: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    select: vi.fn(() => Promise.resolve({ data: [], error: null })),
+                  })),
+                })),
+              })),
+            })),
+          };
+        }),
+        rpc: vi.fn(async () => ({ error: null })),
+      },
+    } as never);
+    const res = await POST(makeRequest({ action: 'deposit', challengeId: 'challenge-123' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.depositStatus).toBe('deposited');
+    expect(json.error).toContain('already deposited');
+  });
+
   it('P0 fix: RPC failure on 2nd fund returns 500 with partial info, does NOT rollback to unsettled (prevents retry double-counting)', async () => {
     // 🔧 ARCH fix (2026-07-22 P0 — multi-fund retry double accumulation):
     //    旧代码: RPC 失败 → rollback deposit_status to 'unsettled' → 用户重试 → 已成功的 fund 双倍累加
