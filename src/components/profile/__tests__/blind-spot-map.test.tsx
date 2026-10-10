@@ -17,7 +17,7 @@
 // @vitest-environment happy-dom
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BlindSpotMap } from '../blind-spot-map';
 
 // Mock apiFetch
@@ -271,6 +271,56 @@ describe('BlindSpotMap component', () => {
     render(<BlindSpotMap isActive={true} />);
     await waitFor(() => {
       expect(screen.getByText(/You need more data to see your blind spots/i)).toBeTruthy();
+    });
+  });
+
+  it('PM-#14: impulse insight 三档动态 — ≥50% 警示文案', async () => {
+    mockApiFetch.mockResolvedValue(makeResponse({
+      blind_spots: [
+        { type: 'impulse', label: '冲动盲区', emoji: '⚡', rate: 65, description: 'x', insight: null, sample_count: 15, show: true },
+      ],
+    }));
+    render(<BlindSpotMap />);
+    await waitFor(() => {
+      expect(screen.getByText(/Urgency raced ahead of thought/)).toBeTruthy();
+    });
+  });
+
+  it('PM-#14: impulse insight <20% → 肯定文案 (非冲动型不说 Slow down)', async () => {
+    mockApiFetch.mockResolvedValue(makeResponse({
+      blind_spots: [
+        { type: 'impulse', label: '冲动盲区', emoji: '⚡', rate: 10, description: 'x', insight: null, sample_count: 15, show: true },
+      ],
+    }));
+    render(<BlindSpotMap />);
+    await waitFor(() => {
+      expect(screen.getByText(/You take your time before paying/)).toBeTruthy();
+    });
+  });
+
+  it('P2-9: 点击盲点卡片展开应对建议 (sample_count>=10)', async () => {
+    mockApiFetch.mockResolvedValue(makeResponse());
+    render(<BlindSpotMap />);
+    await waitFor(() => {
+      expect(screen.getByText('🌙')).toBeTruthy();
+    });
+    const card = screen.getByText('🌙').closest('div.cursor-pointer');
+    expect(card).toBeTruthy();
+    fireEvent.click(card!);
+    await waitFor(() => {
+      expect(screen.getByText(/Turn off shopping app notifications after 10 PM/)).toBeTruthy();
+    });
+  });
+
+  it('P1-2: sample_count<10 → 数据不足提示 (不显示 0% 误导)', async () => {
+    mockApiFetch.mockResolvedValue(makeResponse({
+      blind_spots: [
+        { type: 'night', label: '深夜盲区', emoji: '🌙', rate: 67, description: 'x', insight: 'x', sample_count: 4, show: true },
+      ],
+    }));
+    render(<BlindSpotMap />);
+    await waitFor(() => {
+      expect(screen.getByText(/Insufficient data/)).toBeTruthy();
     });
   });
 });
