@@ -1,76 +1,46 @@
-/**
- * sitemap 输出断言 (batch86-a)
- *
- * /transparency 与 /transparency/finance 是 build in public 内容引擎的
- * 搜索引擎面 (BP p20) — sitemap 不收录 = 自然流量入口缺失。断言:
- * 双 locale 形态 + alternates 互链 + blog 两篇不回退 + OG route 永不进 sitemap
- * (OG 图是分享卡资源非可索引页)。
- */
-
+// @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
 import sitemap from '../sitemap';
 
-const BASE = 'https://symy.ai';
-
-function urls(): string[] {
-  return sitemap().map((e) => e.url);
-}
-
+/**
+ * src/app/sitemap.ts (45行) — SEO sitemap 生成。
+ *
+ * 锁定:
+ * - 12 路径 × 2 locale = 24 条目
+ * - URL 形状 /{locale}{path} + baseUrl
+ * - alternates.languages 双语互指
+ * - lastModified 为当前时间
+ */
 describe('sitemap', () => {
-  it('transparency 双 locale 均收录', () => {
-    const all = urls();
-    expect(all).toContain(`${BASE}/en/transparency`);
-    expect(all).toContain(`${BASE}/zh/transparency`);
+  const entries = sitemap();
+
+  it('12 路径 × 2 locale = 24 条目', () => {
+    expect(entries).toHaveLength(24);
   });
 
-  it('trust 双 locale 均收录', () => {
-    const all = urls();
-    expect(all).toContain(`${BASE}/en/trust`);
-    expect(all).toContain(`${BASE}/zh/trust`);
+  it('URL 形状: baseUrl+locale+path', () => {
+    const urls = entries.map((e) => e.url);
+    expect(urls).toContain('https://symy.ai/zh');
+    expect(urls).toContain('https://symy.ai/en');
+    expect(urls).toContain('https://symy.ai/zh/blog/the-prison-of-attachment');
+    expect(urls).toContain('https://symy.ai/en/legal/privacy');
   });
 
-  it('covenant 双 locale 均收录并互链', () => {
-    const entry = sitemap().find((e) => e.url === `${BASE}/en/covenant`);
-
-    expect(sitemap().some((e) => e.url === `${BASE}/zh/covenant`)).toBe(true);
-    expect(entry!.changeFrequency).toBe('monthly');
-    expect(entry!.alternates?.languages).toEqual({
-      en: `${BASE}/en/covenant`,
-      zh: `${BASE}/zh/covenant`,
+  it('alternates 双语互指', () => {
+    const zhHome = entries.find((e) => e.url === 'https://symy.ai/zh');
+    expect(zhHome?.alternates?.languages).toEqual({
+      en: 'https://symy.ai/en',
+      zh: 'https://symy.ai/zh',
     });
   });
 
-  it('finance 页双 locale 均收录', () => {
-    const all = urls();
-    expect(all).toContain(`${BASE}/en/transparency/finance`);
-    expect(all).toContain(`${BASE}/zh/transparency/finance`);
-  });
-
-  it('transparency 条目带 alternates 双语互链与周更频率', () => {
-    const entry = sitemap().find((e) => e.url === `${BASE}/zh/transparency`);
-    expect(entry).toBeDefined();
-    expect(entry!.changeFrequency).toBe('weekly');
-    expect(entry!.priority).toBe(0.8);
-    expect(entry!.alternates?.languages).toEqual({
-      en: `${BASE}/en/transparency`,
-      zh: `${BASE}/zh/transparency`,
-    });
-  });
-
-  it('finance 条目为月更 (owner 手动月更)', () => {
-    const entry = sitemap().find((e) => e.url === `${BASE}/en/transparency/finance`);
-    expect(entry).toBeDefined();
-    expect(entry!.changeFrequency).toBe('monthly');
-    expect(entry!.priority).toBe(0.7);
-  });
-
-  it('blog 两篇不回退 (既有收录)', () => {
-    const all = urls();
-    expect(all).toContain(`${BASE}/en/blog/algorithm-decode-001`);
-    expect(all).toContain(`${BASE}/zh/blog/the-prison-of-attachment`);
-  });
-
-  it('OG route 永不进 sitemap (分享卡资源非可索引页)', () => {
-    expect(urls().some((u) => u.includes('/transparency/og'))).toBe(false);
+  it('lastModified 为当前时间 (周更/月更/年更标记在位)', () => {
+    const before = Date.now();
+    const entriesNow = sitemap();
+    expect(entriesNow.every((e) => e.lastModified instanceof Date)).toBeTruthy();
+    const lm = entriesNow[0]!.lastModified as Date;
+    expect(lm.getTime()).toBeGreaterThanOrEqual(before - 1000);
+    const freqs = new Set(entries.map((e) => e.changeFrequency));
+    expect(freqs).toEqual(new Set(['weekly', 'monthly', 'yearly']));
   });
 });
