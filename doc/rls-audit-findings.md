@@ -6,11 +6,12 @@
 - no current UPDATE policy lacks WITH CHECK; no migration added here.
 
 ## ⚠️ 勘误（2026-10-11 R475，v13 RLS 复审）
-上述结论**有误**。实测 5 处 UPDATE policy 缺 WITH CHECK（USING-only = 用户可改 user_id 转移行所有权）：
+上述结论**有误**。实测 4 处 UPDATE policy 缺 WITH CHECK（USING-only = 用户可改 user_id 转移行所有权）：
 - butterfly_sessions_update (014)
 - active_challenges_update_own (031)
-- avatars_update (074, storage.objects)
 - why_wall_update_own / reflection_update_own (128)
+
+（初判 5 处含 avatars_update (074)，R476 复核排除——114 已 DROP 重建为 avatars_update_policy 且 WITH CHECK 双全。）
 
 漏检根因：审计方法未覆盖 storage schema + 旧迁移文件（031 先于审计存在但被漏检）。
 修复：148_rls_policy_guard.sql 内联 backfill ALTER POLICY ×5 + 守卫扩 storage schema。

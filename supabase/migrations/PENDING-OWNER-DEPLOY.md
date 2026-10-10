@@ -16,7 +16,7 @@
 - **影响/回滚**：同 145（索引名 `idx_email_receipts_user_status_received`）。
 
 ### 148_rls_policy_guard.sql（2026-10-11 更新）
-- **目的**：①backfill 修复 5 处 UPDATE policy 缺 WITH CHECK（10-01 审计漏检勘误，见 doc/rls-audit-findings.md）②DB 级守卫——任何 UPDATE 策略缺 `WITH CHECK` 时部署直接失败
+- **目的**：①backfill 修复 4 处 UPDATE policy 缺 WITH CHECK（10-01 审计漏检勘误，见 doc/rls-audit-findings.md；avatars 已由 114 修复不在集内）②DB 级守卫——任何 UPDATE 策略缺 `WITH CHECK` 时部署直接失败
 - **为什么**：USING-only UPDATE policy = 用户可改 user_id 转移行所有权（提权模式）。守卫已扩 storage schema。
 - **影响**：`ALTER POLICY ... WITH CHECK` 五条（幂等语义同 CREATE，policy 已存在）+ DO 守卫块。若线上 policy 名与本文件不一致会报错——报错即说明线上结构漂移，须先核对。
 - **回滚**：`ALTER POLICY ... WITH CHECK` 无独立回滚（可 `ALTER POLICY ... WITH CHECK (true)` 放开，不建议）。
