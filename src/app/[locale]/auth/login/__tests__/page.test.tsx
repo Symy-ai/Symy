@@ -121,4 +121,26 @@ describe('LoginPage magic link (P1-6)', () => {
       expect(/check your email|inbox|查看邮箱|sent/i.test(txt)).toBeTruthy(); // 统一成功
     });
   });
+
+  it('forgot-password 链接: 输入 email 后带 ?email= (N23 联动)', () => {
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.placeholders.emailExample'), { target: { value: 'spark@x.com' } });
+    const forgot = screen.getByText('Forgot password?').closest('a');
+    expect(forgot?.getAttribute('href')).toBe('/auth/forgot-password?email=spark%40x.com');
+  });
+
+  it('signup 链接: locale 前缀 + email 透传', () => {
+    render(<LoginPage />);
+    fireEvent.change(screen.getByPlaceholderText('auth.placeholders.emailExample'), { target: { value: 'go@x.com' } });
+    const signup = screen.getByText(/auth.login.signUp|create account/i).closest('a') ?? screen.getAllByRole('link').find((a) => /signup/.test(a.getAttribute('href') ?? ''));
+    expect(signup?.getAttribute('href')).toBe('/zh/auth/signup?email=go%40x.com');
+  });
+
+  it('?email= URL 参数 → 输入框预填 (signup→login 联动, Bug #29/N23)', async () => {
+    window.history.replaceState({}, '', '/zh/auth/login?email=prefill@x.com');
+    render(<LoginPage />);
+    const input = screen.getByPlaceholderText('auth.placeholders.emailExample') as HTMLInputElement;
+    await waitFor(() => expect(input.value).toBe('prefill@x.com'));
+    window.history.replaceState({}, '', '/zh/auth/login');
+  });
 });
