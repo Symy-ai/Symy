@@ -75,4 +75,55 @@ describe('AdminEmbeddingsPage', () => {
     await waitFor(() => expect(screen.getByTestId('result-backfill_user').dataset.status).toBe('error'));
     expect(M.adminPost).not.toHaveBeenCalled();
   });
+
+  it('backfill_user 有 userId → POST backfill_user + 成功态', async () => {
+    M.adminGet.mockResolvedValue({ ok: true, data: { total: 100 } });
+    M.adminPost.mockResolvedValueOnce({ ok: true, data: { inserted: 5 } });
+    render(<AdminEmbeddingsPage />);
+    const input = document.querySelector('input') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'u-123' } });
+    const btns = screen.getAllByRole('button');
+    const backfillBtn = btns.find((b) => /backfill|回填/i.test(b.textContent ?? '') && !/all|全部/i.test(b.textContent ?? ''));
+    fireEvent.click(backfillBtn as HTMLButtonElement);
+    await waitFor(() => expect(M.adminPost).toHaveBeenCalledWith('/api/admin/embeddings?action=backfill_user&user_id=u-123', {}));
+    await waitFor(() => expect(screen.getByTestId('result-backfill_user').dataset.status).toBe('success'));
+  });
+
+  it('backfill_all: 确认门内点触发 → POST backfill_all + 成功后重拉 stats', async () => {
+    M.adminGet.mockResolvedValue({ ok: true, data: { total: 100 } });
+    M.adminPost.mockResolvedValueOnce({ ok: true, data: { done: true } });
+    render(<AdminEmbeddingsPage />);
+    // 确认门: AlertDialogAction 按钮文案含回填全部
+    const triggerBtn = await waitFor(() => {
+      const b = screen.getAllByRole('button').find((x) => /执行批量回填/.test(x.textContent ?? ''));
+      if (!b) throw new Error('not yet');
+      return b;
+    });
+    fireEvent.click(triggerBtn);
+    const confirmBtn = await waitFor(() => {
+      const b = screen.getAllByRole('button').find((x) => /确认执行/.test(x.textContent ?? ''));
+      if (!b) throw new Error('not yet');
+      return b;
+    });
+    fireEvent.click(confirmBtn);
+    await waitFor(() => expect(M.adminPost).toHaveBeenCalledWith('/api/admin/embeddings?action=backfill_all', {}));
+    await waitFor(() => {
+      const statsCalls = M.adminGet.mock.calls.filter((c) => String(c[0]).includes('action=stats'));
+      expect(statsCalls.length).toBeGreaterThanOrEqual(2); // 挂载一次 + 成功后刷新
+    });
+  });
+
+  it('test 按钮 → GET /api/admin/embeddings/test + 成功态', async () => {
+    M.adminGet.mockResolvedValueOnce({ ok: true, data: { total: 0 } });
+    M.adminGet.mockResolvedValueOnce({ ok: true, data: { vector_ok: true } });
+    render(<AdminEmbeddingsPage />);
+    const testBtn = await waitFor(() => {
+      const b = screen.getAllByRole('button').find((x) => /测试|test/i.test(x.textContent ?? '') && !/刷新/.test(x.textContent ?? ''));
+      if (!b) throw new Error('not yet');
+      return b;
+    });
+    fireEvent.click(testBtn);
+    await waitFor(() => expect(M.adminGet).toHaveBeenCalledWith('/api/admin/embeddings/test'));
+    await waitFor(() => expect(screen.getByTestId('result-embeddings_test').dataset.status).toBe('success'));
+  });
 });
