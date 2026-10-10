@@ -1,5 +1,5 @@
 import { withPayload } from '@payloadcms/next/withPayload';
-import { withSentryConfig } from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs/config';
 import createNextIntlPlugin from 'next-intl/plugin';
 import bundleAnalyzer from '@next/bundle-analyzer';
 
@@ -67,8 +67,8 @@ export default withPayload(
         disable: !process.env.SENTRY_AUTH_TOKEN,
       },
 
-      // 🔧 2026-07-15: Disable in dev to avoid noise
-      disableLogger: process.env.NODE_ENV === 'development',
+      // 🔧 2026-10-11: sentry 11 移除 disableLogger 选项 (Logger 面板已废弃)
+      // 旧: disableLogger: process.env.NODE_ENV === 'development'
     }),
   ),
 );
