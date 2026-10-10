@@ -46,4 +46,33 @@ describe('PrivacyPage 渲染 (隐私红线)', () => {
     const html = renderToString(await PrivacyPage({ params: Promise.resolve({ locale: 'en' }) } as never));
     expect(html.toLowerCase()).toContain('bcrypt');
   });
+
+  it('GDPR/CCPA/PIPL 三权清单在位 (访问/更正/删除/携带)', async () => {
+    const html = renderToString(await PrivacyPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('访问');
+    expect(html).toContain('被遗忘权');
+    expect(html).toContain('数据可携权');
+    expect(html).toContain('30 天内回复');
+  });
+
+  it('72h 数据泄露通知承诺在位 (GDPR 第34条)', async () => {
+    const html = renderToString(await PrivacyPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('72 小时内');
+  });
+
+  it('儿童数据 7 天删除承诺 + 13 岁门槛', async () => {
+    const html = renderToString(await PrivacyPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('13 岁以下');
+    expect(html).toContain('7 天内删除');
+  });
+
+  it('localStorage 用途白名单: 语言/主题/邀请码/打卡 — 无敏感数据声明', async () => {
+    const html = renderToString(await PrivacyPage({ params: Promise.resolve({ locale: 'zh' }) } as never));
+    expect(html).toContain('语言偏好');
+    expect(html).toContain('邀请码');
+    expect(html).toContain('不会将 localStorage 用于敏感数据');
+    // 不用第三方跟踪 Cookie
+    expect(html).toContain('不会');
+    expect(html).toContain('跟踪 Cookie');
+  });
 });
