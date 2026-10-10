@@ -95,4 +95,31 @@ describe('ResetPasswordPage', () => {
       expect(html.length).toBeGreaterThan(100);
     });
   });
+
+  it('无 session → 过期态真锚: Link expired 文案 + Request new link 按钮', async () => {
+    M.getSession.mockResolvedValueOnce({ data: { session: null } });
+    render(<ResetPasswordPage />);
+    await waitFor(() => expect(screen.getByText('Link expired or invalid')).toBeTruthy());
+    expect(screen.getByText(/may have been used or expired/i)).toBeTruthy();
+    const newLink = screen.getByText('Request new link').closest('a');
+    expect(newLink?.getAttribute('href')).toBe('/auth/forgot-password');
+  });
+
+  it('updateUser 失败 → 错误显示 (不跳转)', async () => {
+    M.updateUser.mockResolvedValueOnce({ error: { message: 'weak password' } });
+    render(<ResetPasswordPage />);
+    const pw = await waitFor(() => screen.getAllByPlaceholderText('••••••••'));
+    fireEvent.change(pw[0], { target: { value: 'newpass123' } });
+    fireEvent.change(pw[1], { target: { value: 'newpass123' } });
+    fireEvent.submit(screen.getByRole('button').closest('form') as HTMLFormElement);
+    await waitFor(() => expect(screen.getByText(/weak password/i)).toBeTruthy());
+    expect(M.push).not.toHaveBeenCalled();
+  });
+
+  it('Back to sign in 链接 → /auth/login', async () => {
+    render(<ResetPasswordPage />);
+    await waitFor(() => expect(screen.getAllByPlaceholderText('••••••••')).toBeTruthy());
+    const back = screen.getByText('Back to sign in').closest('a');
+    expect(back?.getAttribute('href')).toBe('/auth/login');
+  });
 });
