@@ -177,13 +177,17 @@ describe('closeSSE', () => {
     expect(() => closeSSE(controller)).not.toThrow();
   });
 
-  it('logs debug message on error (not silent)', () => {
-    const debugSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  it('logs debug message on error (not silent)', async () => {
+    // logger.debug 仅 isDev 输出 (测试环境静默) — spy logger 对象属性断言被调
+    const loggerModule = await import('@/lib/logger');
+    const debugSpy = vi.spyOn(loggerModule.logger, 'debug').mockImplementation(() => {});
     const { controller, setCloseShouldThrow } = createMockController();
     setCloseShouldThrow(true);
     closeSSE(controller);
-    // logger.debug uses console.log in development
-    // The spy catches it if NODE_ENV is development
+    expect(debugSpy).toHaveBeenCalledWith(
+      '[sse] closeSSE swallowed (stream likely already closed):',
+      expect.any(Error),
+    );
     debugSpy.mockRestore();
   });
 });
