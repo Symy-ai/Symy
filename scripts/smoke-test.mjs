@@ -19,7 +19,7 @@
 
 import { chromium } from 'playwright';
 
-const URL = process.env.SMOKE_URL || 'https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app/';
+const URL = process.env.SMOKE_URL || 'https://symy-git-main-spark-huang-s-projects.vercel.app/';
 const TEST_EMAIL = process.env.SMOKE_EMAIL;
 const TEST_PASSWORD = process.env.SMOKE_PASSWORD;
 

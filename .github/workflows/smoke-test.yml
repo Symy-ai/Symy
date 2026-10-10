@@ -40,7 +40,7 @@ jobs:
 
       - name: 执行冒烟测试
         env:
-          SMOKE_URL: https://we-me-mvp-git-main-spark-huang-s-projects.vercel.app/
+          SMOKE_URL: https://symy-git-main-spark-huang-s-projects.vercel.app/
           SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
           SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
         run: node scripts/smoke-test.mjs
