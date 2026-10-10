@@ -40,7 +40,7 @@ vi.mock('@/lib/cultivation', () => ({
   reassessProfile: (...a: unknown[]) => reassessMock(...a),
 }));
 
-import { GET } from '../route';
+import { GET, POST } from '../route';
 
 function req(q = '') {
   return new NextRequest('http://localhost/api/admin/cultivation' + (q ? '?' + q : ''));
@@ -86,6 +86,30 @@ describe('GET /api/admin/cultivation', () => {
     const res = await GET(req('action=profile&user_id=123e4567-e89b-12d3-a456-426614174000'));
     expect(res.status).toBe(200);
     expect((await res.json()).profile.stage).toBe('zhi_zhi');
+  });
+
+  it('stats: severity 桶 count 查询失败 → 500', async () => {
+    countMock.mockResolvedValue({ count: null, error: { message: 'rls denied' } });
+    const res = await GET(req());
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Query failed');
+    expect(JSON.stringify(body)).not.toContain('rls');
+  });
+
+  it('POST assess: reassessProfile 返 null → 500', async () => {
+    reassessMock.mockResolvedValue(null);
+    const res = await POST(req('action=assess&user_id=11111111-1111-1111-1111-111111111111'));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toBe('Assessment failed');
+  });
+
+  it('POST 无 action / 非法 action → 400', async () => {
+    const res1 = await POST(req());
+    expect(res1.status).toBe(400);
+    const res2 = await POST(req('action=drop_table'));
+    expect(res2.status).toBe(400);
   });
 
   it('profile: getProfile null → 500', async () => {
