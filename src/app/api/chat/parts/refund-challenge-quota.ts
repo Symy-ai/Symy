@@ -91,9 +91,8 @@ export async function refundChallengeQuota(userId: string): Promise<RefundResult
 
     logger.info(`[RefundChallengeQuota] Refunded daily_see_it_count for user ${userId}: ${storedCount} → ${storedCount - 1}`);
     return { refunded: true, previousCount: storedCount };
-      // safe to ignore: non-critical background operation, error already logged
   } catch (err) {
-                  // safe to ignore: non-critical background operation, error already logged
+    // safe to ignore: non-critical error path, already logged and returned as refunded=false
     logger.error('[RefundChallengeQuota] Unexpected error:', err);
     return { refunded: false, error: `unexpected: ${err instanceof Error ? err.message : String(err)}` };
   }
