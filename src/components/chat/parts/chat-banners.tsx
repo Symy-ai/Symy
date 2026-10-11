@@ -11,7 +11,7 @@
  * 纯展示 + 回调组件, 无 state.
  */
 
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { formatPlatformName } from '@/lib/utils';
 // 🔧 ARCH fix (Round 57 REVIEW-A-3): 用共享 getChallengeTypeI18nKey 替代内联阈值
@@ -54,6 +54,15 @@ function ChatBannersInner({
   const { t } = useI18n();
   // 🔧 P4-8 fix (2026-07-20): Bought anyway 确认状态 — 点击后显示"再想想"确认
   const [showBuyConfirm, setShowBuyConfirm] = useState(false);
+  // 🔧 R1043 收编 (R1042 观察项19): 确认条按 challengeId 键控 — 挑战切换时 reset,
+  //   防确认态跨实体泄漏 (为 A 弹的确认点 Yes 作用于 B).
+  //   注: 不用引用键控 — chat-tab 的 fallback 表达式 `activeChallenge ?? (challengeContext ? {...} : undefined)`
+  //   在 demo 模式每次 render 新建对象, 引用键控会在该场景反复打掉确认条.
+  //   challengeId optional: A 有 id → B 无 id (undefined ≠ 'ch-1') 仍 reset;
+  //   A 无 id 时确认条本就不存在 (无 banner 可点), 键控空窗无副作用.
+  useEffect(() => {
+    setShowBuyConfirm(false);
+  }, [activeChallenge?.challengeId]);
 
   return (
     <>

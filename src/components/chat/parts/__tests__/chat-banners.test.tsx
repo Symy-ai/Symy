@@ -26,7 +26,7 @@ vi.mock('@/i18n/provider', () => ({
 import { ChatBanners } from '../chat-banners';
 
 const challenge = {
-  id: 'ch-1',
+  challengeId: 'ch-1', // 🔧 R1043: fixture 修正 id→challengeId (ChallengeContext 真字段)
   itemName: '空气炸锅',
   amount: 88,
   platform: 'taobao',
@@ -82,12 +82,47 @@ describe('ActiveChallengeBanner — 挑战横幅', () => {
     fireEvent.click(screen.getByText(/我买了/));
     fireEvent.click(screen.getByText('确定'));
     expect(onChooseToBuy).toHaveBeenCalledTimes(1);
-    expect(onChooseToBuy).toHaveBeenCalledWith(expect.objectContaining({ id: 'ch-1' }));
+    expect(onChooseToBuy).toHaveBeenCalledWith(expect.objectContaining({ challengeId: 'ch-1' }));
   });
 
   it('isLoading 时按钮禁用', () => {
     renderBanner({ isLoading: true });
     const buy = screen.getByText(/我买了/).closest('button');
     expect(buy?.hasAttribute('disabled')).toBe(true);
+  });
+
+  // 🔧 R1043: 确认条按 challengeId 键控 — 跨实体泄漏回归锁
+  it('挑战切换时确认条 reset — 为 A 弹的确认不作用于 B', () => {
+    const onChooseToBuy = vi.fn<(challenge: { itemName: string; amount: number; challengeId?: string }) => void>();
+    const utils = render(
+      <ChatBanners
+        activeChallenge={challenge as never}
+        expiredChallenge={null}
+        onGiveUp={vi.fn()}
+        onChooseToBuy={onChooseToBuy}
+        onResume={vi.fn()}
+        onDismiss={vi.fn()}
+        isLoading={false}
+      />
+    );
+    // A 挑战: 点「我买了」→ 确认条出现
+    fireEvent.click(screen.getByText(/我买了/));
+    expect(screen.getByText(/确定？/)).toBeTruthy();
+    // 切到 B 挑战 (challengeId 变化)
+    const challengeB = { ...challenge, challengeId: 'ch-2', itemName: '按摩仪' };
+    utils.rerender(
+      <ChatBanners
+        activeChallenge={challengeB as never}
+        expiredChallenge={null}
+        onGiveUp={vi.fn()}
+        onChooseToBuy={onChooseToBuy}
+        onResume={vi.fn()}
+        onDismiss={vi.fn()}
+        isLoading={false}
+      />
+    );
+    // 确认条已收起 — B 上没有残留确认
+    expect(screen.queryByText(/确定？/)).toBeNull();
+    expect(onChooseToBuy).not.toHaveBeenCalled();
   });
 });
