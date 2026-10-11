@@ -22,7 +22,7 @@ export interface ClassifyShoppingIntentInput {
 const PURCHASE_PATTERN = /买|下单|点(?:一?[杯份单])?|订购|购买|搜索|帮我搜|want|need|buy|get|purchase|order|shop(?:ping)? for|search for|look(?:ing)? for/i;
 const FIRST_PARTY_PATTERN = /我|帮(?:我)?|给自己|\bI\b|\bhelp me\b|\bmyself\b|\bmy own\b/i;
 const UNCERTAIN_PATTERN = /不确定|不知道|还是|或者|\bnot sure\b|\bunsure\b|\bwhether or\b|\bor\b/i;
-const RECIPIENT_PATTERN = /送人|礼物|给(?:妈妈|爸爸|孩子|朋友|家人|老人)|我妈|我妈|for my (?:mom|mother|dad|father|kid|child|friend|family)|\bfor (?:her|him|them)\b|\bfor my\b|\ba gift\b/i;
+const RECIPIENT_PATTERN = /送人|礼物|给(?:妈妈|爸爸|孩子|朋友|家人|老人)|我妈|for my (?:mom|mother|dad|father|kid|child|friend|family)|\bfor (?:her|him|them)\b|\bfor my\b|\ba gift\b/i;
 const FUTURE_PATTERN = /下(?:个月|周|次)|以后|回头|再看看|next (?:month|week|time)|later|maybe/i;
 const CAMPING_PATTERN = /露营|camping/i;
 
