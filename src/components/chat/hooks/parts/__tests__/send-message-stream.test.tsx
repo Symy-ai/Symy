@@ -204,18 +204,18 @@ describe('consumeSendMessageStream (编排层)', () => {
     expect(saved.content).toBe('t:chat.aiFallback.hereForYou');
   });
 
-  it('drift guard 命中: 应用替换词表', async () => {
+  it('drift guard 命中: 应用 i18n 替换词表', async () => {
+    // 🔧 R1014: 漂移替换改走 i18n key (chat.aiFallback.driftReplacements.<type>),
+    //   不再读 DRIFT_REPLACEMENTS 硬编码英文常量 (zh.json 四条此前从未生效).
     const { applyDriftGuard } = await import('@/lib/chat-drift-guard');
     vi.mocked(applyDriftGuard).mockReturnValueOnce('anxiety-trip');
     vi.mocked(applyDriftGuard).mockReturnValueOnce(null);
-    const { DRIFT_REPLACEMENTS } = await import('@/lib/chat-drift-guard');
-    (DRIFT_REPLACEMENTS as Record<string, string>)['anxiety-trip'] = '安全替换文案';
     consumeAIStreamMock.mockResolvedValue(streamResult({ reply: '正常内容不会被替换' }));
     const args = makeArgs();
     await consumeSendMessageStream(args as never);
     const saved = args.saveMessage.mock.calls[0][0] as ChatMessage;
-    // drift 命中 → 替换词
-    expect(saved.content).toBe('安全替换文案');
+    // drift 命中 → t() 取 i18n key (mock t 返回 `t:${key}`)
+    expect(saved.content).toBe('t:chat.aiFallback.driftReplacements.anxiety-trip');
   });
 
   it('greenAltRetro: markGreenAltRetroAwaited 被调 + 消息携带', async () => {

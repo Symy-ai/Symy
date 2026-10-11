@@ -5,7 +5,7 @@ import {
   handleToolEvent,
   type ConsumeAIStreamCallbacks,
 } from "../consume-ai-stream";
-import { applyDriftGuard, DRIFT_REPLACEMENTS } from "@/lib/chat-drift-guard";
+import { applyDriftGuard } from "@/lib/chat-drift-guard";
 import type { ProductCardData } from "@/types/product-card";
 import type { GreenAltCardData } from "@/types/green-alt-card";
 import type { GreenAltRetroCardData } from "@/types/green-alt-retro";
@@ -529,9 +529,20 @@ export async function consumeSendMessageStream({
     : accumulatedReply.trim() || t("chat.aiFallback.hereForYou");
 
   const detectedDrift = applyDriftGuard(rawFinalContent, turnId);
-  const finalContent = detectedDrift
-    ? (DRIFT_REPLACEMENTS[detectedDrift] ?? rawFinalContent)
-    : rawFinalContent;
+  // 🔧 R1014 fix (i18n 漂移替换双源): 旧代码取 DRIFT_REPLACEMENTS 硬编码英文常量,
+  //   zh.json 的 driftReplacements 四条从未生效 — zh 用户命中漂移显示英文.
+  //   修复: 改走 i18n key (chat.aiFallback.driftReplacements.<type>), en/zh 各取各的.
+  //   key 缺失 (t 返回 raw key) 时回退原文, 不嵌内联英文兜底 (chat-error-i18n-guard 规则).
+  const driftKey = detectedDrift
+    ? `chat.aiFallback.driftReplacements.${detectedDrift}`
+    : null;
+  const driftReplacement = driftKey
+    ? t(driftKey)
+    : null;
+  const finalContent =
+    driftReplacement && driftReplacement !== driftKey
+      ? driftReplacement
+      : rawFinalContent;
 
   const finalMsg: ChatMessage = {
     id: currentAssistantMsgId,

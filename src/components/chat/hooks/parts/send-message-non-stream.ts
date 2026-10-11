@@ -1,6 +1,6 @@
 import { ChatMessage } from "@/components/chat-bubble";
 import { markGreenAltRetroAwaited } from "@/components/chat/parts/green-alt-retro-store";
-import { applyDriftGuard, DRIFT_REPLACEMENTS } from "@/lib/chat-drift-guard";
+import { applyDriftGuard } from "@/lib/chat-drift-guard";
 import { extractProductCards } from "@/lib/product-tool-result";
 import type { ProductCardData } from "@/types/product-card";
 import type { ActiveChallenge } from "../use-challenge-actions";
@@ -70,9 +70,20 @@ export async function processSendMessageNonStream({
 
   const nonStreamTurnId = nextId("ai");
   const detectedDrift = applyDriftGuard(replyContent, nonStreamTurnId);
-  const finalContent = detectedDrift
-    ? (DRIFT_REPLACEMENTS[detectedDrift] ?? replyContent)
-    : replyContent;
+  // 🔧 R1014 fix (i18n 漂移替换双源): 旧代码取 DRIFT_REPLACEMENTS 硬编码英文常量,
+  //   zh.json 的 driftReplacements 四条从未生效 — zh 用户命中漂移显示英文.
+  //   修复: 改走 i18n key (chat.aiFallback.driftReplacements.<type>), en/zh 各取各的.
+  //   key 缺失 (t 返回 raw key) 时回退原文, 不嵌 defaultValue (与 stream 路径同规).
+  const driftKey = detectedDrift
+    ? `chat.aiFallback.driftReplacements.${detectedDrift}`
+    : null;
+  const driftReplacement = driftKey
+    ? t(driftKey)
+    : null;
+  const finalContent =
+    driftReplacement && driftReplacement !== driftKey
+      ? driftReplacement
+      : replyContent;
 
   const assistantMsg: ChatMessage = {
     id: nonStreamTurnId,
