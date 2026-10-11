@@ -64,8 +64,8 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
           <p>
             <strong>{isZh ? '设备与使用分析：' : 'Device &amp; usage analytics:'}</strong>
             {isZh
-              ? ' 通过 Sentry 收集的汇总、匿名化使用统计数据（页面浏览量、功能使用情况、错误率）。Sentry 会接收 IP 地址和浏览器指纹用于错误诊断，但我们已将 Sentry 配置为不存储原始个人身份信息（PII）。'
-              : ' Aggregated, anonymized usage statistics (page views, feature engagement, error rates) via Sentry. Sentry receives IP addresses and browser fingerprints for error diagnosis, but we configure Sentry to not store raw PII.'}
+              ? ' 通过 Sentry 收集的汇总、匿名化使用统计数据（页面浏览量、功能使用情况、错误率）。Sentry 会接收 IP 地址和浏览器指纹用于错误诊断，但我们已将 Sentry 配置为不存储原始个人身份信息（PII）。此外，我们通过 PostHog 收集产品使用事件（如挑战参与、聊天交互、抽卡结果），用于改进产品。PostHog 收到的是您的 Symy 账户标识符（非邮箱），事件属性为枚举值与数值，不含自由文本；AI 对话的输入与输出摘录（截断至 2000 字符）也会发送至 PostHog 用于 AI 质量观测。我们尊重浏览器的「请勿追踪」（DNT）信号。'
+              : ' Aggregated, anonymized usage statistics (page views, feature engagement, error rates) via Sentry. Sentry receives IP addresses and browser fingerprints for error diagnosis, but we configure Sentry to not store raw PII. We also collect product usage events (e.g., challenge participation, chat interactions, gacha outcomes) via PostHog to improve the product. PostHog receives your Symy account identifier (not your email); event properties are enums and numbers, not free text. Excerpts of AI conversation input and output (truncated to 2,000 characters) are also sent to PostHog for AI quality observability. We respect the browser Do-Not-Track (DNT) signal.'}
           </p>
           <p>
             <strong>{isZh ? '推荐数据：' : 'Referral data:'}</strong>
@@ -217,6 +217,12 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
             <li>
               <strong>{isZh ? 'Sentry' : 'Sentry'}</strong>
               {isZh ? ' —— 错误监控（已启用 PII 清洗，保留 90 天）；' : ' — error monitoring (PII scrubbing enabled, 90-day retention);'}
+            </li>
+            <li>
+              <strong>PostHog</strong>
+              {isZh
+                ? ' —— 产品分析与 AI 质量观测（账户标识符标识、枚举与数值属性、AI 对话摘录截断 2000 字符、尊重 DNT）；'
+                : ' — product analytics and AI quality observability (account-identifier identity, enum/number properties, AI conversation excerpts truncated to 2,000 characters, respects DNT);'}
             </li>
             <li>
               <strong>{isZh ? 'Vercel' : 'Vercel'}</strong>
