@@ -1,8 +1,6 @@
 // @vitest-environment happy-dom
 
 import React from 'react';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { SmartPromptChips } from '../smart-prompt-chips';
@@ -176,9 +174,8 @@ describe('SmartPromptChips', () => {
     expect(screen.getByText('What do you want to save today?')).toBeTruthy();
   });
 
-  it('hides chips after first message sent (sessionStorage flag)', () => {
+  it('hides chips after first message sent (prop path)', () => {
     badgeGoalMock.getBadgeGoal.mockReturnValue(null);
-    window.sessionStorage.setItem('symy-chat-first-message-sent', 'true');
 
     render(
       <SmartPromptChips
@@ -187,29 +184,28 @@ describe('SmartPromptChips', () => {
         healthEvents={[]}
         hasHadInterceptInSession={false}
         onQuickReply={vi.fn()}
-      />,
+      />
     );
 
+    // 🔧 R1046: sessionStorage 死读已删 — 唯一隐藏路径是 hasSentMessage prop
     expect(screen.queryByText('What do you want to save today?')).toBeNull();
   });
 
-  it('gates the hidden-session preference behind mount, then hides the fallback chip', () => {
-    const source = readFileSync(resolve(process.cwd(), 'src/components/chat/smart-prompt-chips.tsx'), 'utf8');
-
-    expect(source).toContain('mounted && window.sessionStorage.getItem');
+  it('still shows chips when storage flag set but prop is false (死读已删, storage 不再影响)', () => {
     badgeGoalMock.getBadgeGoal.mockReturnValue(null);
     window.sessionStorage.setItem('symy-chat-first-message-sent', 'true');
 
-    const view = render(
+    render(
       <SmartPromptChips
         hasSentMessage={false}
         buddyState={createBuddyState({ streak: 0 })}
         healthEvents={[]}
         hasHadInterceptInSession={false}
         onQuickReply={vi.fn()}
-      />,
+      />
     );
 
-    expect(view.queryByText('What do you want to save today?')).toBeNull();
+    // 🔧 R1046: storage key 全库零写入方 — 死读删除后 storage 状态不再影响显示
+    expect(screen.getByText('What do you want to save today?')).toBeTruthy();
   });
 });

@@ -2,12 +2,10 @@
 
 import { useMemo } from 'react';
 import { useI18n } from '@/i18n/provider';
-import { useMounted } from '@/hooks/use-mounted';
 import type { HealthEvent, BuddyState } from '@/types/buddy-state';
 import { getBadgeGoal } from '@/lib/badge-goal';
 import { ALL_BADGES } from '@/lib/badge-constants';
 
-const SESSION_FIRST_MESSAGE_SENT = 'symy-chat-first-message-sent';
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 export interface SmartPromptChipsProps {
@@ -31,15 +29,14 @@ export function SmartPromptChips({
   onQuickReply,
 }: SmartPromptChipsProps) {
   const { t } = useI18n();
-  const mounted = useMounted();
 
   const chips = useMemo(() => {
-    // 🔧 QA qa7 fix: hasSentMessage 之前由调用方硬编码 false 且 sessionStorage 无写入方 —
-    //   发过消息后 chips 永不消失。双保险: prop(调用方 messagesCount>0) + sessionStorage 标记。
+    // 🔧 QA qa7 fix: hasSentMessage 由调用方传入 (messagesCount > 0) — 发过消息后 chips 消失.
+    // 🔧 R1046 收编: 删 sessionStorage 死读 (symy-chat-first-message-sent) — 该 key 全库
+    //   零写入方, 「双保险」实为单保险 (prop 面有效, storage 面是死读). 补写入方反而会
+    //   引入跨用户泄漏 (A 首消息写入 → 同 tab 换登录 B → B 该看 chips 却被 A 的标记隐藏,
+    //   R1021 清单完备性族), 故删除而非补写.
     if (hasSentMessage) {
-      return [];
-    }
-    if (mounted && window.sessionStorage.getItem(SESSION_FIRST_MESSAGE_SENT) === 'true') {
       return [];
     }
 
@@ -90,7 +87,7 @@ export function SmartPromptChips({
         text: t('chat.smartPrompt.fallback', { defaultValue: 'What do you want to save today?' }),
       },
     ];
-  }, [buddyState, healthEvents, hasSentMessage, mounted, t]);
+  }, [buddyState, healthEvents, hasSentMessage, t]);
 
   const extraChip = useMemo(() => {
     if (hasHadInterceptInSession) {
