@@ -6,8 +6,15 @@
  * 次日由回访条消费。零金额: 全链路只有品类与次数, 不涉及 saved 金额。
  */
 
-/** 可识别的守护品类 (与 micro-challenge 五品类对齐) */
-export type CooldownCategory = 'electronics' | 'clothing' | 'beauty' | 'home' | 'food';
+import type { InterceptCategory } from '@/features/butterfly/green-alt-copy';
+
+/**
+ * 可识别的守护品类 — R856: 从 SSOT 源 InterceptCategory 投影 (Exclude 'default'),
+ * 与 MicroChallengeCategory / DimensionQueryCategory 同款对齐方式 (b134 方案 A)。
+ * 此前为独立五档字面量声明, 对齐靠注释无编译期保证; 投影后源加/删档时此处
+ * 随动, 消除漂移面。
+ */
+export type CooldownCategory = Exclude<InterceptCategory, 'default'>;
 
 /** 冷静卡 payload (服务端 cooldown-turn 产出, 挂到 assistant 消息) */
 export interface CooldownCardData {
