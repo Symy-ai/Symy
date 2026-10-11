@@ -13,6 +13,7 @@
  */
 
 import { resolveQueryWindowFromText } from './query-window-range';
+import { YIELD_CORE_ZH, YIELD_CORE_EN } from './yield-core';
 import type { SavingsQueryWindow } from '@/types/savings-query';
 import type { DimensionQueryCategory } from '@/types/dimension-query';
 
@@ -21,14 +22,19 @@ export interface CategoryQueryIntent {
   category: DimensionQueryCategory;
 }
 
-/** 更强购物意图让路 (与 57-c savings-query-detector 同款) */
+/** 更强购物意图让路 (与 57-c savings-query-detector 同款)
+ *  🔧 R1216 收编 (R1076 观察项): 核心 4 模式抽到 yield-core.ts 单源, 本文件只留
+ *  category 语境增量 (该买…吗求问强化 + 想买/吃/喝等具体消费动作)。 */
 const YIELD_ZH: readonly RegExp[] = [
-  /(该不该买|该买.{0,6}吗|要不要买|值得买吗)/,
-  /还是.{1,24}(好|值|划算|呢|吗|\?|？)/,
+  ...YIELD_CORE_ZH,
+  /(帮我看看.{0,8}该不该)/,
+  /(想|要|打算)(要|去|买|喝|吃|囤)/,
+  /(吃|喝|买|点|订|下单|逛)/,
 ];
 const YIELD_EN: readonly RegExp[] = [
-  /(?<![\w-])(?:should i buy|is it worth|worth buying)(?![\w-])/i,
-  /\svs\.?\s/i,
+  ...YIELD_CORE_EN,
+  /(?<![\w-])(?:want to|wanna|i'?ll buy|going to buy)(?![\w-])/i,
+  /(?<![\w-])(?:eat|eating|buy|buying|order|ordering|get|grab)(?![\w-])/i,
 ];
 
 /** 帮别人问不触发 (第三人称求问, 账不是本人的) */

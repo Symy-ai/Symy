@@ -27,16 +27,19 @@ export interface SavingsQueryIntent {
   window: SavingsQueryWindow;
 }
 
-/** 更强购物意图让路 — 求问/承诺/对比/清单四流在前 (route 链序 + 这里再挡一道) */
+import { YIELD_CORE_ZH, YIELD_CORE_EN } from './yield-core';
+
+/** 更强购物意图让路 — 求问/承诺/对比/清单四流在前 (route 链序 + 这里再挡一道)
+ *  🔧 R1216 收编 (R1076 观察项): 核心 4 模式抽到 yield-core.ts 单源 (四 detector
+ *  同构核心), 本文件只留 savings 语境增量 (不买/不囤承诺 + no more 承诺)。 */
 const YIELD_ZH: readonly RegExp[] = [
-  /(该不该买|该买.{0,6}吗|要不要买|值得买吗|帮我看看.{0,8}该不该)/,
+  ...YIELD_CORE_ZH,
+  /(该买.{0,6}吗.*帮我看看|帮我看看.{0,8}该不该)/,
   /(不买|不囤).{0,12}(了|啦)/,
-  /还是.{1,24}(好|值|划算|呢|吗|\?|？)/,
 ];
 const YIELD_EN: readonly RegExp[] = [
-  /(?<![\w-])(?:should i buy|is it worth|worth buying)(?![\w-])/i,
+  ...YIELD_CORE_EN,
   /(?<![\w-])(?:no more|not buying|won'?t buy)(?![\w-])/i,
-  /\svs\.?\s/i,
 ];
 
 /** 问账语义 (zh) — 必须是「问数字」形态, 陈述句 (我省钱了) 天然不中 */

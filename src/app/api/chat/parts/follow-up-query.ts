@@ -22,6 +22,7 @@
 
 import { resolveCategoryFromText } from './category-query-detector';
 import { resolveImpulseWindowFromText } from './impulse-time-query-detector';
+import { YIELD_CORE_ZH, YIELD_CORE_EN } from './yield-core';
 import type { SavingsQueryWindow } from '@/types/savings-query';
 import type { DimensionQueryCategory, ImpulseTimeWindowId } from '@/types/dimension-query';
 
@@ -50,16 +51,17 @@ export type ResolvedFollowUp =
   | { kind: 'category'; window: SavingsQueryWindow; category: DimensionQueryCategory }
   | { kind: 'impulse'; window: SavingsQueryWindow; impulseWindow: ImpulseTimeWindowId };
 
-/** 更强购物意图让路 (与 58-c 同款) + 想/要买语境 — 裸品类词 + 想买 ≠ 追问 */
+/** 更强购物意图让路 (与 58-c 同款) + 想/要买语境 — 裸品类词 + 想买 ≠ 追问
+ *  🔧 R1216 收编 (R1076 观察项): 核心 4 模式抽到 yield-core.ts 单源 (四 detector
+ *  同构核心), 本文件只留 follow-up 语境增量 (想买/具体消费动作词表)。 */
 const YIELD_ZH: readonly RegExp[] = [
-  /(该不该买|该买.{0,6}吗|要不要买|值得买吗)/,
-  /还是.{1,24}(好|值|划算|呢|吗|\?|？)/,
+  ...YIELD_CORE_ZH,
   /(想|要|打算)(要|去|买|喝|吃|囤)/,
   /(吃|喝|买|点|订|下单|逛)/,
 ];
 const YIELD_EN: readonly RegExp[] = [
-  /(?<![\w-])(?:should i buy|is it worth|worth buying|want to|wanna|i'?ll buy|going to buy)(?![\w-])/i,
-  /\svs\.?\s/i,
+  ...YIELD_CORE_EN,
+  /(?<![\w-])(?:want to|wanna|i'?ll buy|going to buy)(?![\w-])/i,
   /(?<![\w-])(?:eat|eating|buy|buying|order|ordering|get|grab)(?![\w-])/i,
 ];
 

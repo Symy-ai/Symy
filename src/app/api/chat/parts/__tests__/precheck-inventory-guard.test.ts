@@ -139,6 +139,8 @@ const FROZEN_PARTS_MODULES = [
   'user-history-context.ts',
   'user-message-extract.ts',
   'websearch-wait-stream.ts',
+  // 🔧 R1216 收编 (R1076 观察项): 四 detector YIELD 同构核心抽出为单源文件
+  'yield-core.ts',
 ];
 
 function listPartsModules(): string[] {

@@ -20,19 +20,21 @@
 
 import { resolveCategoryFromText } from './category-query-detector';
 import { resolveImpulseWindowFromText } from './impulse-time-query-detector';
+import { YIELD_CORE_ZH, YIELD_CORE_EN } from './yield-core';
 
 /** 预报聚焦日 — 0=周一 … 6=周日 (与 WEEKDAYS_EN/ZH 同约定) */
 export type ForecastDayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-/** 更强购物意图让路 (与 57-c/58-c 同款) */
+/** 更强购物意图让路 (与 57-c/58-c 同款)
+ *  🔧 R1216 收编 (R1076 观察项): 核心 4 模式抽到 yield-core.ts 单源, 本文件只留
+ *  forecast 语境增量 (想/打算消费动作 — 预报让给当下消费意图)。 */
 const YIELD_ZH: readonly RegExp[] = [
-  /(该不该买|该买.{0,6}吗|要不要买|值得买吗)/,
-  /还是.{1,24}(好|值|划算|呢|吗|\?|？)/,
+  ...YIELD_CORE_ZH,
   /(想|要|打算)(要|去|买|喝|吃|囤)/,
 ];
 const YIELD_EN: readonly RegExp[] = [
-  /(?<![\w-])(?:should i buy|is it worth|worth buying|want to|wanna|going to buy)(?![\w-])/i,
-  /\svs\.?\s/i,
+  ...YIELD_CORE_EN,
+  /(?<![\w-])(?:want to|wanna|going to buy)(?![\w-])/i,
 ];
 
 /** 天气/日程/健康/纯生活话题让路 — 预报只答消费触发规律 */
