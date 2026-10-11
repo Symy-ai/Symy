@@ -33,16 +33,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch, apiFetchVoid, ApiError } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { useBuddyActions } from './use-buddy-actions';
+// 🔧 R1199 收编 (R1198 观察项): 删死导入 getHealthFromVitality (文件内零消费, 判例同 R1065
+// 死符号删除——真活消费在 use-buddy-actions/buddy-state-helpers, 与本文件无关), 并合并
+// 分裂的同模块二次导入 (no-duplicate-imports disable 随删)。
 import {
   DEFAULT_VITALITY,
   DEFAULT_TOKENS,
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getHealthFromVitality,
+  SAVINGS_FUND_ID,
+  DEFAULT_DREAM_FUNDS,
 } from '@/lib/buddy-defaults';
 import type { BuddyState, BuddyHealth, DreamFund } from '@/types/buddy-state';
 import { generateDreamFundId } from '@/lib/id-helpers';
-// eslint-disable-next-line no-duplicate-imports
-import { SAVINGS_FUND_ID, DEFAULT_DREAM_FUNDS } from '@/lib/buddy-defaults';
 import { useCallback, useEffect, useId, useRef } from 'react';
 import { createClient as createBrowserSupabaseClient } from '@/lib/supabase-browser';
 import { useBuddyTimers } from './use-buddy-timers';
