@@ -115,7 +115,7 @@ export function useChallengeFlow({ isDemo, userId, onNavigateChat, onToast, puls
     if (isDemo) return;
     if (!userId) return;
     let cancelled = false;
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 挑战预取 (prefetchPromiseRef 模块级去重, 进 Buddy tab 前预热), 失败降级无挑战; 与 use-challenge-fetch 同端点
     prefetchPromiseRef.current = apiFetch<{ challenge?: { id: string; item_name: string; amount: number } }>('/api/challenge/active')
       .then(data => {
         const challenge = data?.challenge || null;

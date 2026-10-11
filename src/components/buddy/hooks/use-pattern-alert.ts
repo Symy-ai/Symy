@@ -19,7 +19,7 @@ export function usePatternAlert({ isDemo, userId }: { isDemo: boolean; userId?: 
   useEffect(() => {
     if (isDemo || !userId) return;
     let active = true;
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 消费模式提醒一次性读 (active 守卫, 失败降级 null 不显示), one-shot decorative read 同款; RQ 迁移候选
     fetch('/api/buddy/pattern-alert')
       .then(r => r.ok ? r.json() : null)
       .then((d: PatternAlertData | null) => { if (active && d?.alert) setPatternAlertData(d); })

@@ -361,7 +361,7 @@ export function useButterflyNormalPlayer(): UseButterflyNormalPlayerReturn {
               logger.info('[NormalPlayer] V34: storyComplete not received after 3s, fetching from DB');
               if (sessionId) {
                 // 🔧 ARCH fix (Round 5 AUDIT-1 M-4): 用 apiFetch 替代裸 fetch — 获得 30s timeout + credentials + 统一错误处理
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 会话恢复一次性读 (sessionId 存在才拉, RQ 迁移候选), 失败降级新会话
                 apiFetch<{ session: ButterflySession | null }>(`/api/butterfly/session?sessionId=${sessionId}`)
                   .then((data) => {
                     const s = data?.session;

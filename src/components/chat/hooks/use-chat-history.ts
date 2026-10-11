@@ -134,8 +134,8 @@ export function useChatHistory({
         // 🔧 ARCH fix (Round 38 H3 — loadHistory 用 raw fetch 绕过 apiFetch):
         //    旧代码用 raw fetch → 无 30s timeout, 401 不触发 signOut, catch 吞错无日志。
         //    根因修复: 用 apiFetch (统一错误处理 + timeout + ApiError 含 status)。
-        // 豁免理由: loadHistory 是 symy/no-raw-fetch-in-use-effect 的既定例外 (冷载历史专用, 401 有专门分流)
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+        // 豁免理由: loadHistory 是 symy/no-raw-fetch-in-use-effect 的既定例外 (冷载历史专用, 401 有专门分流; 分页+nonce 防竞态设计, RQ 缓存语义反而不适配 — 历史流式追加)
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 冷载会话历史专用例外: apiFetch (Round 38 H3 修复) + cancelled/nonce 竞态防护, RQ 缓存与流式分页追加模型不匹配
         const data = await apiFetch<{ messages?: Array<{ id: string; role: string; content: string; reasoning?: string; created_at: string }>; hasMore?: boolean }>(
           `/api/chat/history?limit=${pageSize}&mode=${mode}`,
           { headers: { 'Cache-Control': 'no-cache' } }

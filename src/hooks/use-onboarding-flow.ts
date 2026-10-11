@@ -57,7 +57,7 @@ export function useOnboardingFlow({ user, loading, isDemo }: UseOnboardingFlowAr
       //   修复: 新注册用户始终显示 onboarding (由 profiles.onboarding_completed 控制)
       //         demo 模式的 localStorage 不再影响真实用户
 
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- onboarding 状态一次性读 (登录后首屏判定), 失败降级未完成 → 显示引导, 与 use-aha-moment 同款
       apiFetch<{ onboarding_completed?: boolean }>('/api/user/onboarding')
         .then((data) => {
           if (cancelled) return;

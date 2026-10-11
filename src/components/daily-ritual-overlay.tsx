@@ -99,7 +99,7 @@ export function DailyRitualOverlay({
           if (!cancelled) setShouldShow(shouldShowDemo);
         } else {
           // Authenticated: check server
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 每日仪式状态一次性读 (登录用户, localStorage 日键已挡大半), 失败降级不显示 overlay
           const data = await apiFetch<{ shouldShow: boolean; lastRitualAt: string | null; intervalMs: number }>(
             '/api/user/ritual-status'
           );

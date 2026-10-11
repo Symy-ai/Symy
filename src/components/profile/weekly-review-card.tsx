@@ -59,7 +59,7 @@ export function WeeklyReviewCard({ isActive = true, onOpenInsights }: WeeklyRevi
 
     (async () => {
       try {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 周报卡一次性读 (AbortController 可取消), 失败降级隐藏卡片, one-shot decorative read 同款
         const result = await apiFetch<WeeklyReviewData>('/api/buddy/weekly-review', {
           signal: controller.signal,
         });

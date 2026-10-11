@@ -135,7 +135,7 @@ export function useHourlyRate(isDemo = false): UseHourlyRateResult {
     if (!fetchPromise) {
       fetchPromise = (async () => {
         try {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 单例初始化读 (fetchPromise 模块级去重, 见 R1201 单例隐私判例), 全会话仅一次; RQ 迁移候选 (B 档)
           const data = await apiFetch<{ hourlyRate: number; default?: boolean; isDefault?: boolean }>(
             '/api/user/hourly-rate'
           );
@@ -191,7 +191,7 @@ export function useHourlyRate(isDemo = false): UseHourlyRateResult {
     function handleVisibilityChange() {
       if (document.visibilityState === 'visible' && sharedInitialized) {
         // 重新 fetch 最新时薪
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- visibilitychange 回调内 refetch (用户回前台才刷新), 单例已初始化前提下低频; 与初始化读同端点
         apiFetch<{ hourlyRate: number; default?: boolean; isDefault?: boolean }>(
           '/api/user/hourly-rate'
         ).then((result) => {

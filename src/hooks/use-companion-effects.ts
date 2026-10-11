@@ -38,7 +38,7 @@ export function useCompanionEffects({
 
     const lastOpenDate = typeof window !== 'undefined' ? localStorage.getItem(`symy-last-open-${userId}`) : null;
 
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 每日一次惰性触发 (localStorage 日键防重), fire-and-forget POST 生成主动消息, 无 UI 状态依赖; 服务器幂等
     fetch('/api/buddy/proactive-messages/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -65,7 +65,7 @@ export function useCompanionEffects({
     const todayKey = new Date().toISOString().slice(0, 10);
     if (lastChecked === todayKey) return;
 
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 每日一次惰性触发 (日键防重, 同 proactive-messages 模式), fire-and-forget POST 性格觉醒, 服务器幂等
     fetch('/api/buddy/personality', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -95,7 +95,7 @@ export function useCompanionEffects({
     // 🔧 2026-07-15 (deep audit NEW #2): Add cancelled guard — prevents setState
     // after unmount or cross-user data leak on rapid account switch
     let cancelled = false;
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- one-shot 装饰读 (挑战统计卡), 失败降级空统计 + cancelled 守卫防跨用户泄漏 (deep audit NEW #2); RQ 迁移候选
     apiFetch<{ totalSaw: number; totalPassed: number; totalFailed: number }>('/api/challenge/stats')
       .then(data => { if (!cancelled && data) setChallengeStats(data); })
       .catch((err) => {

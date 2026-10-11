@@ -241,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         _localeSyncInFlightUserId = user.id;
         _localeSyncCompletedUserIds.add(user.id);
         // 🔧 ARCH fix (Round 39 — raw fetch → apiFetchVoid, 加 logger.warn)
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- locale 同步上报 (每用户一次, Set 去重), fire-and-forget, 失败仅 logger.warn
         apiFetchVoid('/api/user/locale', {
           method: 'POST',
           body: payload,

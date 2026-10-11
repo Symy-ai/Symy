@@ -51,7 +51,7 @@ export function useAhaMoment({
         timer = setTimeout(() => { if (!cancelled) setShowAhaMoment(true); }, 800);
       }
     } else if (user?.id) {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- aha 时刻探测一次性读 (onboarding 状态), 失败降级不标记, 与 use-onboarding-flow 同款端点
       apiFetch<{ onboarding_completed?: boolean }>('/api/user/onboarding')
         .then((data) => {
           if (cancelled) return;

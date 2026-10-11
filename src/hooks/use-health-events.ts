@@ -98,7 +98,7 @@ export function useHealthEvents({ isDemo, userId, vitality }: UseHealthEventsArg
           //   The UI only displays the first 10 anyway (sliced in the component), so we
           //   fetch 50 and let the component slice — this also gives us more data for free
           //   if the user scrolls.
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 健康事件流分页读 (gen 代际守卫防竞态, fetch 50 条供滚动), 失败降级空列表; RQ 迁移候选
           const data = await apiFetch<{ events?: HealthEvent[] }>('/api/buddy/health-events?limit=50');
           if (myGen !== healthFetchGenRef.current) return;
           if (!healthActiveRef.current) return;

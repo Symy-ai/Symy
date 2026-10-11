@@ -59,7 +59,7 @@ export function GuardRankProgressSection({ totalIntercepts, streakDays, badgesUn
     if (weeklyReviewProp !== undefined || !stats.totalIntercepts) return;
     const controller = new AbortController();
     // safe to ignore: weekly-review 是可选增强数据, AbortController 已防悬挂; 组件挂载时 auth 必已就绪, 不属冷载 401 风暴类
-    // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+    // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 守护等级进度可选增强读 (AbortController 防悬挂, 失败降级隐藏进度区), one-shot decorative read 同款
     apiFetch<WeeklyReviewLite>('/api/buddy/weekly-review', { signal: controller.signal })
       .then((data) => { if (!controller.signal.aborted) setWeek(data); })
       .catch((err: unknown) => {

@@ -80,7 +80,7 @@ export function useRefCodeTracking(userId: string | null | undefined) {
 
     (async () => {
       try {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 邀请码归因上报 (一次性, ref 已在 URL 时不再触发), fire-and-forget, 失败仅 logger.warn 不影响 UX
         const result = await apiFetch<{
           recorded?: boolean;
           guardian?: { completedCount?: number; badgeProgress?: number; badgeLinked?: boolean };

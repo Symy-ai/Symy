@@ -72,7 +72,7 @@ export function useChallengeFetch({
     }
     prevActiveRef.current = activeChallenge;
     let cancelled = false;
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 挑战状态同步读 (activeChallenge 变化触发, prevActiveRef 防重复拉取), 失败静默保持现状态; cancelled 防竞态
     apiFetch<{ challenge?: { id: string; item_name: string; amount: number | string } }>('/api/challenge/active', { headers: { 'Cache-Control': 'no-cache' } })
       .then(data => {
         if (cancelled) return;
@@ -110,7 +110,7 @@ export function useChallengeFetch({
     prevExpiredActiveRef.current = activeChallenge;
     let cancelled = false;
     // 🔧 架构还债: 用 apiFetch 替代内联 fetch (统一错误处理 + 类型安全)
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 过期挑战同步读 (与 /active 同款: prop 变化触发 + prevRef 防重 + cancelled 防竞态), 失败静默
     apiFetch<{ challenge?: { id: string; item_name: string; amount: number | string } }>('/api/challenge/expired', { headers: { 'Cache-Control': 'no-cache' } })
       .then(data => {
         if (cancelled) return;

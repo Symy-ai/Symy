@@ -158,7 +158,7 @@ export function BlindSpotMap({ isActive = true }: BlindSpotMapProps) {
 
     (async () => {
       try {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 盲点图一次性读 (AbortController 可取消), 失败降级隐藏卡片, 与 weekly-review-card 同款
         const result = await apiFetch<BlindSpotData>('/api/blind-spot-map', {
           signal: controller.signal,
         });

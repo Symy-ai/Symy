@@ -62,7 +62,7 @@ export function HomeTab({ status, events, stats, onNavigateMonitor: _onNavigateM
       return;
     }
     let cancelled = false;
-    // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+    // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 活跃挑战一次性读 (Home tab 挂载, cancelled 防竞态), 失败降级无挑战; 与 use-challenge-fetch 同端点
     apiFetch<{ challenge?: { id: string; item_name: string; amount: number } }>('/api/challenge/active')
       .then((data) => { if (!cancelled) setActiveChallenge(data?.challenge ?? null); })
       .catch(() => { if (!cancelled) setActiveChallenge(undefined); });

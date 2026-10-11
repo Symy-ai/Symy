@@ -51,7 +51,7 @@ export function useGachaQuota(isDemo: boolean, onAuthPrompt?: (type: string) => 
     (async () => {
       try {
         const { apiFetch } = await import('@/lib/api-client');
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 抽卡额度一次性读 (挂载即查, cancelled 守卫), 失败降级额度未知 → 按钮照常; RQ 迁移候选
         const data = await apiFetch<{ count?: number; remaining?: number; isPremium?: boolean }>('/api/buddy/gacha-limit');
         if (!cancelled) {
           setGachaUsedToday(data?.count || 0);

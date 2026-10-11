@@ -62,7 +62,7 @@ export function ShareCardModal({ open, onClose, buddyState, aiQuote, onToast }: 
     let cancelled = false;
     (async () => {
       try {
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 邀请码一次性读 (modal 打开时, cancelled 守卫), 失败降级隐藏邀请区
         const data = await apiFetch<{ refCode: string }>('/api/invite/link');
         if (!cancelled && data?.refCode) setRefCode(data.refCode);
       } catch (err) {

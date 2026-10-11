@@ -35,7 +35,7 @@ export function useProfileData({ showPremiumToastMsg }: UseProfileDataArgs) {
     if (!user?.id) return;
     let cancelled = false;
     // 🔧 架构还债: 用 apiFetch 替代内联 fetch
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- one-shot 装饰读 (邮箱连接状态), 失败降级空列表+logger.warn, cancelled 标志防 unmount setState (S-07 fix); RQ 迁移候选
     apiFetch<{ connections?: EmailConnection[] }>('/api/email/status')
       .then((data) => {
         if (!cancelled && data.connections) setEmailConnections(data.connections);
@@ -46,7 +46,7 @@ export function useProfileData({ showPremiumToastMsg }: UseProfileDataArgs) {
         logger.warn('[ProfileTab] Failed to load email connections:', err instanceof Error ? err.message : String(err));
       });
     // 🔧 VIP 内测: 获取用户 plan (判断邮箱接入权限)
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- one-shot 装饰读 (plan 探测), 失败降级 free plan + logger.warn, 与 email/status 同款 cancelled 模式
     apiFetch<{ isPremium?: boolean }>('/api/challenge/limit')
       .then((data) => {
         if (!cancelled && data.isPremium) {
@@ -66,9 +66,9 @@ export function useProfileData({ showPremiumToastMsg }: UseProfileDataArgs) {
     //    旧代码用 Promise.all — 任一 fetch 失败则全部丢弃, 用户看到 $0 saved。
     //    根因修复: 用 Promise.allSettled, 部分成功仍显示数据。
     Promise.allSettled([
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- one-shot 装饰读 (单据流, allSettled 部分成功仍显示, Round 22 H4 修复), 失败降级空单据列表; RQ 迁移候选
       apiFetch<{ receipts?: EmailReceipt[] }>('/api/email/receipts?status=actionable&limit=50'),
-  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect
+  // eslint-disable-next-line symy/no-raw-fetch-in-use-effect -- 同上 (refunded 通道, 同一 allSettled 批)
       apiFetch<{ receipts?: EmailReceipt[] }>('/api/email/receipts?status=refunded&limit=50'),
     ]).then(([actionableResult, refundedResult]) => {
       if (cancelled) return;
