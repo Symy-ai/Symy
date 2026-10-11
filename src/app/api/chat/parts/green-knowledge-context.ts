@@ -15,6 +15,7 @@ import { GREEN_ALTERNATIVES } from '@/lib/green-alternatives';
 import type { GreenLocale } from '@/lib/green-alt-types';
 import { matchGreenKnowledge, greenKnowledgeLabel } from '@/lib/green-knowledge-query';
 import type { GreenKnowledgeCardData } from '@/types/green-knowledge';
+import { prependCardEvent } from './sse-prepend-event';
 
 export interface GreenKnowledgeInjection {
   /** 注入 Letta prompt 的 [GREEN KNOWLEDGE: ...] 块; 未命中为 null */
@@ -70,33 +71,12 @@ export function greenKnowledgeSseEvent(payload: GreenKnowledgeCardData): Uint8Ar
 /**
  * 命中时在流最前面注入 green_knowledge 事件, 之后逐字节透传 Letta 原始流;
  * 未命中原样返回 inner (零包装开销)。
+ * R927 收编: 泵体上收 parts/sse-prepend-event.ts, 本函数为薄壳。
  */
 export function withGreenKnowledgeEvent(
   inner: ReadableStream<Uint8Array>,
   payload: GreenKnowledgeCardData | null,
 ): ReadableStream<Uint8Array> {
   if (!payload) return inner;
-  const event = greenKnowledgeSseEvent(payload);
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(event);
-      const reader = inner.getReader();
-      const pump = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            controller.enqueue(value);
-          }
-          controller.close();
-        } catch (err) {
-          controller.error(err);
-        }
-      };
-      void pump();
-    },
-    cancel(reason) {
-      return inner.cancel(reason);
-    },
-  });
+  return prependCardEvent(inner, greenKnowledgeSseEvent(payload));
 }

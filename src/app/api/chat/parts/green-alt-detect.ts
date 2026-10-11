@@ -14,6 +14,7 @@ import { suggestAlternativeWithPreference } from '@/lib/green-alt-preference-ran
 import type { GreenAltPreferenceState } from '@/lib/green-alt-preference';
 import type { GreenLocale } from '@/lib/green-alt-types';
 import type { GreenAltCardData } from '@/types/green-alt-card';
+import { prependCardEvent } from './sse-prepend-event';
 
 /**
  * 关键词预检: 命中则给绿色替代卡片 payload, 未命中/开关关 → null。
@@ -48,34 +49,13 @@ export function greenAltSseEvent(payload: GreenAltCardData): Uint8Array {
 /**
  * 命中时在流最前面注入 green_alt 事件, 之后逐字节透传 Letta 原始流;
  * 未命中原样返回 inner (零包装开销)。
+ * R927 收编: 泵体上收 parts/sse-prepend-event.ts (三处 with*Event 逐字同构),
+ * 本函数为薄壳 (判 null + 组事件 + 调单源)。
  */
 export function withGreenAltEvent(
   inner: ReadableStream<Uint8Array>,
   payload: GreenAltCardData | null,
 ): ReadableStream<Uint8Array> {
   if (!payload) return inner;
-
-  const event = greenAltSseEvent(payload);
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(event);
-      const reader = inner.getReader();
-      const pump = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            controller.enqueue(value);
-          }
-          controller.close();
-        } catch (err) {
-          controller.error(err);
-        }
-      };
-      void pump();
-    },
-    cancel(reason) {
-      return inner.cancel(reason);
-    },
-  });
+  return prependCardEvent(inner, greenAltSseEvent(payload));
 }

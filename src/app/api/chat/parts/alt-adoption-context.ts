@@ -24,6 +24,7 @@ import {
 } from '@/lib/alt-adoption-profile';
 import type { AltFootprintCardData } from '@/types/alt-footprint';
 import type { GreenLocale } from '@/lib/green-alt-types';
+import { prependCardEvent } from './sse-prepend-event';
 
 /** 拉取行数上限 — 足迹是全量分布 + 30 天窗口, 最近 200 条采纳足够且单查询可控 */
 const CONTEXT_ALT_ADOPTION_LIMIT = 200;
@@ -162,33 +163,12 @@ export function altFootprintSseEvent(payload: AltFootprintCardData): Uint8Array 
 /**
  * 足迹召回命中时在流最前面注入 alt_footprint 事件, 之后逐字节透传 Letta 原始流;
  * 未命中原样返回 inner (零包装开销)。
+ * R927 收编: 泵体上收 parts/sse-prepend-event.ts, 本函数为薄壳。
  */
 export function withAltFootprintEvent(
   inner: ReadableStream<Uint8Array>,
   payload: AltFootprintCardData | null,
 ): ReadableStream<Uint8Array> {
   if (!payload) return inner;
-  const event = altFootprintSseEvent(payload);
-  return new ReadableStream<Uint8Array>({
-    start(controller) {
-      controller.enqueue(event);
-      const reader = inner.getReader();
-      const pump = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            controller.enqueue(value);
-          }
-          controller.close();
-        } catch (err) {
-          controller.error(err);
-        }
-      };
-      void pump();
-    },
-    cancel(reason) {
-      return inner.cancel(reason);
-    },
-  });
+  return prependCardEvent(inner, altFootprintSseEvent(payload));
 }

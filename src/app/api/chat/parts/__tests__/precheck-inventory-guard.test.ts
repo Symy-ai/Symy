@@ -132,6 +132,7 @@ const FROZEN_PARTS_MODULES = [
   'shopping-clarify-turn.ts',
   // 🔧 拆相位第23刀 (2026-09-30): SSE 包装栈 (纯函数) 自 route.ts 拆出
   'sse-pipeline.ts',
+  'sse-prepend-event.ts',
   'spending-cap-context.ts',
   'stream-audit.ts',
   'types.ts',
