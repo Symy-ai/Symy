@@ -8,13 +8,18 @@
 
 ## 文档目录
 
+<!-- 🔧 R1244: 目录表对齐现实 — product-overview/tech-architecture/ui-design 三文件不存在 (死链删除); 补齐现存核心文档 -->
+
 | 文档 | 文件 | 说明 |
 |------|------|------|
-| **产品概述** | [product-overview.md](./product-overview.md) | 产品定位、目标用户、核心功能、共生系统设计、版本路线图 |
 | **功能规格** | [feature-spec.md](./feature-spec.md) | 每个功能模块的详细需求、交互流程、验收标准 |
-| **技术架构** | [tech-architecture.md](./tech-architecture.md) | 技术栈、系统架构、目录结构、数据库设计、设计决策 |
-| **API 接口** | [api-reference.md](./api-reference.md) | 全部 API 路由的请求/响应规格 |
-| **UI/UX 设计** | [ui-design.md](./ui-design.md) | 界面布局、交互规范、色彩系统、动效说明 |
+| **API 接口** | [api-reference.md](./api-reference.md) | 早期端点请求/响应规格 (⚠️ 仅覆盖 13/120 路由, 严重过时 — 处置决策待 owner, 见债务池 #33) |
+| **错误决策表** | [error-policy.md](./error-policy.md) | 18 failure mode 的 fail-closed/fail-open 决策 (代码即守卫 no-warn-only-catch 的文档锚) |
+| **产品铁律** | [PRODUCT-DOCTRINE.md](./PRODUCT-DOCTRINE.md) | 面子/里子、荣誉框架、执行标准三问 (owner 定案) |
+| **AI 人格契约** | [AI_Prompt.md](./AI_Prompt.md) | AI 行为规范、语言锁、反伪造三禁 |
+| **安全强制** | [SAFETY-ENFORCED.md](./SAFETY-ENFORCED.md) | 安全红线清单 |
+| **Jev 决策门** | [Jev-引入方案-v2.md](./Jev-引入方案-v2.md) + 12 件 jev-*/green-annotation 文档 | Wave 0/1 战役五段链 (方案→侦察→计划→实施→结果) |
+| **治理道体** | [symy-lab/](./symy-lab/) | 道经 (道体永不可改) + 总则 + 治理文档 |
 
 ---
 
