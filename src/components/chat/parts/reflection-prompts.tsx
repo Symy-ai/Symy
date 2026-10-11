@@ -22,14 +22,15 @@ import { REFLECTION_QUESTIONS_EN, REFLECTION_QUESTIONS_ZH } from './reflection-q
 
 interface ReflectionPromptsProps {
   onSelect: (question: string) => void;
-  locale?: 'en' | 'zh';
 }
 
-export function ReflectionPrompts({ onSelect, locale }: ReflectionPromptsProps) {
-  const { t: _t, locale: ctxLocale } = useI18n();
+export function ReflectionPrompts({ onSelect }: ReflectionPromptsProps) {
+  const { t, locale } = useI18n();
   const [dismissed, setDismissed] = useState(false);
-  // 🔧 F6 fix: 优先用 prop locale, fallback 到 i18n context locale (旧代码默认 'en' 覆盖了 context)
-  const effectiveLocale = locale || (ctxLocale === 'zh' ? 'zh' : 'en');
+  // 🔧 R1049 收编 (R1048 观察项22 + locale prop 删除): 壳层三元硬编码双语 → t() key;
+  //   locale prop 是测试专用注入面 (生产唯一调用 chat-messages 不传) — 删除后问题池与
+  //   壳层全跟 context locale, 语言一致性天然保证 (F6 的 context 兜底成为唯一路径).
+  const effectiveLocale = locale === 'zh' ? 'zh' : 'en';
 
   // Pick 3 random questions (memoized — stable per mount)
   const questions = useMemo(() => {
@@ -40,8 +41,10 @@ export function ReflectionPrompts({ onSelect, locale }: ReflectionPromptsProps) 
 
   if (dismissed) return null;
 
-  const title = effectiveLocale === 'zh' ? '想看看为什么吗？' : 'Want to look at why?';
-  const subtitle = effectiveLocale === 'zh' ? '（可选 — 点击一个问题开始反思）' : '(optional — tap a question to reflect)';
+  // 🔧 R1049 收编 (R1048 观察项22, i18n 漂移第 6 例): 壳层三元硬编码双语 → t() key
+  //   (chat.reflectionPrompts.title/subtitle/skip). 问题池本身已 i18n SSOT, 此处是壳层残留.
+  const title = t('chat.reflectionPrompts.title');
+  const subtitle = t('chat.reflectionPrompts.subtitle');
 
   return (
     <div className="flex justify-center mb-4 px-4">
@@ -69,7 +72,7 @@ export function ReflectionPrompts({ onSelect, locale }: ReflectionPromptsProps) 
           onClick={() => setDismissed(true)}
           className="mt-3 w-full text-center text-xs text-text-muted hover:text-text-secondary transition-colors"
         >
-          {effectiveLocale === 'zh' ? '跳过' : 'Skip'}
+          {t('chat.reflectionPrompts.skip')}
         </button>
       </div>
     </div>

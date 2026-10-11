@@ -1749,6 +1749,11 @@
     "guardPolicyRestorePrevious": "恢复上一版策略",
     "guardPolicyReceiptDone": "完成",
     "guardPolicyNoChanges": "守护策略没有变化",
+    "reflectionPrompts": {
+      "title": "想看看为什么吗？",
+      "subtitle": "（可选 — 点击一个问题开始反思）",
+      "skip": "跳过"
+    },
     "contextTrust": {
       "title": "小象为什么现在提",
       "minimal": "只凭你在这轮对话里说的话。",

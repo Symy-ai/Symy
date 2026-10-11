@@ -7,7 +7,24 @@ import { ReflectionPrompts } from '../reflection-prompts';
 const localeMock = vi.hoisted(() => ({ value: 'en' as 'en' | 'zh' }));
 
 vi.mock('@/i18n/provider', () => ({
-  useI18n: () => ({ locale: localeMock.value, t: (key: string) => key }),
+  useI18n: () => ({
+    locale: localeMock.value,
+    // 🔧 R1049: t mock 实现三 key (双语) — 壳层硬编码改 t() 后断言走 i18n 路径
+    t: (key: string) => {
+      const en: Record<string, string> = {
+        'chat.reflectionPrompts.title': 'Want to look at why?',
+        'chat.reflectionPrompts.subtitle': '(optional — tap a question to reflect)',
+        'chat.reflectionPrompts.skip': 'Skip',
+      };
+      const zh: Record<string, string> = {
+        'chat.reflectionPrompts.title': '想看看为什么吗？',
+        'chat.reflectionPrompts.subtitle': '（可选 — 点击一个问题开始反思）',
+        'chat.reflectionPrompts.skip': '跳过',
+      };
+      const table = localeMock.value === 'zh' ? zh : en;
+      return table[key] ?? key;
+    },
+  }),
 }));
 
 function buttons() {
@@ -23,9 +40,9 @@ describe('ReflectionPrompts', () => {
     expect(buttons()).toHaveLength(3);
   });
 
-  it('prefers the explicit locale over the i18n context locale', () => {
-    localeMock.value = 'en';
-    render(<ReflectionPrompts onSelect={vi.fn()} locale="zh" />);
+  it('uses the Chinese pool and shell copy for Chinese context locales', () => {
+    localeMock.value = 'zh';
+    render(<ReflectionPrompts onSelect={vi.fn()} />);
     expect(REFLECTION_QUESTIONS_ZH).toEqual(expect.arrayContaining(buttons().map(({ textContent }) => textContent!)));
     expect(screen.getByText('想看看为什么吗？')).toBeTruthy();
     expect(screen.getByText('（可选 — 点击一个问题开始反思）')).toBeTruthy();

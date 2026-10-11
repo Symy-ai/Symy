@@ -1749,6 +1749,11 @@
     "guardPolicyRestorePrevious": "Restore previous policy",
     "guardPolicyReceiptDone": "Done",
     "guardPolicyNoChanges": "No policy changes",
+    "reflectionPrompts": {
+      "title": "Want to look at why?",
+      "subtitle": "(optional — tap a question to reflect)",
+      "skip": "Skip"
+    },
     "contextTrust": {
       "title": "Why Symy brought this up",
       "minimal": "Only what you said in this conversation.",
