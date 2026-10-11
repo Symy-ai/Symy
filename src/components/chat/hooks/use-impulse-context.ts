@@ -14,13 +14,14 @@ interface UseImpulseContextArgs {
   nextId: (prefix: string) => string;
   saveMessage: (msg: ChatMessage) => void;
   setMessagesSync: (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
+  t: (key: string, values?: Record<string, string | number>) => string;
 }
 
 /**
  * 诱导消费上下文 → 系统开场消息 (外部 trigger → 内部 state)
  * (原为 chat-tab.tsx 内联逻辑 — File Split Wave 1 纯搬运, 行为零变化)
  */
-export function useImpulseContext({ impulseContext, nextId, saveMessage, setMessagesSync }: UseImpulseContextArgs) {
+export function useImpulseContext({ impulseContext, nextId, saveMessage, setMessagesSync, t }: UseImpulseContextArgs) {
   const [hasContext, setHasContext] = useState(false);
 
   // 当 impulseContext 变化时重置 hasContext，允许后续被诱导事件产生消息
@@ -48,12 +49,23 @@ export function useImpulseContext({ impulseContext, nextId, saveMessage, setMess
       // impulseContext prop → hasContext state (外部 trigger → 内部 state)
 
       setHasContext(true);
+      // 🔧 R1028 fix (i18n 漂移第 5 例): 旧代码硬编码英文模板 — zh 用户从首页带消费事件
+      //   进入聊天时收到英文系统开场消息. 修复: 走 i18n key chat.impulseGreeting
+      //   (+impulseGreetingReasons 条件段), 插值 platform/amount/reasons.
+      //   金额显示走数字锚定 (toFixed(2)), 与旧模板逐字节兼容 (en 视觉零变化).
+      const reasonsText = impulseContext.reasons.length > 0
+        ? t('chat.impulseGreetingReasons', { reasons: impulseContext.reasons.slice(0, 2).join(', ') })
+        : '';
       const contextMsg: ChatMessage = {
         // 用 nextId helper 替代 Date.now() — 防止 burst notifications 下的 React key 碰撞
         //    nextId 内部用 ++idCounterRef.current 保证同毫秒内也唯一 (BUG-181 fix pattern)
         id: nextId('system'),
         role: 'assistant',
-        content: `I noticed you just made a purchase on ${formatPlatformName(impulseContext.platform)} — $${(impulseContext.amount ?? 0).toFixed(2)}. ${impulseContext.reasons.length > 0 ? `Some patterns I detected: ${impulseContext.reasons.slice(0, 2).join(', ')}.` : ''} How are you feeling right now?`,
+        content: t('chat.impulseGreeting', {
+          platform: formatPlatformName(impulseContext.platform),
+          amount: `$${(impulseContext.amount ?? 0).toFixed(2)}`,
+          reasons: reasonsText,
+        }),
         timestamp: new Date(),
       };
       setMessagesSync((prev) => [...prev, contextMsg]);

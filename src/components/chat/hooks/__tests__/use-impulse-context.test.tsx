@@ -23,10 +23,21 @@ function Probe(props: Parameters<typeof useImpulseContext>[0]) {
 beforeEach(() => { savedMsgs = []; applied = []; idSeq = 0; });
 
 const ctx = { platform: 'taobao', amount: 88.5, reasons: ['深夜浏览', '比价多次'], time: '2026-10-09T23:00:00Z' };
+// 🔧 R1028: t mock 实现 next-intl 单括号插值 — 断言走 i18n 路径 (chat.impulseGreeting 家族)
+const t = (key: string, values?: Record<string, string | number>) => {
+  const dict: Record<string, string> = {
+    'chat.impulseGreeting': '我注意到你刚刚在{platform}有一笔消费 — {amount}。{reasons}你现在感觉怎么样？',
+    'chat.impulseGreetingReasons': '我注意到一些消费模式：{reasons}。',
+  };
+  let out = dict[key] ?? key;
+  if (values) for (const [k, v] of Object.entries(values)) out = out.replaceAll(`{${k}}`, String(v));
+  return out;
+};
 const fns = {
   nextId: (p: string) => `${p}-${++idSeq}`,
   saveMessage: (m: unknown) => savedMsgs.push(m),
   setMessagesSync: (u: unknown) => applied.push(u),
+  t,
 };
 
 /**
@@ -46,9 +57,9 @@ describe('useImpulseContext 诱导开场', () => {
     expect(msg.id).toBe('system-1'); // nextId 非 Date.now (BUG-181 锚)
     expect(msg.role).toBe('assistant');
     expect(msg.content).toContain('淘宝'); // formatPlatformName 映射
-    expect(msg.content).toContain('$88.50'); // 2 位小数
+    expect(msg.content).toContain('$88.50'); // 2 位小数 (插值带货币符)
     expect(msg.content).toContain('深夜浏览, 比价多次'); // 前 2 模式
-    expect(msg.content).toContain('How are you feeling');
+    expect(msg.content).toContain('你现在感觉怎么样'); // R1028: zh i18n 路径
     expect(applied).toHaveLength(1); // setMessagesSync 同步一次
   });
 

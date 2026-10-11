@@ -866,6 +866,8 @@
   },
   "chat": {
     "messageUnavailable": "This message is temporarily unavailable. Try refreshing.",
+    "impulseGreeting": "I noticed you just made a purchase on {platform} — {amount}. {reasons} How are you feeling right now?",
+    "impulseGreetingReasons": "Some patterns I detected: {reasons}.",
     "title": "🐘 Symy",
     "duplicatePrecheck": {
       "title": "Duplicate precheck",

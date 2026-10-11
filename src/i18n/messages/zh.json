@@ -866,6 +866,8 @@
   },
   "chat": {
     "messageUnavailable": "这条消息暂时打不开了，刷新试试",
+    "impulseGreeting": "我注意到你刚刚在{platform}有一笔消费 — {amount}。{reasons}你现在感觉怎么样？",
+    "impulseGreetingReasons": "我注意到一些消费模式：{reasons}。",
     "title": "🐘 Symy",
     "duplicatePrecheck": {
       "title": "重复购买预检",

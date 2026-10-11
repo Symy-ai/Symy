@@ -276,7 +276,7 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
   // contextMessage → pendingContext effect moved to use-chat-history.ts
 
   // 诱导消费上下文 → 系统开场消息 (原两个 impulseContext effects — File Split Wave 1 移入 hook)
-  useImpulseContext({ impulseContext, nextId, saveMessage, setMessagesSync });
+  useImpulseContext({ impulseContext, nextId, saveMessage, setMessagesSync, t });
 
   // loadMoreMessages 已提取到 useChatPersistence hook
 
