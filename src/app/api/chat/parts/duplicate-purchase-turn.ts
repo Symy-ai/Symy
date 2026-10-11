@@ -12,8 +12,8 @@ const REPLIES: Record<'en' | 'zh', readonly string[]> = {
     'Let’s check the existing one first. Little Elephant will wait right here.',
   ],
   zh: [
-    '大象先帮你按一下暂停——不是不许买，只是先看看家里。',
-    '先找找已有的，大象在这儿陪你等结果。',
+    '小象先帮你按一下暂停——不是不许买，只是先看看家里。',
+    '先找找已有的，小象在这儿陪你等结果。',
   ],
 };
 
