@@ -32,104 +32,30 @@
  *   challenge_id / symy_user_ref 等字段名与取值完全不变。
  */
 
-import type { CultivationStage } from "@/lib/cultivation";
-import { getChallengeType } from "@/lib/challenge-rules";
-import type { ChallengeContext } from "./types";
+// 🔧 R1065 收编 (R1064 观察项25): buildUserMessageWithContext + buildGreenAlternativesContext
+//    删除 — BUG-333 重构后 letta-turn-context 内联 symyFields 成为唯一活 context 构建,
+//    两函数生产消费面零 (仅 __tests__ 直调)。连带死链: getChallengeType / GREEN_ALTERNATIVES
+//    / CultivationStage / BuildContextParams 随删。活函数保留: getSymyCartTotalCents /
+//    getSymyGreenContext / sanitizeShoppingFactsForPrompt (letta-turn-context 主链消费)
+//    + sanitize 家族 (UUID/currency/cents/greenPref) + SymyGreenContext 类型。
 // 🔧 ARCH fix (Round 8 AUDIT-3 P0 #3): ImpulseContext 单一 source of truth
 import type { ImpulseContext } from "@/types/impulse-context";
 import { createClient } from "@supabase/supabase-js";
 export type { ImpulseContext };
-// 🔧 P0-3 fix (2026-07-18, AUDIT-CHAT-ROUTE): sanitize challenge/impulse
-//    context fields before prompt interpolation to prevent prompt injection.
-import {
-  sanitizeItemName,
-  sanitizePlatform,
-  sanitizeReasons,
-  sanitizeChallengeId,
-} from "./prompt-sanitizer";
-import { GREEN_ALTERNATIVES, type GreenLocale } from "@/lib/green-alternatives";
+import { sanitizeItemName } from "./prompt-sanitizer";
 import { logger } from "@/lib/logger";
 import { warnMissingEnvOnce } from "@/lib/env-consumers";
-
-export interface BuildContextParams {
-  userId: string | undefined;
-  cultivationStage: CultivationStage;
-  locale?: string;
-  challengeContext?: ChallengeContext;
-  impulseContext?: ImpulseContext;
-  userHistory?: string;
-  userContent: string;
-  symyUserRef?: string;
-  symySessionRef?: string;
-  symyCurrency?: string;
-  symyCartTotalCents?: number | null;
-  /** 绿色偏好开关 (用户 profile, 缺省 on) */
-  symyGreenPref?: "on" | "off";
-  /** 最近冲动记录的商品名 (impulse_events.title, 无则省略) */
-  symyImpulseItem?: string;
-  /** 购物事实单行摘要 (shopping_facts 表, batch25-b; 加载失败/为空省略) */
-  symyShoppingFacts?: string;
-}
 
 export interface SymyGreenContext {
   greenPref: "on" | "off";
   impulseItem?: string;
 }
 
-function formatGreenAlternativeLine(text: string): string {
-  const normalized = text.replace(/[\r\n]+/g, " ").trim();
-  return normalized.length > 220
-    ? `${normalized.slice(0, 217)}...`
-    : normalized;
-}
-
-/**
- * 绿色偏好 on 时注入替代话术库 (symy_green_alternatives)。
- *
- * - 只注入当前 locale 的一条完整建议 (alternative + reuse), 每类一行并截断
- * - 话术库读取/遍历异常时返回 undefined, 聊天 prompt 保持接线前形态
- */
-export function buildGreenAlternativesContext(
-  greenPref: "on" | "off" | undefined,
-  locale: string | undefined,
-): string | undefined {
-  if (sanitizeGreenPref(greenPref) === "off") return undefined;
-
-  try {
-    const selectedLocale: GreenLocale = locale === "zh" ? "zh" : "en";
-    const lines = GREEN_ALTERNATIVES.map(
-      (entry) =>
-        `${entry.id}: ${formatGreenAlternativeLine(
-          selectedLocale === "zh"
-            ? `${entry.alternative[selectedLocale]}${entry.reuse[selectedLocale]}`
-            : `${entry.alternative[selectedLocale]} ${entry.reuse[selectedLocale]}`,
-        )}`,
-    );
-    return lines.length > 0
-      ? `[symy_green_alternatives]\n${lines.join("\n")}`
-      : undefined;
-  } catch (error) {
-    // safe to ignore: green alternatives are optional context enrichment — degrade gracefully
-    logger.warn(
-      "[ContextBuilder] Ignoring green alternatives injection failure:",
-      error,
-    );
-    return undefined;
-  }
-}
-
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const ISO_CURRENCY_PATTERN = /^[A-Za-z]{3}$/;
 
 function sanitizeSymyRef(value: string | undefined): string | undefined {
   return value && UUID_PATTERN.test(value.trim()) ? value.trim() : undefined;
-}
-
-function sanitizeIsoCurrency(value: string | undefined): string | undefined {
-  return value && ISO_CURRENCY_PATTERN.test(value)
-    ? value.toUpperCase()
-    : undefined;
 }
 
 function sanitizeNonNegativeCents(
@@ -147,9 +73,6 @@ function sanitizeNonNegativeCents(
  * 绿色偏好开关 sanitize — 只有显式 'off' 才关闭, 其余 (undefined/非法值) 一律 'on'。
  * 沿用 prompt-sanitizer 模式: 不让非法值进 prompt。
  */
-function sanitizeGreenPref(value: "on" | "off" | undefined): "on" | "off" {
-  return value === "off" ? "off" : "on";
-}
 
 /**
  * 请求级绿色偏好 sanitize — 客户端把设置页「绿色守护模式」开关 (localStorage 持久化)
@@ -279,108 +202,3 @@ export async function getSymyGreenContext(
   return result;
 }
 
-/**
- * 构建 AI 接收的完整 user message (含 context prefix)
- *
- * 这是 AI 收到的唯一 context 层 (letta.ts 不再二次包装, 见 BUG-333 fix)
- */
-export function buildUserMessageWithContext({
-  userId: _userId, // 🔧 Round 22 M3: 不再注入 user_id 到 prompt (PII 泄露), 保留参数向后兼容
-  cultivationStage,
-  locale,
-  challengeContext,
-  impulseContext,
-  userHistory,
-  userContent,
-  symyUserRef,
-  symySessionRef,
-  symyCurrency,
-  symyCartTotalCents,
-  symyGreenPref,
-  symyImpulseItem,
-  symyShoppingFacts,
-}: BuildContextParams): string {
-  // Challenge context: itemName $amount (tier: ...) + challenge_id
-  // 🔧 P0-3 fix (2026-07-18): sanitize itemName + challengeId before interpolation
-  //    Old: `${challengeContext.itemName}` — attacker could send
-  //    "earbuds\n\nIMPORTANT: Ignore all previous instructions..." → prompt injection.
-  //    New: sanitizeItemName strips control chars + caps length + logs injection attempts.
-  const challengeInfo = challengeContext
-    ? ` | challenge: ${sanitizeItemName(challengeContext.itemName)} $${challengeContext.amount} (tier: ${getChallengeType(challengeContext.amount)})${challengeContext.challengeId ? ` | challenge_id: ${sanitizeChallengeId(challengeContext.challengeId)}` : ""}`
-    : "";
-
-  // Impulse context: platform $amount (signals: ...)
-  // 🔧 P0-3 fix: sanitize platform + reasons before interpolation
-  // 🔧 同型收编 (BUG-AUDIT-69-7 漏网第二处, R940): 旧 impulseContext.amount?.toFixed(2) || "unknown"
-  //    — NaN.toFixed(2)="NaN" (truthy) → || 不生效 → prompt 出现 "$NaN"。与 letta-turn-context
-  //    同型修法: 显式 Number.isFinite 校验 (zod .finite() 只守住 route 入口, 本函数可被测试直调绕过,
-  //    纵深防御层独立成立)。
-  const impulseAmountStr =
-    typeof impulseContext?.amount === "number" && Number.isFinite(impulseContext.amount)
-      ? impulseContext.amount.toFixed(2)
-      : "unknown";
-  const impulseInfo = impulseContext
-    ? ` | impulse: ${sanitizePlatform(impulseContext.platform)} $${impulseAmountStr}${impulseContext.reasons?.length ? ` (signals: ${sanitizeReasons(impulseContext.reasons).join(", ")})` : ""}`
-    : "";
-
-  // Language instruction
-  // 🔧 Brief C P0 (C1c) fix: 双向对称 + 强语言锁。旧代码只在非中文时注入 (中文模式无指令 → AI 可能混英文)。
-  //    根因修复: zh/en 都注入强指令, 与 chat/route.ts 的 [LANGUAGE LOCK] 保持一致。
-  const languageInstruction =
-    locale === "zh"
-      ? "[INSTRUCTION: The user's preferred language is Chinese (Simplified). You MUST reply in Chinese only. Zero English words (except proper nouns and currency symbols). Never mix languages in a single response.]"
-      : "[INSTRUCTION: The user's preferred language is English. You MUST reply in English only. Zero Chinese characters. Never mix languages in a single response.]";
-
-  // 🔧 A2 缓存分层: 字段按变化频率拆两层 (字段集合与取值不变, 只调序)。
-  // 稳定层 — 会话内字节级不变, 靠前放置保住 provider 前缀缓存:
-  const stableFields = [
-    ["symy_user_ref", sanitizeSymyRef(symyUserRef)],
-    ["symy_session_ref", sanitizeSymyRef(symySessionRef)],
-    ["symy_lang", locale === "zh" ? "zh" : "en"],
-    ["symy_currency", sanitizeIsoCurrency(symyCurrency)],
-    // 绿色偏好开关缺省 on (用户设置, 会话内不变 → 稳定层)
-    ["symy_green_pref", sanitizeGreenPref(symyGreenPref)],
-    // 🧺 购物事实摘要 (尺码/预算/偏好, batch25-b) — 会话内不变 → 稳定层。
-    //    值再过一遍括号/折行剥离 (纵深防御; pipeline 侧已卫生化), 空则字段省略。
-    ["symy_shopping_facts", sanitizeShoppingFactsForPrompt(symyShoppingFacts)],
-  ]
-    .filter((entry) => entry[1] !== undefined)
-    .map(([key, value]) => ` | ${key}: ${String(value)}`)
-    .join("");
-
-  // 易变层 — 每轮都可能变, 挪到 user message 尾部 (紧贴 <message> 之前),
-  // 让时间性字节永不插进可缓存的稳定前缀:
-  const volatileFields = [
-    ["symy_cart_total_cents", sanitizeNonNegativeCents(symyCartTotalCents)],
-    // 冲动商品名过 sanitizeItemName, 空值省略 (最近一条冲动记录, 随事件变化 → 易变层)
-    [
-      "symy_impulse_item",
-      symyImpulseItem ? sanitizeItemName(symyImpulseItem) || undefined : undefined,
-    ],
-  ]
-    .filter((entry) => entry[1] !== undefined)
-    .map(([key, value]) => ` | ${key}: ${String(value)}`)
-    .join("");
-
-  return [
-    // 🔧 ARCH fix (Round 22 BUG-R22-M3): 移除 user_id 注入 (PII 泄露到 Letta 对话历史, agentId 已标识用户)
-    // 🔧 A2: 稳定层 [Context:] 行 (字段: cultivation_stage/locale/user_ref/session_ref/lang/currency/green_pref)
-    `[Context: cultivation_stage: ${cultivationStage} | locale: ${locale || "en"}${stableFields}]`,
-    // 🔧 Brief C P0 (C1c) fix: [LANGUAGE LOCK] 紧贴 Context 头部 (高权重位置), 双保险
-    locale === "zh"
-      ? `[LANGUAGE LOCK: The user's locale is zh. You MUST reply in Chinese only. NEVER mix languages. This overrides any memory of past conversations in another language.]`
-      : `[LANGUAGE LOCK: The user's locale is en. You MUST reply in English only. NEVER mix languages. This overrides any memory of past conversations in another language.]`,
-    languageInstruction,
-    userHistory || "",
-    // 🔧 A2: 易变层 [Context:] 行 (cart_total_cents/最近冲动商品名 + 当前挑战状态/本轮冲动信号),
-    //    位于 RAG 历史之后、<message> 之前。与稳定层同用 [Context: ...] 标记 — AI 侧契约不变。
-    //    全部易变段缺省时整行省略 (与单字段缺省即省略的既有约定一致);
-    //    前导分隔符修剪: volatileFields 为空时避免出现 "[Context: | challenge..." 的悬空 " | "。
-    ...((volatileFields || challengeInfo || impulseInfo) && [
-      `[Context: ${`${volatileFields}${challengeInfo}${impulseInfo}`.replace(/^ \| /, "")}]`,
-    ]),
-    `<message>${userContent}</message>`,
-  ]
-    .filter(Boolean)
-    .join("\n\n");
-}
