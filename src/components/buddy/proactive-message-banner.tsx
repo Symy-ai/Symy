@@ -118,7 +118,7 @@ export function ProactiveMessageBanner({ messages, onMarkRead }: ProactiveMessag
   const unreadCount = messages.filter(m => !m.read && !dismissedIds.has(m.id)).length;
   const totalCount = messages.length;
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleClose 纯 UI 收尾 (置 dismissed id + 触发一次性 POST), banner 关闭后不再渲染, 重击无目标
   const handleClose = useCallback(async () => {
     if (!visibleMessage) return;
     setIsClosing(true);

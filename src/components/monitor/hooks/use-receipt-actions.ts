@@ -106,7 +106,7 @@ export function useReceiptActions({
 
   /** 标记退款 (PATCH status=refunding, 乐观更新 + 回滚) */
   const handleReceiptsRefund = useCallback(
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- 乐观更新+失败回滚 (refunding 态先标, 失败还原 prev); 单据级操作天然互斥 (同一 receipt 重复点击=同状态幂等), 与 setHourlyRate 回滚三件套同款
     async (receiptId: string) => {
       if (isDemoRef.current || isDemoModeRef.current) {
         if (isDemoRef.current) {

@@ -213,7 +213,7 @@ export function useHourlyRate(isDemo = false): UseHourlyRateResult {
   }, [isDemo, user]);
 
   const setHourlyRate = useCallback(
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- setHourlyRate 乐观更新+失败回滚三件套 (P0 fix 2026-07-10): oldRate 快照在 async 前取, 回滚 last-write-wins; 与 push preferences 同款 one-shot 模式
     async (rate: number) => {
       // 🔧 P0 fix (2026-07-10): 保存旧值用于失败回滚
       //   旧代码: 乐观更新后不回滚 → 后端拒绝 (如 >100万) 但前端仍显示新值 → 用户以为保存成功

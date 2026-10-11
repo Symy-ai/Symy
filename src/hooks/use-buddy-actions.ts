@@ -65,7 +65,7 @@ export function useBuddyActions(pushMutation: PushMutation) {
     }
   }, [queryClient, pushMutation]);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- useHealingKit 服务端幂等 (409=already_used), 前端无 state mutation, 快速重击无副作用
   const useHealingKit = useCallback(async (): Promise<'success' | 'already_used' | 'error'> => {
     try {
       await apiFetch('/api/buddy/healing-kit', { method: 'POST' });
@@ -89,7 +89,7 @@ export function useBuddyActions(pushMutation: PushMutation) {
   }, [queryClient]);
 
   // 🔧 Round 126 用户决策 7 (#4): reorderDreamFunds 也提取到此处
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- reorderDreamFunds 先乐观写 RQ 缓存再逐条 PATCH, 失败仅 logger.warn (排序为非关键数据, RQ 轮询终会纠偏); mutation 目标为 queryClient 缓存非 React state
   const reorderDreamFunds = useCallback(async (newOrder: string[]) => {
     const prev = queryClient.getQueryData<BuddyState>(BUDDY_STATE_KEY);
     if (!prev) return;

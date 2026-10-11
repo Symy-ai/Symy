@@ -52,7 +52,7 @@ export function WaitlistForm({ mode = 'form' }: WaitlistFormProps) {
     };
   }, []);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleSubmit 有 status==='submitting' 态守卫 (提交期间表单禁用), 一次性 waitlist 动作
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (status === 'submitting') return;

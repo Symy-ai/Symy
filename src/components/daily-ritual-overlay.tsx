@@ -116,7 +116,7 @@ export function DailyRitualOverlay({
     return () => { cancelled = true; };
   }, [mounted, isDemo]);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleClose 纯 UI 收尾 (setFadingOut 后 overlay 退出, localStorage 写=幂等窗口 key), 关闭后无重击目标
   const handleClose = useCallback(async () => {
     setFadingOut(true);
 

@@ -317,7 +317,7 @@ WHEN THE USER DECIDES:
    * handleDismiss — "Dismiss" 按钮
    * 调 /api/challenge/dismiss + 清空 expiredChallenge
    */
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleDismiss 无条件 setExpiredChallenge(null) 为幂等收尾 (重复 dismiss 同一过期挑战=同结果), POST 失败有 ARCH fix 兜底重见
   const handleDismiss = useCallback(async (expired: ExpiredChallenge) => {
     // 🔧 ARCH fix (Round 19 C3 — handleDismiss 静默吞错):
     //    旧代码: catch { /* silent */ } + 无条件 setExpiredChallenge(null)。
@@ -361,7 +361,7 @@ WHEN THE USER DECIDES:
    *   若 sendMessage 被 force-abort (旧 stream 还在跑), finally 块因 abort mismatch 不清 ref →
    *   ref 泄漏到下一个 sendMessage → 误判 buy 路径。修复: ref 由 sendMessage 内部管理 (isBuyPath 参数)。
    */
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- ref 由 sendMessage 内部管理 (isBuyPath, Race fix 见上注), isGiveUpInProgressRef 同步闸防重入
   const handleChooseToBuy = useCallback(async (challenge: ActiveChallenge) => {
     if (isGiveUpInProgressRef.current) return;
     isGiveUpInProgressRef.current = true;

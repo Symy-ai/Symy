@@ -116,7 +116,7 @@ export function useCommunityChallenges(isDemo: boolean) {
     refresh();
   }, [refresh]);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- joinChallenge 有 setActionLoading 态守卫 (按钮 disabled 防重入), 与 push subscribe isLoading 守卫同款
   const joinChallenge = useCallback(async (challengeId: string): Promise<{ success: boolean; error?: string }> => {
     if (isDemo) return { success: false };
     setActionLoading(true);

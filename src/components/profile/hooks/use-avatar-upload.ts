@@ -43,7 +43,7 @@ export function useAvatarUpload() {
   const effectiveAvatarUrl = localAvatarUrl || userAvatarUrl || null;
 
   // 🔧 CL3 fix: 头像上传 handler
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleAvatarUpload 由 file input change 事件触发 (选文件后 input 清空, 重复触发=新文件覆盖旧 URL, last-write-wins 可接受); 有 MIME+大小客户端验证前置
   const handleAvatarUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

@@ -200,7 +200,7 @@ export function DepositDialog({ challengeId, savedAmount, fundName, fundEmoji, f
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional omission (stable ref/callback)
   }, [challengeId, safeClose, onDeposited, t]);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- DM-6 同步 ref guard (skipCallRef+depositCallRef 双闸防重入), 与 handleChooseToBuy 的 isGiveUpInProgressRef 同款
   const handleSkip = useCallback(async () => {
     // 🔧 DM-6 fix: 同步 ref guard
     if (skipCallRef.current || depositCallRef.current) return;

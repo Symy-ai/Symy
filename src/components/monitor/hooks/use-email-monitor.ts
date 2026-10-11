@@ -225,7 +225,7 @@ export function useEmailMonitor(
     }
   }, [user?.id]);
 
-  // eslint-disable-next-line symy/no-async-callback-mutation
+  // eslint-disable-next-line symy/no-async-callback-mutation -- handleConnectIMAP 有 setIsConnecting 态守卫 (表单期间禁用连接按钮), 连接结果 idempotent 显示
   const handleConnectIMAP = useCallback(async (email: string, authCode: string) => {
     if (!user?.id) return;
     setIsConnecting(true);
