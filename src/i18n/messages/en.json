@@ -3019,18 +3019,6 @@
       "regretPurchase": "I want to look back at a choice 😔",
       "spendingPattern": "What's my pattern?"
     },
-    "aiResponses": {
-      "default": "Buy less, live more. Sign up and the little elephant will guard it with you. 🐘",
-      "impulse": "Bought is bought — no judgment. Sign up and we'll catch the next one together. 🐘",
-      "resist": "You held the gate and the money stayed. Sign up to celebrate every green medal. 🐘",
-      "refund": "You returned it. The money came back. Sign up to track what stays.",
-      "pattern": "Late-night scrolling. Livestream FOMO. You know the triggers. Sign up and Symy will help you spot yours. 🐘",
-      "bnpl": "Buy Now Pay Later. Small payments that add up to the full price — plus late fees if you miss one. Sign up to guard the full picture. 🐘",
-      "challengeFollowUp": "You said it. Your guardian elephant heard it. Sign up to start guarding.",
-      "challengeFollowUpWant": "Wanting it is normal. The little elephant will gently help you decide. Sign up and we'll guard together. 🐘",
-      "challengeFollowUpFriends": "Your friends have it. The ad said you'd be like them. The little elephant stays beside you either way. Sign up for calmer choices. 🐘",
-      "challengeFollowUpNeed": "Need. Want. Deserve. The little elephant doesn't judge words — only helps you hold the gate. Sign up to keep it kind. 🐘"
-    },
     "dreamFunds": {
       "creditCardPayoff": "Credit Card Payoff",
       "icelandTrip": "Iceland Trip",

@@ -13,8 +13,8 @@
 /* eslint-disable require-await -- ReadableStream callbacks use async per webstreams contract */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import enMessages from '@/i18n/messages/en.json';
-import zhMessages from '@/i18n/messages/zh.json';
+// 🔧 R1018: enMessages/zhMessages import 已删 — demo.aiResponses.* i18n key 已收编,
+//   回归锁改为内联常量断言 (旧文案首句), 不再依赖 json import.
 import { POST } from '../route';
 
 // Mock dependencies
@@ -162,8 +162,17 @@ describe('Anonymous Chat API', () => {
   });
 
   it.each([
-    { locale: 'en' as const, expected: enMessages.demo.aiResponses.default },
-    { locale: 'zh' as const, expected: zhMessages.demo.aiResponses.default },
+    // 🔧 R1018: demo.aiResponses.* i18n key 已删 (死键, 生产零消费).
+    //   本断言意图保留: prompt 不得回流旧 demo canned 文案 (R948 SSOT 修复回归锁).
+    //   旧文案首句内联为常量断言, 不再依赖已删的 i18n key.
+    {
+      locale: 'en' as const,
+      expected: 'Buy less, live more. Sign up and the little elephant will guard it with you.',
+    },
+    {
+      locale: 'zh' as const,
+      expected: '少买一点，多活一点。注册后小象陪你一起守护。',
+    },
   ])('passes a $locale prompt that answers first and keeps one trailing signup sentence', async ({ locale, expected }) => {
     const req = createMockRequest({
       messages: [{ role: 'user', content: locale === 'zh' ? '我想买一双跑鞋' : 'I want to buy running shoes' }],

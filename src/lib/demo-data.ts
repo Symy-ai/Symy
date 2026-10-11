@@ -340,33 +340,10 @@ export function getLocalizedChatQuickReplies(t: TFn): string[] {
   ];
 }
 
-// ====== Demo AI Response — 模拟 AI 回复（不调用真实 API）======
-export const DEMO_AI_RESPONSES: Record<string, string> = {
-  default: "Symy sees the choice in front of you — sign up and we'll guard it together.",
-  impulse: "Symy saw the purchase, and we can track what it really cost. Sign up to see the pattern.",
-  resist: "You paused — Symy is proud. Sign up to keep guarding what matters.",
-  refund: "You returned it — that's a guarded win. Sign up to track every save.",
-  pattern: "Late-night scrolling and livestream FOMO are guardable moments. Sign up to see your own.",
-};
-
-/** Localized version of DEMO_AI_RESPONSES */
-export function getLocalizedDemoAIResponses(t: TFn): Record<string, string> {
-  return {
-    default: t('demo.aiResponses.default'),
-    impulse: t('demo.aiResponses.impulse'),
-    resist: t('demo.aiResponses.resist'),
-    refund: t('demo.aiResponses.refund'),
-    pattern: t('demo.aiResponses.pattern'),
-    bnpl: t('demo.aiResponses.bnpl'),
-    // 🔧 P0-5 fix: Demo 模式挑战中后续消息的 fallback 回复 (避免复读第一次的"item + price + hours")
-    //   旧代码: getDemoChallengeReply fallback 路径不区分第一次 vs 后续, 都返回同样的 "iPhone 17 Pro. $1099. 55 hours..." → 用户感到被忽略
-    //   修复: isFollowUp=true 时走这些回复, 承认情绪 + 引导 sign up, 不复读
-    challengeFollowUp: t('demo.aiResponses.challengeFollowUp'),
-    challengeFollowUpWant: t('demo.aiResponses.challengeFollowUpWant'),
-    challengeFollowUpFriends: t('demo.aiResponses.challengeFollowUpFriends'),
-    challengeFollowUpNeed: t('demo.aiResponses.challengeFollowUpNeed'),
-  };
-}
+// 🔧 R1018 收编: DEMO_AI_RESPONSES 常量 + getLocalizedDemoAIResponses 函数已删除.
+//   2026-09-05 人设转型时 demo 回复迁 src/lib/elephant-tone.ts (SSOT),
+//   本函数与常量生产零消费 (仅自家测试引用), demo.aiResponses.* i18n key 同步删除.
+//   demo 回复真源 = demo-reply.ts → getElephantPhrase (elephant-tone.ts).
 
 /** Localized version of demo dream funds */
 export function getLocalizedDreamFunds(t: TFn): DreamFund[] {

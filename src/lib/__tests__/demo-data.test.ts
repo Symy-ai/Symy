@@ -9,8 +9,7 @@
  * - DEMO_CHAT_MESSAGES: structure
  * - DEMO_IMPULSE_EVENTS: structure
  * - DEMO_STATS: values
- * - DEMO_AI_RESPONSES: keys, content
- * - getLocalizedDemoAIResponses / getLocalizedDreamFunds: i18n
+ * - getLocalizedDreamFunds: i18n
  */
 
 import { describe, it, expect } from 'vitest';
@@ -24,8 +23,6 @@ import {
   DEMO_CHAT_MESSAGES,
   DEMO_IMPULSE_EVENTS,
   DEMO_STATS,
-  DEMO_AI_RESPONSES,
-  getLocalizedDemoAIResponses,
   getLocalizedDreamFunds,
   type TFn,
 } from '@/lib/demo-data';
@@ -263,54 +260,6 @@ describe('DEMO_STATS', () => {
 
   it('impulseInterventions is less than totalEvents (consistency)', () => {
     expect(DEMO_STATS.impulseInterventions).toBeLessThanOrEqual(DEMO_STATS.totalEvents);
-  });
-});
-
-describe('DEMO_AI_RESPONSES', () => {
-  it('has all required keys', () => {
-    expect(DEMO_AI_RESPONSES.default).toBeTruthy();
-    expect(DEMO_AI_RESPONSES.impulse).toBeTruthy();
-    expect(DEMO_AI_RESPONSES.resist).toBeTruthy();
-    expect(DEMO_AI_RESPONSES.refund).toBeTruthy();
-    expect(DEMO_AI_RESPONSES.pattern).toBeTruthy();
-  });
-
-  it('all responses are non-empty strings', () => {
-    for (const key of Object.keys(DEMO_AI_RESPONSES)) {
-      expect(typeof DEMO_AI_RESPONSES[key]).toBe('string');
-      expect(DEMO_AI_RESPONSES[key].length).toBeGreaterThan(20);
-    }
-  });
-
-  it('default response mentions "demo" or "sign up"', () => {
-    expect(DEMO_AI_RESPONSES.default.toLowerCase()).toMatch(/demo|sign up|full version/);
-  });
-});
-
-describe('getLocalizedDemoAIResponses', () => {
-  const mockT: TFn = (key: string) => `[zh]${key}`;
-
-  // 🔧 P0-5 fix: 新增 4 个 challengeFollowUp 回复 (6 → 10 keys)
-  it('returns all 10 response keys (6 original + 4 challengeFollowUp)', () => {
-    const result = getLocalizedDemoAIResponses(mockT);
-    expect(Object.keys(result)).toHaveLength(10);
-    expect(result.default).toBeTruthy();
-    expect(result.impulse).toBeTruthy();
-    expect(result.resist).toBeTruthy();
-    expect(result.refund).toBeTruthy();
-    expect(result.pattern).toBeTruthy();
-    expect(result.bnpl).toBeTruthy();
-    // P0-5: challenge follow-up replies
-    expect(result.challengeFollowUp).toBeTruthy();
-    expect(result.challengeFollowUpWant).toBeTruthy();
-    expect(result.challengeFollowUpFriends).toBeTruthy();
-    expect(result.challengeFollowUpNeed).toBeTruthy();
-  });
-
-  it('uses t function for each response', () => {
-    const result = getLocalizedDemoAIResponses(mockT);
-    expect(result.default).toBe('[zh]demo.aiResponses.default');
-    expect(result.impulse).toBe('[zh]demo.aiResponses.impulse');
   });
 });
 

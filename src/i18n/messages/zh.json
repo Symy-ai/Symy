@@ -3019,18 +3019,6 @@
       "regretPurchase": "我想复盘一个选择 😔",
       "spendingPattern": "我的模式是什么？"
     },
-    "aiResponses": {
-      "default": "少买一点，多活一点。注册后小象陪你一起守护。🐘",
-      "impulse": "买了就买了，不评判。注册后咱们一起拦住下一单。🐘",
-      "resist": "你守住了门，钱也留住了。注册后一起庆祝每一枚绿色勋章。🐘",
-      "refund": "退掉啦，钱回到它该在的地方。注册后看看什么一直属于你。🐘",
-      "pattern": "深夜滑动、直播 FOMO——你其实知道那些触发点。注册后 Symy 帮你认出它们。🐘",
-      "bnpl": "先享后付。小额分期加起来是全价——漏还一期还有滞纳金。注册后看清全局再决定。🐘",
-      "challengeFollowUp": "你说出来了，小象听见了。注册后让守护开始。🐘",
-      "challengeFollowUpWant": "想要就是想要，这很正常。小象会温柔地陪你决定。注册后一起守护。🐘",
-      "challengeFollowUpFriends": "朋友有，广告也说你会像他们。无论怎么选，小象都在你身边。注册后选择更从容。🐘",
-      "challengeFollowUpNeed": "需要、想要、值得——小象不评判词语，只帮你守门。注册后让选择更温柔。🐘"
-    },
     "dreamFunds": {
       "creditCardPayoff": "信用卡还款",
       "icelandTrip": "冰岛之旅",
