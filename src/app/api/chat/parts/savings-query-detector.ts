@@ -18,6 +18,9 @@
  * - zh 走包含匹配, en 走词边界 (小写归一后 includes/regex)
  */
 
+/** 时间窗词表已上收 query-window-range (R906): WINDOW_ZH/WINDOW_EN 删除, resolveQueryWindowFromText 单源 */
+
+import { resolveQueryWindowFromText } from './query-window-range';
 import type { SavingsQueryWindow } from '@/types/savings-query';
 
 export interface SavingsQueryIntent {
@@ -57,20 +60,6 @@ const QUERY_EN: readonly RegExp[] = [
   /help me (?:add up|count|calculate).{0,24}(?:saved|savings|guarding|win rate)/i,
 ];
 
-/** 时间窗 (顺序: 上周/上月 先于 本周/本月; 默认 thisMonth) */
-const WINDOW_ZH: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /上周|上一周/, window: 'lastWeek' },
-  { re: /本周|这周|这一周/, window: 'thisWeek' },
-  { re: /上个?月/, window: 'lastMonth' },
-  { re: /本月|这个月|这月/, window: 'thisMonth' },
-];
-const WINDOW_EN: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /(?<![\w-])last week(?![\w-])/i, window: 'lastWeek' },
-  { re: /(?<![\w-])(?:this|the past|past) week(?![\w-])/i, window: 'thisWeek' },
-  { re: /(?<![\w-])last month(?![\w-])/i, window: 'lastMonth' },
-  { re: /(?<![\w-])(?:this|the) month(?![\w-])/i, window: 'thisMonth' },
-];
-
 /**
  * 检测问账意图。命中返回 {window}, 未命中返回 null。
  * 纯函数: 只做字符串匹配, 不读状态不抛异常, 非字符串/空输入恒 null。
@@ -86,21 +75,6 @@ export function detectSavingsQuery(userContent: string): SavingsQueryIntent | nu
   const isEnQuery = QUERY_EN.some((p) => p.test(normalized));
   if (!isZhQuery && !isEnQuery) return null;
 
-  // 时间窗: zh/en 各自扫一遍, 先中先得; 无时间词默认本月
-  let window: SavingsQueryWindow | null = null;
-  for (const { re, window: w } of WINDOW_ZH) {
-    if (re.test(normalized)) {
-      window = w;
-      break;
-    }
-  }
-  if (!window) {
-    for (const { re, window: w } of WINDOW_EN) {
-      if (re.test(normalized)) {
-        window = w;
-        break;
-      }
-    }
-  }
-  return { window: window ?? 'thisMonth' };
+  // 时间窗: zh/en 各自扫一遍, 先中先得; 无时间词默认本月 (R906 起词表上收 query-window-range 单源)
+  return { window: resolveQueryWindowFromText(normalized) ?? 'thisMonth' };
 }

@@ -11,6 +11,7 @@
  * - 时段词归一到 impulse-window 的四桶; 时间窗默认 thisMonth (与 57-c 同约定)
  */
 
+import { resolveQueryWindowFromText } from './query-window-range';
 import type { SavingsQueryWindow } from '@/types/savings-query';
 import type { ImpulseTimeWindowId } from '@/types/dimension-query';
 
@@ -54,19 +55,7 @@ const TIMEWORD_EN: ReadonlyArray<{ re: RegExp; window: ImpulseTimeWindowId }> = 
   { re: /(?<![\w-])(?:early )?mornings?|at dawn(?![\w-])/i, window: 'dawn' },
 ];
 
-/** 时间窗 (与 57-c 同约定, 默认 thisMonth) */
-const WINDOW_ZH: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /上周|上一周/, window: 'lastWeek' },
-  { re: /本周|这周|这一周/, window: 'thisWeek' },
-  { re: /上个?月/, window: 'lastMonth' },
-  { re: /本月|这个月|这月/, window: 'thisMonth' },
-];
-const WINDOW_EN: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /(?<![\w-])last week(?![\w-])/i, window: 'lastWeek' },
-  { re: /(?<![\w-])(?:this|the past|past) week(?![\w-])/i, window: 'thisWeek' },
-  { re: /(?<![\w-])last month(?![\w-])/i, window: 'lastMonth' },
-  { re: /(?<![\w-])(?:this|the) month(?![\w-])/i, window: 'thisMonth' },
-];
+/** 时间窗词表已上收 query-window-range (R906): resolveQueryWindowFromText 单源 */
 
 /**
  * 时段词归一: 深夜词先于泛晚上词, 先中先得; 无时段词返回 null。
@@ -99,20 +88,5 @@ export function detectImpulseTimeQuery(userContent: string): ImpulseTimeQueryInt
   const impulseWindow = resolveImpulseWindowFromText(normalized);
   if (!impulseWindow) return null;
 
-  let window: SavingsQueryWindow | null = null;
-  for (const { re, window: w } of WINDOW_ZH) {
-    if (re.test(normalized)) {
-      window = w;
-      break;
-    }
-  }
-  if (!window) {
-    for (const { re, window: w } of WINDOW_EN) {
-      if (re.test(normalized)) {
-        window = w;
-        break;
-      }
-    }
-  }
-  return { window: window ?? 'thisMonth', impulseWindow };
+  return { window: resolveQueryWindowFromText(normalized) ?? 'thisMonth', impulseWindow };
 }

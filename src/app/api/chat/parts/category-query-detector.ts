@@ -12,6 +12,7 @@
  * - zh 走包含匹配, en 走词边界; 时间窗默认 thisMonth (周界与 57-c 同约定)
  */
 
+import { resolveQueryWindowFromText } from './query-window-range';
 import type { SavingsQueryWindow } from '@/types/savings-query';
 import type { DimensionQueryCategory } from '@/types/dimension-query';
 
@@ -66,19 +67,7 @@ const CATEGORY_KEYWORDS: ReadonlyArray<{ category: DimensionQueryCategory; zh: r
   },
 ];
 
-/** 时间窗 (顺序: 上周/上月 先于 本周/本月; 默认 thisMonth, 与 57-c 同约定) */
-const WINDOW_ZH: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /上周|上一周/, window: 'lastWeek' },
-  { re: /本周|这周|这一周/, window: 'thisWeek' },
-  { re: /上个?月/, window: 'lastMonth' },
-  { re: /本月|这个月|这月/, window: 'thisMonth' },
-];
-const WINDOW_EN: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
-  { re: /(?<![\w-])last week(?![\w-])/i, window: 'lastWeek' },
-  { re: /(?<![\w-])(?:this|the past|past) week(?![\w-])/i, window: 'thisWeek' },
-  { re: /(?<![\w-])last month(?![\w-])/i, window: 'lastMonth' },
-  { re: /(?<![\w-])(?:this|the) month(?![\w-])/i, window: 'thisMonth' },
-];
+/** 时间窗词表已上收 query-window-range (R906): resolveQueryWindowFromText 单源 */
 
 /**
  * 品类归一: 全串扫词, 多类命中取最长关键词; 无命中返回 null (回落 57-c)。
@@ -118,20 +107,5 @@ export function detectCategoryQuery(userContent: string): CategoryQueryIntent | 
   const category = resolveCategoryFromText(normalized);
   if (!category) return null;
 
-  let window: SavingsQueryWindow | null = null;
-  for (const { re, window: w } of WINDOW_ZH) {
-    if (re.test(normalized)) {
-      window = w;
-      break;
-    }
-  }
-  if (!window) {
-    for (const { re, window: w } of WINDOW_EN) {
-      if (re.test(normalized)) {
-        window = w;
-        break;
-      }
-    }
-  }
-  return { window: window ?? 'thisMonth', category };
+  return { window: resolveQueryWindowFromText(normalized) ?? 'thisMonth', category };
 }

@@ -47,3 +47,34 @@ export function sliceEventsByQueryWindow<T extends QueryWindowEventLike>(
     return local >= start && local < end;
   });
 }
+
+/**
+ * 时间窗词表 (R906 收编) — 57-c/58-c 三 detector 逐字相同的 WINDOW_ZH/WINDOW_EN
+ * 上收单源。表序=裁决序 (上周/上月 先于 本周/本月, 先中先得); 默认 thisMonth。
+ * follow-up-query 的 TIMEWORD 表含「上季度≈上月」近似与「前一周」, 语义不同,
+ * 不并入本表 (不同词表不合并)。
+ */
+export const QUERY_WINDOW_KEYWORDS_ZH: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
+  { re: /上周|上一周/, window: 'lastWeek' },
+  { re: /本周|这周|这一周/, window: 'thisWeek' },
+  { re: /上个?月/, window: 'lastMonth' },
+  { re: /本月|这个月|这月/, window: 'thisMonth' },
+];
+
+export const QUERY_WINDOW_KEYWORDS_EN: ReadonlyArray<{ re: RegExp; window: SavingsQueryWindow }> = [
+  { re: /(?<![\w-])last week(?![\w-])/i, window: 'lastWeek' },
+  { re: /(?<![\w-])(?:this|the past|past) week(?![\w-])/i, window: 'thisWeek' },
+  { re: /(?<![\w-])last month(?![\w-])/i, window: 'lastMonth' },
+  { re: /(?<![\w-])(?:this|the) month(?![\w-])/i, window: 'thisMonth' },
+];
+
+/** 从已归一文本解析时间窗 (zh 先 en 后, 先中先得); 未命中返回 null (调用方按约定默认 thisMonth) */
+export function resolveQueryWindowFromText(normalized: string): SavingsQueryWindow | null {
+  for (const { re, window } of QUERY_WINDOW_KEYWORDS_ZH) {
+    if (re.test(normalized)) return window;
+  }
+  for (const { re, window } of QUERY_WINDOW_KEYWORDS_EN) {
+    if (re.test(normalized)) return window;
+  }
+  return null;
+}
