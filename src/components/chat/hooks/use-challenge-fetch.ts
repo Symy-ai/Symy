@@ -44,8 +44,8 @@ export function useChallengeFetch({
   setActiveChallenge,
   setExpiredChallenge,
 }: UseChallengeFetchArgs) {
-  // 防止重复 fetch (用户切换时)
-  const _prevUserIdRef = useRef<string | undefined>(undefined);
+  // 🔧 R1038 收编: 删 _prevUserIdRef 死 ref — 全库零引用 (R1037 开档).
+  //   用户切换防重由 deps [user] 天然处理, ref 是残留.
   // 🔧 P0-3 fix (2026-07-17): 跟踪 activeChallenge 从有值变 undefined 的瞬间
   //   避免完成挑战后又立刻重新 fetch /api/challenge/active + /api/challenge/expired
   const prevActiveRef = useRef<ActiveChallenge | undefined>(undefined);
