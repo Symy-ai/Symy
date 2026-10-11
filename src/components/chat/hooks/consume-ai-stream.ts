@@ -283,19 +283,6 @@ export function handleToolEvent(parsed: SseToolEvent, params: HandleToolEventPar
     //     - 仍标 justCompletedChallengeRef (防止 effect 重设)
     const isBuyPath = justBoughtChallengeRef?.current === true;
 
-    // 🏅 拦截勋章 (绿色转向) — 流式 SSE 路径: 仅 tool_result (非 tool_call, 防双发; dedupe 兜底),
-    //   非 buy 路径 (用户买了不是拦截)。"没买" = 可晒的勋章, Buddy 页监听显示晒入口。
-    if (parsed.type === 'tool_result' && toolName === 'complete_challenge' && !isBuyPath) {
-      const savedAmount = activeChallenge?.amount;
-      if (savedAmount && savedAmount > 0) {
-        dispatchInterceptMedal({
-          itemTitle: activeChallenge?.itemName || '',
-          savedCents: Math.round(savedAmount * 100),
-          date: new Date().toISOString(),
-        });
-      }
-    }
-
     // 🔧 BUG-013 fix: 挑战完成时显示 toast (仅 passed 路径 — buy 路径已显示 toast)
     //   🐘 人设转型: 小象恭喜话术 (荣誉框架), 不再动既有 i18n key
     if (toolName === 'complete_challenge' && onToast && !isBuyPath) {
