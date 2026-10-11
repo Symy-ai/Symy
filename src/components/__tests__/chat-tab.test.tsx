@@ -207,14 +207,10 @@ vi.mock('../chat/parts/prepurchase-store', () => ({
 }));
 
 vi.mock('../chat/parts/chat-header', () => ({
-  ChatHeader: ({ buddyState: buddy, health, accentClass, gradientClass, children }: {
-    buddyState?: BuddyState;
-    health?: string;
-    accentClass?: string;
-    gradientClass?: string;
-    children?: ReactNode;
-  }) => (
-    <header data-testid="chat-header" data-buddy-state={String(!!buddy)} data-health={health} data-accent={accentClass} data-gradient={gradientClass}>
+  // 🔧 R1041: ChatHeader 四死 props 收编后 mock 同步 — 组件只收 children,
+  // data-health/data-accent 断言随死 props 一并删除 (mock 自造面不算真行为).
+  ChatHeader: ({ children }: { children?: ReactNode }) => (
+    <header data-testid="chat-header">
       {children}
     </header>
   ),
@@ -451,12 +447,10 @@ describe('ChatTab assembly', () => {
     }
   });
 
-  it('maps buddy health to the header and background presentation', () => {
+  it('maps buddy health to the background presentation', () => {
     setup();
 
-    expectAttribute(screen.getByTestId('chat-header'), 'data-health', 'weak');
-    expectAttribute(screen.getByTestId('chat-header'), 'data-accent', 'text-yellow-400 bg-yellow-500/20');
-    expectAttribute(screen.getByTestId('chat-header'), 'data-gradient', 'from-yellow-400 to-amber-300');
+    // 🔧 R1041: header 面 props 已收编 — 剩 background 面 (vitality)
     expectAttribute(screen.getByTestId('companion-background'), 'data-vitality', '88');
   });
 

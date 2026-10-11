@@ -12,10 +12,6 @@ import { useI18n } from '@/i18n/provider';
 import { ChatCartPanel } from './cart-panel';
 
 export interface ChatHeaderProps {
-  buddyState?: unknown;
-  health?: unknown;
-  accentClass?: string;
-  gradientClass?: string;
   children?: React.ReactNode;
 }
 

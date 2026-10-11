@@ -49,7 +49,7 @@ import { ChatComposer } from './chat/sections/chat-composer';
 import { DepositDialogSection } from './chat/sections/deposit-dialog-section';
 import { SilentMomentSection } from './chat/sections/silent-moment-section';
 import { useEntryDismiss } from './chat/hooks/use-entry-dismiss';
-import { BUDDY_ACCENT, BUDDY_GRADIENT } from './chat/chat-accents';
+import { BUDDY_GRADIENT } from './chat/chat-accents';
 import { useAuth } from '@/components/auth/auth-provider';
 import type { ChatTabProps } from './chat/chat-tab-props';
 import { useI18n } from '@/i18n/provider';
@@ -429,7 +429,7 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
 
 
   const health = buddyState?.health || 'healthy';
-  const accentClass = BUDDY_ACCENT[health];
+  // 🔧 R1041: accentClass 删除 — ChatHeader 死 props 收编后全库零消费, 只留 gradientClass (ChatComposer)
   const gradientClass = BUDDY_GRADIENT[health];
 
   // 🔧 b138 批B (2026-09-29): 回访条全家桶收拢 useFollowupStrips —
@@ -487,12 +487,9 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
       <CompanionBackground health={health} vitality={buddyState?.vitality || 72} />
 
       {/* === Header — minimal: only banners, no title/avatar/tokens === */}
-      <ChatHeader
-        buddyState={buddyState}
-        health={health}
-        accentClass={accentClass}
-        gradientClass={gradientClass}
-      >
+      {/* 🔧 R1041 收编: ChatHeader 四死 props 删除 (buddyState/health/accentClass/gradientClass) —
+          09-06 minimal 化删头像/健康徽章后 props 双侧残留, 组件只消费 children. */}
+      <ChatHeader>
         {/* Banners 嵌套在 Header 内 (与原结构一致) */}
         {/* 🔧 Bug 27 fix: Demo 模式下 challengeContext prop 可能比 activeChallenge state 先到
             (setActiveChallenge 是异步 state 更新, 首次 render 时 activeChallenge 仍为 undefined)。

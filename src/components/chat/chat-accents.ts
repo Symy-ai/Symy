@@ -1,13 +1,7 @@
 // Chat tab 的 buddy 健康状态配色 (File Split Wave 1 从 chat-tab.tsx 拆出 — 纯常量, 零运行时)
+// 🔧 R1041 收编: BUDDY_ACCENT 已删 — 09-06 minimal 化后全库生产零消费 (仅测试引用).
+//   判定: 测试引用不算存活 — 测试为死对象写断言 = 死测试 (被删对象专属测试同步删除惯例).
 import type { BuddyHealth } from '@/types/buddy-state';
-
-export const BUDDY_ACCENT: Record<BuddyHealth, string> = {
-  thriving: 'text-green-400 bg-green-500/20',
-  healthy: 'text-emerald-400 bg-emerald-500/20',
-  weak: 'text-yellow-400 bg-yellow-500/20',
-  critical: 'text-red-400 bg-red-500/20',
-  dormant: 'text-gray-500 bg-gray-500/20',
-};
 
 // Neon accent gradients per health (kept in parent for gradientClass prop)
 export const BUDDY_GRADIENT: Record<BuddyHealth, string> = {
