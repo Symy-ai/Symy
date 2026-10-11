@@ -19,8 +19,9 @@
  */
 
 import { detectSavingsQuery } from './savings-query-detector';
+import { queryWindowRange } from './query-window-range';
 import type { SavingsQueryEvent } from './savings-query-context';
-import { localWeekStart, weeklyGuardCompare } from '@/lib/weekly-guard-compare';
+import { weeklyGuardCompare } from '@/lib/weekly-guard-compare';
 import { buildMonthlyStatement } from '@/lib/monthly-guard-statement';
 import { aggregateGuardStyleProfile } from '@/lib/guard-style-profile';
 import { formatFreedomTime } from '@/lib/freedom-time';
@@ -51,24 +52,8 @@ const WINDOW_WORD: Record<SavingsQueryWindow, { zh: string; en: string }> = {
   lastMonth: { zh: '上月', en: 'last month' },
 };
 
-/** 窗口本地时间界 [start, end) — 周界复用 localWeekStart (Monday-start 同约定) */
-function windowRange(window: SavingsQueryWindow, now: Date): { start: Date; end: Date } {
-  if (window === 'thisWeek') {
-    const start = localWeekStart(now);
-    return { start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7) };
-  }
-  if (window === 'lastWeek') {
-    const end = localWeekStart(now);
-    return { start: new Date(end.getFullYear(), end.getMonth(), end.getDate() - 7), end };
-  }
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  if (window === 'thisMonth') {
-    return { start: new Date(y, m, 1), end: new Date(y, m + 1, 1) };
-  }
-  return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1) };
-}
-
+// R840: 窗界收编 query-window-range (共享 lib, 与 58-c category/impulse turn 同一刀切);
+// 提取前本文件私有 windowRange 与共享版逐字节一致, 收编后私有版删除 (单一真源)。
 /** 本地时间 YYYY-MM (buildMonthlyStatement 的 monthKey) */
 function monthKeyOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -113,7 +98,7 @@ export function buildSavingsQueryTurnFromWindow(input: BuildSavingsQueryTurnFrom
   const { window, locale, events, now, hourlyRate, rng } = input;
 
   // 时间窗切片 (机械过滤, 聚合口径仍由 lib 自己定义)
-  const { start, end } = windowRange(window, now);
+  const { start, end } = queryWindowRange(window, now);
   const windowEvents = (events || []).filter((e) => {
     const t = new Date(e.createdAt).getTime();
     if (!Number.isFinite(t)) return false;
