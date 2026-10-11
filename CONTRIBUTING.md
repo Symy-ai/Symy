@@ -40,7 +40,7 @@ npm run dev   # http://localhost:3000
 CI runs all three of these on every pull request, and all must be green:
 
 ```bash
-npm run test                                # Vitest — baseline snapshot: 10,458 tests across 1,107 files
+npm run test                                # Vitest — baseline snapshot: 10,464 tests across 1,107 files
 NODE_OPTIONS='--max-old-space-size=4096' npx tsc --noEmit   # TypeScript type check
 npx eslint src/ --max-warnings=0            # ESLint — zero warnings allowed
 ```
