@@ -15,6 +15,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'edge') {
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN,
+      // 🔧 R592: 隐私政策断言「PII 清洗」的实现支撑 — 与 server/client 同口径
+      beforeSend: (await import('./lib/sentry-scrub')).scrubSentryEvent,
       tracesSampleRate: 0.1,
     });
   }
