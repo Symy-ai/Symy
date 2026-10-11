@@ -1,5 +1,10 @@
 // 第19刀，自 route.ts:97-121 纯机械搬移
 // （isLettaConfigured 门内的 Guest 限流段 — 已登录用户 hasAuth=true 直接跳过）
+// 注: 未登录聊天的主入口是 /api/chat/anonymous (ZAI 直调, 无 Letta, 3 次/天 IP 限流)。
+// 本闸是 /api/chat 内的历史二道闸: 未登录请求即使过了本闸, 后续 getUserAgentId
+// 因无 userId 返回 null → buildAgentUnavailableResponse 503 (Round 12 C3 已移除
+// 全局 LETTA_AGENT_ID 共享 fallback, 防跨用户记忆污染)。guest-gate 只拦截超额 IP,
+// 不再代表 guest 可通过本端点获得 AI 回复。
 import { NextRequest } from 'next/server';
 import { checkGuestLimit, getClientIP } from '@/lib/guest-rate-limiter';
 import { logger } from '@/lib/logger';
