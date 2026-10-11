@@ -24,7 +24,12 @@ export function CheckoutConfirmModal({
 }: CheckoutConfirmModalProps) {
   const { t } = useI18n();
   return (
-    <div className="fixed inset-0 z-[220] flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={onCancel}>
+    // 🔧 R1052 收编 (R1051 观察项23): submitting 中遮罩点击不再 onCancel —
+    //   按钮三禁已到位, 遮罩是逃逸缺口 (结算进行中关 modal, 结果仍到 toast 仍弹).
+    <div
+      className="fixed inset-0 z-[220] flex items-end justify-center bg-black/50 backdrop-blur-sm"
+      onClick={submitting ? undefined : onCancel}
+    >
       <div
         className="w-full max-w-md rounded-t-3xl border border-glass-border bg-surface-1 p-5 animate-in slide-in-from-bottom duration-300"
         onClick={(event) => event.stopPropagation()}

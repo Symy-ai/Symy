@@ -98,4 +98,12 @@ describe('CheckoutConfirmModal', () => {
     renderModal();
     expect(screen.getByRole('button', { name: 'Close' })).toBeTruthy();
   });
+
+  // 🔧 R1052: submitting 中遮罩点击不触发 onCancel (按钮三禁外遮罩是逃逸缺口)
+  it('ignores backdrop clicks while submitting', () => {
+    const onCancel = vi.fn();
+    const { result } = renderModal({ submitting: true, onCancel });
+    fireEvent.click(result.container.firstElementChild as HTMLElement);
+    expect(onCancel).not.toHaveBeenCalled();
+  });
 });
