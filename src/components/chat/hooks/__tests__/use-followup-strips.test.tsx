@@ -9,7 +9,7 @@ const M = vi.hoisted(() => ({
   mc: { dueRecord: { id: 'mc' }, clear: () => {} },
   cool: { dueRecord: { id: 'cool' } },
   pre: { dueRecord: { id: 'pre' }, clear: () => {} },
-  dup: { due: { id: 'dup' }, clear: () => {} },
+  dup: { dueRecord: { id: 'dup' }, clear: () => {} },
   emo: { dueRecord: { id: 'emo' } },
   rev: { dueReview: { id: 'rev' }, reviewSummary: null, recordReview: () => {} },
 }));

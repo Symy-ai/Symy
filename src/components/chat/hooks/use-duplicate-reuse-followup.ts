@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import { getDueReuseConfirmation } from '../parts/duplicate-purchase-store';
 import type { DuplicatePrecheckCardData } from '@/types/duplicate-purchase';
 
+// 🔧 R1030: due → dueRecord — 与其余五 followup hook 命名同型 (R1026 观察项收编)
 export function useDuplicateReuseFollowup({ isDemo, historyReady }: { isDemo: boolean; historyReady: boolean }) {
-  const [due, setDue] = useState<{ card: DuplicatePrecheckCardData; decisionId: string } | null>(null);
+  const [dueRecord, setDueRecord] = useState<{ card: DuplicatePrecheckCardData; decisionId: string } | null>(null);
   const derived = useRef(false);
   useEffect(() => {
     if (derived.current || isDemo || !historyReady) return;
     derived.current = true;
-    setDue(getDueReuseConfirmation());
+    setDueRecord(getDueReuseConfirmation());
   }, [isDemo, historyReady]);
-  return { due, clear: () => setDue(null) };
+  return { dueRecord, clear: () => setDueRecord(null) };
 }

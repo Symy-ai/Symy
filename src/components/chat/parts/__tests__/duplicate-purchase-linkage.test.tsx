@@ -137,7 +137,7 @@ describe('duplicate-precheck 三件套联动 (batch90-c)', () => {
     expect(window.localStorage.getItem(PENDING_KEY)).toBeNull();
 
     const { result } = renderHook(() => useDuplicateReuseFollowup({ isDemo: false, historyReady: true }));
-    expect(result.current.due).toBeNull();
+    expect(result.current.dueRecord).toBeNull();
   });
 
   it('24h 到期链: hook 拾取 pending → followup 答 avoided → conclusion 回链 + pending 消解 + onResolved', () => {
@@ -149,7 +149,7 @@ describe('duplicate-precheck 三件套联动 (batch90-c)', () => {
     agePendingPastDue();
 
     const hook = renderHook(() => useDuplicateReuseFollowup({ isDemo: false, historyReady: true }));
-    const due = hook.result.current.due;
+    const due = hook.result.current.dueRecord;
     if (!due) throw new Error('aged pending should surface through the hook');
     expect(due.card).toEqual({ itemTitle: 'cable', category: 'electronics' });
     expect(due.decisionId).toBe(decisionTriggerId);
@@ -174,12 +174,12 @@ describe('duplicate-precheck 三件套联动 (batch90-c)', () => {
     agePendingPastDue();
 
     const demo = renderHook(() => useDuplicateReuseFollowup({ isDemo: true, historyReady: true }));
-    expect(demo.result.current.due).toBeNull();
+    expect(demo.result.current.dueRecord).toBeNull();
 
     const notReady = renderHook(() => useDuplicateReuseFollowup({ isDemo: false, historyReady: false }));
-    expect(notReady.result.current.due).toBeNull();
+    expect(notReady.result.current.dueRecord).toBeNull();
 
     const ready = renderHook(() => useDuplicateReuseFollowup({ isDemo: false, historyReady: true }));
-    expect(ready.result.current.due?.card).toEqual({ itemTitle: 'kettle', category: 'home' });
+    expect(ready.result.current.dueRecord?.card).toEqual({ itemTitle: 'kettle', category: 'home' });
   });
 });

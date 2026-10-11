@@ -38,7 +38,8 @@ export function useFollowupStrips({ messages, isDemo, historyReady }: FollowupSt
   // 记录驱动; 二选一后回访条内联展示祝福/成功文案, 记录已在 store 内消解)
   const { dueRecord: duePrepurchase, clear: clearPrepurchaseFollowup } = usePrepurchaseFollowup({ isDemo, historyReady });
 
-  const { due: dueDuplicateReuse, clear: clearDuplicateReuseFollowup } = useDuplicateReuseFollowup({ isDemo, historyReady });
+  // 🔧 R1030: due → dueRecord 同型 rename 透传
+  const { dueRecord: dueDuplicateReuse, clear: clearDuplicateReuseFollowup } = useDuplicateReuseFollowup({ isDemo, historyReady });
 
   // 🐘 batch60-c: 情绪守护选「先等 10 分钟」的到期待追问条 (localStorage one-shot
   // 等待记录驱动; 刷新/换会话后卡不在了, 由追问条接棒二选一)

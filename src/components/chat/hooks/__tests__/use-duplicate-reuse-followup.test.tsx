@@ -38,13 +38,13 @@ describe('useDuplicateReuseFollowup 一次性派生', () => {
     cleanup();
     render(<Probe isDemo={false} historyReady={false} />);
     expect(getDueMock).not.toHaveBeenCalled();
-    expect(box.current?.due ?? null).toBeNull();
+    expect(box.current?.dueRecord ?? null).toBeNull();
   });
 
   it('就绪 → 一次性读取 (derived 门防重读)', () => {
     const { rerender } = render(<Probe isDemo={false} historyReady />);
     expect(getDueMock).toHaveBeenCalledTimes(1);
-    expect(box.current?.due).toEqual({ card: { itemName: 'X' }, decisionId: 'd1' });
+    expect(box.current?.dueRecord).toEqual({ card: { itemName: 'X' }, decisionId: 'd1' });
     rerender(<Probe isDemo={false} historyReady />); // 重渲染
     rerender(<Probe isDemo={false} historyReady />);
     expect(getDueMock).toHaveBeenCalledTimes(1); // 只读一次
@@ -52,9 +52,9 @@ describe('useDuplicateReuseFollowup 一次性派生', () => {
 
   it('clear → null (rerender 承接 setState)', () => {
     const { rerender } = render(<Probe isDemo={false} historyReady />);
-    expect((box.current as Ret).due).not.toBeNull();
+    expect((box.current as Ret).dueRecord).not.toBeNull();
     (box.current as Ret).clear();
     rerender(<Probe isDemo={false} historyReady />);
-    expect((box.current as Ret).due).toBeNull();
+    expect((box.current as Ret).dueRecord).toBeNull();
   });
 });
