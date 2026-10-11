@@ -1,7 +1,7 @@
 /**
  * route-sse-bytes — chat/route.ts 拆相位 (Lane G 方案) 批 0 字节级兜底
  *
- * 职责: POST /api/chat 全链 (真实 route.ts + 真实 validateChatRequest + 真实 17 块
+ * 职责: POST /api/chat 全链 (真实 route.ts + 真实 validateChatRequest + 真实 18 块
  * canned 链 + 真实 loadLettaTurnContext + 真实 SSE 包装栈, 仅 mock 外部边界) 的
  * 响应字节快照。拆相位 (刀 18-24) 前后此文件断言必须逐字节不变 — 这是
  * "纯结构性拆分"的机验核心 (方案 §5 第 3 层)。
