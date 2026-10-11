@@ -117,7 +117,7 @@ describe('GET /api/user/export-data', () => {
     expect(new Set(requestIds).size).toBe(1);
   });
 
-  it('成功路径 → 12 section 全透传 + 下载契约头 (attachment/no-store)', async () => {
+  it('成功路径 → 全部 section 透传 + 下载契约头 (attachment/no-store)', async () => {
     const handler = GET as unknown as Handler;
     const { supabase, user } = createSupabase([]);
     const response = await handler({ supabase, user } as never);
