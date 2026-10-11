@@ -28,6 +28,20 @@ const sections = [
   'invitations',
   'butterfly_sessions',
   'challenge_participants',
+  // 🔧 R571: GDPR 补全 13 表
+  'user_inventory',
+  'shopping_facts',
+  'refund_requests',
+  'heal_sessions',
+  'daily_reflections',
+  'daily_reflection_votes',
+  'inward_daily_reflection',
+  'inward_reflection_resonates',
+  'inward_why_wall',
+  'user_intervention_profile',
+  'premium_waitlist',
+  'push_notification_log',
+  'push_subscriptions',
 ] as const;
 
 function createSupabase(failingSections: readonly string[]) {
@@ -158,5 +172,43 @@ describe('GET /api/user/export-data', () => {
     // userId = 00000000-0000-4000-8000-000000000001 → 只露前 8 位
     expect(cd).not.toContain(user.id);
     expect(cd).toContain(user.id.substring(0, 8));
+  });
+
+  it('R571 GDPR 补全: push_subscriptions 凭据列过滤 (select 不含 endpoint/p256dh_key/auth_key)', async () => {
+    const handler = GET as unknown as Handler;
+    const { supabase, user } = createSupabase([]);
+    const selectSpyCalls: Array<{ section: string; columns: string }> = [];
+
+    // 包装 supabase.from 捕获 push_subscriptions 的 select 列
+    const origFrom = supabase.from.bind(supabase);
+    const wrapped = {
+      from(section: string) {
+        const query = origFrom(section) as unknown as Record<string, (...args: unknown[]) => unknown>;
+        return {
+          select: (...selectArgs: unknown[]) => {
+            if (section === 'push_subscriptions') {
+              selectSpyCalls.push({ section, columns: String(selectArgs[0] ?? '') });
+            }
+            return query.select(...selectArgs);
+          },
+          eq: (...eqArgs: unknown[]) => query.eq(...eqArgs),
+          order: (...orderArgs: unknown[]) => query.order(...orderArgs),
+          limit: (...limitArgs: unknown[]) => query.limit(...limitArgs),
+          maybeSingle: () => query.maybeSingle(),
+          or: (...orArgs: unknown[]) => query.or(...orArgs),
+          then: query.then.bind(query) as typeof query.then,
+        };
+      },
+    };
+
+    await handler({ supabase: wrapped, user } as never);
+
+    expect(selectSpyCalls.length).toBe(1);
+    const cols = selectSpyCalls[0].columns;
+    expect(cols).toContain('preferences');
+    expect(cols).toContain('created_at');
+    expect(cols).not.toContain('endpoint');
+    expect(cols).not.toContain('p256dh_key');
+    expect(cols).not.toContain('auth_key');
   });
 });
