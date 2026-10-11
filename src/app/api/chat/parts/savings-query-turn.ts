@@ -19,7 +19,7 @@
  */
 
 import { detectSavingsQuery } from './savings-query-detector';
-import { queryWindowRange } from './query-window-range';
+import { queryWindowRange, sliceEventsByQueryWindow } from './query-window-range';
 import type { SavingsQueryEvent } from './savings-query-context';
 import { weeklyGuardCompare } from '@/lib/weekly-guard-compare';
 import { buildMonthlyStatement } from '@/lib/monthly-guard-statement';
@@ -97,15 +97,8 @@ export interface BuildSavingsQueryTurnFromWindowInput {
 export function buildSavingsQueryTurnFromWindow(input: BuildSavingsQueryTurnFromWindowInput): SavingsQueryTurn {
   const { window, locale, events, now, hourlyRate, rng } = input;
 
-  // 时间窗切片 (机械过滤, 聚合口径仍由 lib 自己定义)
-  const { start, end } = queryWindowRange(window, now);
-  const windowEvents = (events || []).filter((e) => {
-    const t = new Date(e.createdAt).getTime();
-    if (!Number.isFinite(t)) return false;
-    const d = new Date(t);
-    const local = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
-    return local >= start && local < end;
-  });
+  // 时间窗切片 (R997 收编彻底化: 换调 query-window-range 共享切片, 与 58-c 同源)
+  const windowEvents = sliceEventsByQueryWindow(events, window, now);
 
   // 拦截轮次 / 胜率 / 自由小时 / 转存合计 — 全部取自既有聚合 lib 输出
   let intercepts: number;
@@ -120,6 +113,7 @@ export function buildSavingsQueryTurnFromWindow(input: BuildSavingsQueryTurnFrom
     hoursReclaimed = bucket.hoursReclaimed;
     estSavedTotal = bucket.guardedAmount;
   } else {
+    const { start } = queryWindowRange(window, now);
     const statement = buildMonthlyStatement(windowEvents, {
       monthKey: monthKeyOf(start),
       hourlyRate,
