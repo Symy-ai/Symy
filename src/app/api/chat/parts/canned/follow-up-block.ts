@@ -9,6 +9,7 @@
  */
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 interface FollowUpBlockInput {
   userContent: string;
@@ -36,7 +37,7 @@ export async function tryFollowUpBlock(input: FollowUpBlockInput): Promise<Respo
       userId: userId ?? undefined,
       store: (supabase ?? undefined) as unknown as import('../savings-query-context').SavingsQueryStore | undefined,
     }),
-    userId ? getUserHourlyRate(userId).catch(() => 25) : Promise.resolve(25),
+    userId ? getUserHourlyRate(userId).catch(() => DEFAULT_HOURLY_RATE) : Promise.resolve(DEFAULT_HOURLY_RATE),
   ]);
   const followUpTurn = buildFollowUpTurn({ resolved, locale, events, now: new Date(), hourlyRate });
   logger.info('[Chat API] Follow-up query detected, returning follow-up turn');

@@ -20,6 +20,7 @@ import { getElephantPhrase } from '@/lib/elephant-tone';
 import type { SavingsQueryCardData } from '@/types/savings-query';
 import type { CategoryQueryCardData, ImpulseTimeCardData } from '@/types/dimension-query';
 import type { SavingsQueryEvent } from './savings-query-context';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 export interface FollowUpTurn {
   reply: string;
@@ -53,7 +54,7 @@ export function buildFollowUpTurn(input: BuildFollowUpTurnInput): FollowUpTurn {
       locale,
       events,
       now,
-      hourlyRate: input.hourlyRate ?? 25,
+      hourlyRate: input.hourlyRate ?? DEFAULT_HOURLY_RATE,
       rng,
     });
     // 追问语境: 掀同一本账的新一页 (welcome 措辞换成 followup 变体, 空窗沿用 57-c 引导态)

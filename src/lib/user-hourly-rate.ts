@@ -3,7 +3,7 @@ import 'server-only'; // 🔧 ARCH fix Round 73: server-only — prevents client
  * 服务端读取用户时薪 (用于 AI chat context 注入)
  *
  * 用 admin client 绕过 RLS (chat route 已认证用户, 但 supabase 客户端可能受限)。
- * 失败时返回默认值 $20/hr (US median take-home)。
+ * 失败时返回默认值 $25/hr (DEFAULT_HOURLY_RATE, freedom-time SSOT)。
  */
 
 import { createAdminClient } from '@/lib/supabase-admin';
@@ -13,10 +13,10 @@ import { logger } from '@/lib/logger';
 /**
  * 读取用户时薪 — 用于 AI chat context (Freedom Translation)
  *
- * 永不抛错 — 失败返回 20。
+ * 永不抛错 — 失败返回 DEFAULT_HOURLY_RATE (25)。
  *
  * @param userId 用户 UUID
- * @returns 时薪 (默认 20)
+ * @returns 时薪 (默认 25)
  */
 export async function getUserHourlyRate(userId: string): Promise<number> {
   const { supabase, error } = createAdminClient();
