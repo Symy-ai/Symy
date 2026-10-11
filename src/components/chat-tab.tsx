@@ -400,6 +400,16 @@ export function ChatTab({ impulseContext, buddyState, contextMessage, challengeC
       depositShownRef.current = challengeId;
       // 🔧 需求九: handleGiveUp ("I'll pass") 路径 — 沉默时刻 (saw) → DepositDialog
       triggerSawSilentMoment(challengeId, savedAmount, activeChallengeRef.current?.itemName || '');
+      // 🔧 R1024 fix (giveUp 路径 onChallengePassed 断链): 旧代码缺 attachPendingAhaMoment —
+      //   use-challenge-actions.ts 已不再直接调 onChallengePassed (Round 75 改为经沉默时刻延迟),
+      //   giveUp 登录路径 onChallengeCompleted 无 attach → pendingAhaMoment 恒空 →
+      //   沉默时刻完成后 onChallengePassed 永不触发 → Aha Moment Step 3 断链.
+      //   修复: 与 :170/:336 两处完整版对齐, 补 attachPendingAhaMoment.
+      attachPendingAhaMoment({
+        challengeId,
+        itemName: activeChallengeRef.current?.itemName || '',
+        amount: savedAmount,
+      });
     },
     // 🔧 需求九: handleChooseToBuy ("I choose to buy") 路径 — 沉默时刻 (bought), 无存款
     onChallengeBought: (amount: number, itemName: string) => {
