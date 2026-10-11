@@ -311,8 +311,16 @@ export function buildUserMessageWithContext({
 
   // Impulse context: platform $amount (signals: ...)
   // 🔧 P0-3 fix: sanitize platform + reasons before interpolation
+  // 🔧 同型收编 (BUG-AUDIT-69-7 漏网第二处, R940): 旧 impulseContext.amount?.toFixed(2) || "unknown"
+  //    — NaN.toFixed(2)="NaN" (truthy) → || 不生效 → prompt 出现 "$NaN"。与 letta-turn-context
+  //    同型修法: 显式 Number.isFinite 校验 (zod .finite() 只守住 route 入口, 本函数可被测试直调绕过,
+  //    纵深防御层独立成立)。
+  const impulseAmountStr =
+    typeof impulseContext?.amount === "number" && Number.isFinite(impulseContext.amount)
+      ? impulseContext.amount.toFixed(2)
+      : "unknown";
   const impulseInfo = impulseContext
-    ? ` | impulse: ${sanitizePlatform(impulseContext.platform)} $${impulseContext.amount?.toFixed(2) || "unknown"}${impulseContext.reasons?.length ? ` (signals: ${sanitizeReasons(impulseContext.reasons).join(", ")})` : ""}`
+    ? ` | impulse: ${sanitizePlatform(impulseContext.platform)} $${impulseAmountStr}${impulseContext.reasons?.length ? ` (signals: ${sanitizeReasons(impulseContext.reasons).join(", ")})` : ""}`
     : "";
 
   // Language instruction
