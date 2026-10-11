@@ -22,6 +22,9 @@ on:
       - 'src/lib/database.types.ts'
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+
 jobs:
   check-types-sync:
     runs-on: ubuntu-latest
