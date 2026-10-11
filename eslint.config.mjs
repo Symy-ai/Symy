@@ -14,15 +14,17 @@ const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   //   F2: hooks firing API calls before auth ready → no-raw-fetch-in-use-effect, require-auth-gate-on-api-query
   //   F3: optimistic concurrency 409 conflicts → no-put-state-endpoints
   //   F8: swallowed errors → no-warn-only-catch
-  // All rules are "warn" level initially — promote to "error" after fixing existing violations.
+  // 🔧 R1224: warn → error 晋升。前置清扫已完成 (R1220 五族 13 处 + R1222 六族 28 处
+  //   论证补齐), 当前 91 处 disable 全部带 '-- 理由' 豁免在案, 全仓 0 活警告。
+  //   此后触碰这些规则的新代码直接红 — 守卫成为硬门。
   plugins: { symy: symyPlugin },
   rules: {
-    "symy/no-raw-fetch-in-use-effect": "warn",
-    "symy/require-auth-gate-on-api-query": "warn",
-    "symy/no-async-callback-mutation": "warn",
-    "symy/no-put-state-endpoints": "warn",
-    "symy/no-warn-only-catch": "warn",
-    "symy/require-json-helper-in-authenticated-routes": "warn",
+    "symy/no-raw-fetch-in-use-effect": "error",
+    "symy/require-auth-gate-on-api-query": "error",
+    "symy/no-async-callback-mutation": "error",
+    "symy/no-put-state-endpoints": "error",
+    "symy/no-warn-only-catch": "error",
+    "symy/require-json-helper-in-authenticated-routes": "error",
   },
 }, {
   // 🔧 Round 91: Don't warn about unused eslint-disable directives.
