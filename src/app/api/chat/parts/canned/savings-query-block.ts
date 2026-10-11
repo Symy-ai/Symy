@@ -11,6 +11,7 @@
  */
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 interface SavingsQueryBlockInput {
   userContent: string;
@@ -36,7 +37,7 @@ export async function trySavingsQueryBlock(input: SavingsQueryBlockInput): Promi
       // SupabaseClient 运行时满足最小结构面 (与 factsStore 同款边界收窄)
       store: (supabase ?? undefined) as unknown as import('../savings-query-context').SavingsQueryStore | undefined,
     }),
-    userId ? getUserHourlyRate(userId).catch(() => 25) : Promise.resolve(25),
+    userId ? getUserHourlyRate(userId).catch(() => DEFAULT_HOURLY_RATE) : Promise.resolve(DEFAULT_HOURLY_RATE),
   ]);
   const savingsQueryTurn = buildSavingsQueryTurn({
     userContent,
