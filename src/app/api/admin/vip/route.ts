@@ -10,6 +10,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { verifyAdminAuth } from '@/lib/admin-auth';
+import { withAdminAudit, logUnauthorizedAdminAttempt } from '@/lib/admin-audit';
 import { createAdminClient } from '@/lib/supabase-admin';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -81,9 +82,12 @@ export async function GET(request: NextRequest) {
 }
 
 /** POST: 批量开通 VIP (设 profiles.plan='premium') */
+// eslint-disable-next-line require-await -- withAdminAudit HOF requires async function signature
 export async function POST(request: NextRequest) {
   const authResult = verifyAdminAuth(request);
   if (!authResult.authorized) {
+    // 🔧 R564 fix: 未授权尝试也记审计 (与 agent-pool 路由对齐)
+    logUnauthorizedAdminAttempt(request, authResult);
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -92,46 +96,50 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 });
   }
 
-  try {
-    let raw: unknown;
+  // 🔧 R564 fix: VIP 批量开通是付费面写操作, 与 users/agent-pool 等同走 withAdminAudit
+  //    旧代码: 仅 verifyAdminAuth, admin_audit_logs 漏记 VIP 变更 (审计洞)
+  return withAdminAudit(request, authResult, async () => {
     try {
-      raw = await request.json();
-    } catch {
-      // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
-      return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+      let raw: unknown;
+      try {
+        raw = await request.json();
+      } catch {
+        // safe to ignore: malformed JSON is a client error, surfaced as 400 (not swallowed)
+        return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+      }
+      const parsed = vipActionSchema.safeParse(raw);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
+      }
+      const { userIds, action } = parsed.data;
+
+      const newPlan = action === 'activate' ? 'premium' : 'free';
+
+      // 批量更新 profiles.plan
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ plan: newPlan, updated_at: new Date().toISOString() })
+        .in('id', userIds)
+        .select('id, email, plan');
+
+      if (error) {
+        logger.error('[Admin VIP] Batch update error:', error.message);
+        return NextResponse.json({ error: 'Failed to update plans' }, { status: 500 });
+      }
+
+      const affected = data?.length || 0;
+      logger.info(`[Admin VIP] ${action}d ${affected} users to ${newPlan}`);
+
+      return NextResponse.json({
+        success: true,
+        action,
+        affected,
+        users: data || [],
+      });
+    } catch (err) {
+      // safe to ignore: non-critical error, logged for observability
+      logger.error('[Admin VIP] POST error:', err);
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
-    const parsed = vipActionSchema.safeParse(raw);
-    if (!parsed.success) {
-      return NextResponse.json({ error: 'Validation failed', issues: parsed.error.issues }, { status: 400 });
-    }
-    const { userIds, action } = parsed.data;
-
-    const newPlan = action === 'activate' ? 'premium' : 'free';
-
-    // 批量更新 profiles.plan
-    const { data, error } = await supabase
-      .from('profiles')
-      .update({ plan: newPlan, updated_at: new Date().toISOString() })
-      .in('id', userIds)
-      .select('id, email, plan');
-
-    if (error) {
-      logger.error('[Admin VIP] Batch update error:', error.message);
-      return NextResponse.json({ error: 'Failed to update plans' }, { status: 500 });
-    }
-
-    const affected = data?.length || 0;
-    logger.info(`[Admin VIP] ${action}d ${affected} users to ${newPlan}`);
-
-    return NextResponse.json({
-      success: true,
-      action,
-      affected,
-      users: data || [],
-    });
-  } catch (err) {
-    // safe to ignore: non-critical error, logged for observability
-    logger.error('[Admin VIP] POST error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+  }, 'vip-batch-plan-update');
 }
