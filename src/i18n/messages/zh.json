@@ -50,14 +50,8 @@
     "symySuccess": "Symy✓"
   },
   "home": {
-    "weeklyTrend": "本周趋势",
     "spendingCapTitle": "月度守护目标",
     "spendingCapUsage": "本月额度已用 {used} / {cap} · 还余 {days} 天",
-    "trendIncreasing": "比上周守护更多",
-    "trendDecreasing": "比上周守护略少",
-    "trendStable": "与上周大致持平",
-    "noImpulseSpending": "还没有冲动消费",
-    "noImpulseSpendingDesc": "这一周依然安静——每一次守护都有意义",
     "tagline": "少买一点，多活一点。",
     "taglineDemo": "少买一点，多活一点。（演示）",
     "weeklyChallenge": {
@@ -71,7 +65,6 @@
     "guardSeason": {
       "demoTitle": "守护季横幅（演示）",
       "demoDesc": "小象在这里， quietly 陪你。",
-      "demoFallback": "小象在这里， quietly 陪你。",
       "double11": {
         "title": "双11 守护季",
         "desc": "大促信息震耳欲聋，你仍可以安静地守住真正重要的事。"
@@ -87,16 +80,10 @@
     },
     "eventsDetected": "心动时刻",
     "eventsDetectedHint": "什么在召唤你，你守护了什么",
-    "eventsDetectedTooltip": "每一次心动的瞬间 —— 购买、挑战、停顿。其中一些已变成守护。",
     "interventions": "守护时刻",
     "interventionsHint": "你守护的，和赢回的退款",
-    "interventionsTooltip": "你守住绿色关的时刻 —— 睁着眼选择的。",
     "moneySaved": "赢回的时间",
     "dayStreak": "绿色连续",
-    "checkOrders": "查看订单",
-    "startHealing": "开始疗愈",
-    "familyMembers": "家庭成员",
-    "familyMembersDesc": "3 人 · 本周 9 次消费时刻",
     "recentImpulseEvents": "你的守护记录",
     "noImpulseEvents": "还没有什么在召唤你",
     "shoppingUnderControl": "你的选择越来越绿",
@@ -115,14 +102,7 @@
     "thisWeek": "这周",
     "events": "个时刻",
     "spent": "未守护时刻",
-    "spentDesc": "花钱的时候",
-    "spentHint": "还没来得及守护就花掉的钱",
-    "clickDayHint": "点一天看看什么在召唤你",
-    "noEventsThisDay": "这一天没有什么在召唤你",
-    "eventsLoadingHint": "时刻可能在不同时区 —— 换一天试试。",
     "resisted": "你守护的",
-    "resistedDesc": "你及时守住的",
-    "resistedHint": "因为你守住关口而留下的钱 —— 也是没有发生的浪费",
     "saved": "赢回的时间",
     "eventsDetectedDetail": "包括：\n• 邮件收据（购买 + 退款）\n• 你发起的挑战\n\n不包括：\n• 浏览（我们不追踪）\n• 加入购物车（我们不追踪）",
     "interventionsDetail": "包括：\n• 你守护的挑战\n• 你赢回的退款\n\n不包括：\n• 中途关闭的挑战\n• 没有挑战的对话",
@@ -929,17 +909,11 @@
     "rewardTokens": "+{tokens} 代币",
     "rewardTokensVitality": "+{tokens} 代币 · +{vitality} 活力",
     "challengeDesc": "说出什么在召唤你。Symy 替你把好绿色关。你来决定。",
-    "challengeSurrender": "放下它",
-    "challengeGiveUp": "你停下了",
-    "challengeChooseToBuy": "还是买了",
     "challengeBuyConfirm": "确定？",
     "challengeBuyConfirmYes": "确定",
     "challengeBuyConfirmNo": "再陪我看一看",
     "challengeSawItAction": "✓ 守住了",
     "challengeChoseToBuyAction": "✗ 还是买了",
-    "challengeCreatedAction": "🐘 守护开启",
-    "challengeBoughtToast": "🐘 Symy：你知道了代价。你仍然想要。拿去吧，也继续自由。",
-    "challengeSurrenderMessage": "你说得对。我会留下 {amount}，不买 {item}。它留在我的生命里。",
     "challengeTypes": {
       "boss": "大真相",
       "standard": "标准",
@@ -1759,7 +1733,8 @@
         "expired": "谢谢，这条时间依据先放一边，等它重新变准再问。",
         "different_context": "收到，这个场景会改变建议的适用方式。"
       }
-    }
+    },
+    "challengeCreatedAction": "🐘 守护开启"
   },
   "monitor": {
     "liveMonitor": "实时监控",

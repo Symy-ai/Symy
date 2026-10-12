@@ -50,14 +50,8 @@
     "symySuccess": "Symy✓"
   },
   "home": {
-    "weeklyTrend": "This week's trend",
     "spendingCapTitle": "Monthly Guard Goal",
     "spendingCapUsage": "This month's goal: {used} / {cap} · {days} days left",
-    "trendIncreasing": "More guarded than last week",
-    "trendDecreasing": "Fewer guarded than last week",
-    "trendStable": "About the same as last week",
-    "noImpulseSpending": "No impulse spending yet",
-    "noImpulseSpendingDesc": "Your week is still quiet — every guarded moment counts",
     "tagline": "Buy less. Live more.",
     "taglineDemo": "Buy less. Live more. (Demo)",
     "weeklyChallenge": {
@@ -71,7 +65,6 @@
     "guardSeason": {
       "demoTitle": "Season banner (demo)",
       "demoDesc": "Symy is here with you, quietly.",
-      "demoFallback": "Symy is here with you, quietly.",
       "double11": {
         "title": "Double 11 Guard Season",
         "desc": "The offers are loud — you can stay quiet and choose what really matters."
@@ -87,16 +80,10 @@
     },
     "eventsDetected": "Moments of want",
     "eventsDetectedHint": "What's calling you, and what you guarded",
-    "eventsDetectedTooltip": "Every moment something pulled you — a purchase, a challenge, a pause. Some became guarded choices.",
     "interventions": "You guarded",
     "interventionsHint": "What you guarded + refunds won back",
-    "interventionsTooltip": "The moments you held the green gate — and chose with open eyes.",
     "moneySaved": "Hours won back",
     "dayStreak": "Green streak",
-    "checkOrders": "Check Orders",
-    "startHealing": "Start Healing",
-    "familyMembers": "Family Members",
-    "familyMembersDesc": "3 people · 9 spending moments this week",
     "recentImpulseEvents": "Your guardian log",
     "noImpulseEvents": "Nothing has moved you yet",
     "shoppingUnderControl": "You're choosing greener",
@@ -115,14 +102,7 @@
     "thisWeek": "This week",
     "events": "moments",
     "spent": "Unplanned moments",
-    "spentDesc": "When spending won",
-    "spentHint": "Money spent before Symy could guard the choice",
-    "clickDayHint": "Tap a day to see what's calling you",
-    "noEventsThisDay": "Nothing moved you this day",
-    "eventsLoadingHint": "Moments may be in a different timezone — try another day.",
     "resisted": "You guarded",
-    "resistedDesc": "What you caught in time",
-    "resistedHint": "Money that stayed — waste that never was — because you held the gate this week",
     "saved": "Hours won back",
     "eventsDetectedDetail": "Includes:\n• Email receipts (purchases + refunds)\n• Challenges you started\n\nDoes not include:\n• Browsing (we don't track that)\n• Adding to cart (we don't track that)",
     "interventionsDetail": "Includes:\n• Challenges you guarded\n• Refunds won back\n\nDoes not include:\n• Challenges you closed midway\n• Chat without challenge",
@@ -920,17 +900,11 @@
       "quickPass": "Quick"
     },
     "challengeDesc": "Name what's calling you. Symy holds the green gate. You decide.",
-    "challengeSurrender": "Let it go",
-    "challengeGiveUp": "You paused",
-    "challengeChooseToBuy": "Bought anyway",
     "challengeBuyConfirm": "Sure?",
     "challengeBuyConfirmYes": "Yes",
     "challengeBuyConfirmNo": "Sit with me a moment",
     "challengeSawItAction": "✓ Guarded",
     "challengeChoseToBuyAction": "✗ Bought anyway",
-    "challengeCreatedAction": "🐘 Guardian engaged",
-    "challengeBoughtToast": "🐘 Symy: You knew the cost. You still wanted it. Take it, and stay free.",
-    "challengeSurrenderMessage": "You're right. I'll keep the {amount} instead of buying {item}. It stays in my life.",
     "challengeTypes": {
       "boss": "Big Truth",
       "standard": "Standard",
@@ -1759,7 +1733,8 @@
         "expired": "Thanks — I'll set that timing aside and ask again when it is current.",
         "different_context": "Got it — this context changes how the suggestion applies."
       }
-    }
+    },
+    "challengeCreatedAction": "🐘 Guardian engaged"
   },
   "monitor": {
     "liveMonitor": "Live Monitor",
