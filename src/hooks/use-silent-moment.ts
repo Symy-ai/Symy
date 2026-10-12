@@ -26,6 +26,7 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useHourlyRate } from '@/hooks/use-hourly-rate';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 /** 挑战结果: saw = 用户不买 (看见), bought = 用户清醒地买 */
 export type SilentMomentOutcome = 'saw' | 'bought';
@@ -59,7 +60,7 @@ export function useSilentMoment(isDemo: boolean) {
     //    但 completeSilentMoment 时重置 lastSawRef, 让下一次挑战能正常显示沉默时刻
     if (lastSawRef.current === challengeId) return;
     lastSawRef.current = challengeId;
-    const effectiveRate = hourlyRate || 25;
+    const effectiveRate = hourlyRate || DEFAULT_HOURLY_RATE;
     setSilentMoment({
       outcome: 'saw',
       amount: savedAmount,
@@ -76,7 +77,7 @@ export function useSilentMoment(isDemo: boolean) {
       return; // 2s 内同金额已触发, 跳过
     }
     lastBoughtRef.current = { amount, ts: now };
-    const effectiveRate = hourlyRate || 25;
+    const effectiveRate = hourlyRate || DEFAULT_HOURLY_RATE;
     setSilentMoment({
       outcome: 'bought',
       amount,

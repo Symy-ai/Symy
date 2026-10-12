@@ -20,6 +20,7 @@ import { formatCurrency } from '@/lib/format';
 // 🔧 PM3-P2-1 fix: 今日任务清单 (streak ≤ 3 时显示)
 // 🛡️ batch6-b: 守护转存进项 — 从既有 deposit 审计管道派生, 不发明新资金流
 import { fetchGuardTransfers, guardTransfersTotal, type GuardTransferEntry } from '@/lib/guard-ledger';
+import { DEFAULT_HOURLY_RATE } from '@/lib/freedom-time';
 
 interface SymyLedgerProps {
   buddyState: BuddyState;
@@ -131,7 +132,7 @@ export function SymyLedger({ buddyState, config: _config, isDemo, onToast, _onCh
 
   // 🔧 ARCH fix Round 78: Calculate life hours from total saved + hourly rate
   const totalSaved = buddyState.dreamFunds.reduce((sum, f) => sum + (f.current || 0), 0);
-  const effectiveRate = hourlyRate || 25;
+  const effectiveRate = hourlyRate || DEFAULT_HOURLY_RATE;
   const lifeHours = effectiveRate > 0 ? Math.round(totalSaved / effectiveRate) : 0;
 
   // 🛡️ batch6-b: 拉取 deposit 审计记录并派生守护转存条目 (非关键展示, 失败静默为空)
