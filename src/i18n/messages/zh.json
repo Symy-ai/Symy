@@ -101,7 +101,6 @@
     "last7Days": "过去 7 天",
     "thisWeek": "这周",
     "events": "个时刻",
-    "spent": "未守护时刻",
     "resisted": "你守护的",
     "saved": "赢回的时间",
     "eventsDetectedDetail": "包括：\n• 邮件收据（购买 + 退款）\n• 你发起的挑战\n\n不包括：\n• 浏览（我们不追踪）\n• 加入购物车（我们不追踪）",
@@ -3217,7 +3216,7 @@
   "metadata": {
     "title": "Symy —— 你早已知道",
     "description": "Symy 是你的 AI 绿色消费助手——买之前替你和地球把好绿色关，买得更好、买得更少、活得更多。",
-    "ogDescription": "你的 AI 绿色消费伙伴。每一次守护都是勋章。"
+    "ogDescription": "Symy 会看着你买的东西，温柔地问一句：真的需要吗？"
   },
   "about": {
     "title": "Symy AI",
@@ -3263,15 +3262,12 @@
       }
     },
     "challengeMe": "让绿色之门来决定 →",
-    "noIdea": "没想法？试试这些：",
     "thisIsCore": "这就是 Symy——守护者，不是审判者。",
     "resultPassed": "你守住了门。{amount} 留在你手里——约 {hours} 的自由，又赢回一枚绿色勋章。",
     "resultFailed": "你自由选择了。下次不确定时，小象都会在。",
     "completeChallenge": "在对话里完成挑战，再回来！",
     "enterApp": "开始你的旅程 →",
     "demoBanner": "🤔 想买什么？先过一道绿色关 →",
-    "tryNow": "试守一单",
-    "signUpToSave": "开始守护",
     "demoBadge": "🌱 示例数据",
     "demoBannerSimple": "这是 Alex 的旅程。你的会不同——注册后开始你自己的。",
     "signUpLink": "注册 →",
@@ -3294,10 +3290,6 @@
     "savedAmount": "你省下了 {amount}"
   },
   "ritual": {
-    "greetingMorning": "早安",
-    "greetingAfternoon": "午安",
-    "greetingEvening": "晚上好",
-    "greetingNight": "夜深了",
     "beforeToday": "在你开始今天之前，小象有句话想说给你听：",
     "guardianIntro": "你和小象一起，守护着这颗星球。",
     "guardianDay": "第 {days} 天",
@@ -3464,8 +3456,6 @@
       "pill": "守护者邀请",
       "title": "我的守护者称号",
       "companion": "你的伙伴",
-      "recruitFirst": "成为第一个",
-      "joinLabel": "加入我",
       "shareText": "加入我守护 — 我已经守护了 {count} 笔。少买，多活。"
     }
   },
@@ -3561,7 +3551,6 @@
     "description": "Symy 在买之前替你把好绿色关 —— 每笔消费都对照钱包、时间和地球。少买一点，少废一点，多活一点。"
   },
   "inward": {
-    "tabTitle": "守护林",
     "dailyReflectionTitle": "今日觉察",
     "dailyReflectionSubtitle": "只是觉察，不评判。",
     "dailyReflectionPrompt1": "今天你差一点买了、但其实不需要的东西是什么？",
@@ -3576,7 +3565,6 @@
     "dailyReflectionReactions": "有共鸣",
     "dailyReflectionEmpty": "还没有反思。你的可能就是第一条。",
     "dailyReflectionAuthPrompt": "注册分享你的反思",
-    "dailyReflectionRateLimited": "你分享得太快啦，稍后再试。",
     "dailyReflectionSubmitError": "分享失败，请重试。",
     "challengesTitle": "社群挑战",
     "challengesSubtitle": "小事一起做，路就不远",

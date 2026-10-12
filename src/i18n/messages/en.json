@@ -101,7 +101,6 @@
     "last7Days": "Last 7 days",
     "thisWeek": "This week",
     "events": "moments",
-    "spent": "Unplanned moments",
     "resisted": "You guarded",
     "saved": "Hours won back",
     "eventsDetectedDetail": "Includes:\n• Email receipts (purchases + refunds)\n• Challenges you started\n\nDoes not include:\n• Browsing (we don't track that)\n• Adding to cart (we don't track that)",
@@ -3217,7 +3216,7 @@
   "metadata": {
     "title": "Symy — Buy less, live more",
     "description": "Symy is your AI green-shopping companion — holding the green gate before you buy, so you buy better, buy less, and live more.",
-    "ogDescription": "Your AI green-shopping companion. Every guarded choice is a medal."
+    "ogDescription": "Symy watches what you buy and gently asks: do you really need it?"
   },
   "about": {
     "title": "Symy AI",
@@ -3263,15 +3262,12 @@
       }
     },
     "challengeMe": "Let the green gate decide →",
-    "noIdea": "No idea? Try these:",
     "thisIsCore": "This is what Symy is for — a guardian, not a judge.",
     "resultPassed": "You held the gate. {amount} stays yours — about {hours} of freedom won back, plus one more green medal.",
     "resultFailed": "You chose freely. Next time you're unsure, the little elephant will be here.",
     "completeChallenge": "Complete the challenge in chat, then come back!",
     "enterApp": "Start your journey →",
     "demoBanner": "🤔 Want to buy something? Pass it through the green gate first →",
-    "tryNow": "Try one guard",
-    "signUpToSave": "Start guarding",
     "demoBadge": "🌱 Sample data",
     "demoBannerSimple": "This is Alex's journey. Yours will look different — sign up to start your own.",
     "signUpLink": "Sign up →",
@@ -3294,10 +3290,6 @@
     "savedAmount": "You saved {amount}"
   },
   "ritual": {
-    "greetingMorning": "Good morning",
-    "greetingAfternoon": "Good afternoon",
-    "greetingEvening": "Good evening",
-    "greetingNight": "Good night",
     "beforeToday": "Before you begin today, a word from your little elephant:",
     "guardianIntro": "You and Symy are standing guard for the planet.",
     "guardianDay": "Day {days}",
@@ -3464,8 +3456,6 @@
       "pill": "Guardian Invite",
       "title": "My guardian title",
       "companion": "Your companion",
-      "recruitFirst": "Be the first",
-      "joinLabel": "Join me",
       "shareText": "Join me on Symy — I've guarded {count} choices. Buy less, live more."
     }
   },
@@ -3561,7 +3551,6 @@
     "description": "Symy holds the green gate before you buy — checking every purchase against your wallet, your hours, and the planet. Buy less, waste less, live more."
   },
   "inward": {
-    "tabTitle": "The Guard Grove",
     "dailyReflectionTitle": "Today’s Reflection",
     "dailyReflectionSubtitle": "Just observe. No judgment.",
     "dailyReflectionPrompt1": "What did you almost buy today that you didn’t actually need?",
@@ -3576,7 +3565,6 @@
     "dailyReflectionReactions": "Resonates",
     "dailyReflectionEmpty": "No reflections yet. Yours could be the first.",
     "dailyReflectionAuthPrompt": "Sign up to share your reflection",
-    "dailyReflectionRateLimited": "You're sharing fast! Try again later.",
     "dailyReflectionSubmitError": "Couldn't share — try again.",
     "challengesTitle": "Community Challenges",
     "challengesSubtitle": "Small steps, together",
