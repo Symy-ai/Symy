@@ -50,6 +50,7 @@ export function ProductCards({ cards, query }: { cards: ProductCardData[]; query
     try {
       localStorage.setItem(FAVORITES_KEY, JSON.stringify([...next]));
     } catch {
+      // safe to ignore: localStorage 满或被禁用时收藏仅内存态, 不阻塞 UI
     }
   };
 
