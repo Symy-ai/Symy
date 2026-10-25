@@ -13,6 +13,7 @@
  *
  * 不 import 任何平台 SDK/URL — 平台知识全部在适配器层。
  */
+import 'server-only'; // 架构守卫: admin client 引用文件须防客户端 bundle 泄漏
 import { fireAndForgetSafely } from '@/lib/admin-audit';
 import { stripLeakedReasoning } from '@/lib/agent-stream';
 import { logAIBehavior } from '@/lib/ai-audit';

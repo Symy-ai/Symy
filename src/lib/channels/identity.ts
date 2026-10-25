@@ -10,6 +10,7 @@
  *
  * 读写走 createAdminClient()（service role 绕 RLS — webhook 侧无用户会话）。
  */
+import 'server-only'; // 架构守卫: admin client 引用文件须防客户端 bundle 泄漏
 import { logger } from '@/lib/logger';
 import { getOrCreateAgentId } from '@/lib/letta-agent-manager';
 import { createAdminClient } from '@/lib/supabase-admin';

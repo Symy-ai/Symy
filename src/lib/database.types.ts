@@ -381,6 +381,42 @@ export interface Database {
         };
         Relationships: [];
       };
+      channel_bindings: {
+        Row: {
+      id: string;
+      user_id: string;
+      platform: string;
+      platform_user_id: string;
+      platform_username: string | null;
+      chat_ref: string;
+      locale: string;
+      linked_at: string;
+      last_seen_at: string;
+        };
+        Insert: {
+      id?: string | null;
+      user_id: string;
+      platform: string;
+      platform_user_id: string;
+      platform_username?: string | null;
+      chat_ref: string;
+      locale?: string | null;
+      linked_at?: string | null;
+      last_seen_at?: string | null;
+        };
+        Update: {
+      id?: string | null;
+      user_id?: string | null;
+      platform?: string | null;
+      platform_user_id?: string | null;
+      platform_username?: string | null;
+      chat_ref?: string | null;
+      locale?: string | null;
+      linked_at?: string | null;
+      last_seen_at?: string | null;
+        };
+        Relationships: [];
+      };
       chat_messages: {
         Row: {
       id: string;

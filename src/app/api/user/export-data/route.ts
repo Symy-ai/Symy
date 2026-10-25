@@ -110,6 +110,21 @@ export const GET = withAuth(async ({ supabase, user }) => {
     exportData.chat_messages = { error: 'fetch_failed' };
   }
 
+  // 5.5 channel_bindings — 渠道绑定关系 (平台身份映射, 不含凭据; TG token 在
+  // Supabase auth 建号侧, 本表只有 platform/platform_user_id/chat_ref 展示字段)
+  try {
+    const { data, error } = await supabase
+      .from('channel_bindings')
+      .select('id, platform, platform_user_id, platform_username, chat_ref, locale, linked_at, last_seen_at')
+      .eq('user_id', userId)
+      .order('linked_at', { ascending: true });
+    if (error) logger.warn('[Export] channel_bindings query error:', error.message);
+    exportData.channel_bindings = data || [];
+  } catch (err) {
+    logger.error('[Export] channel_bindings fetch_failed', { section: 'channel_bindings', requestId, userId, error: err instanceof Error ? err.message : String(err) });
+    exportData.channel_bindings = { error: 'fetch_failed' };
+  }
+
   // 6. health_events
   try {
     const { data, error } = await supabase
