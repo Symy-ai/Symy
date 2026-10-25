@@ -27,7 +27,7 @@ function splitMessage(text: string): string[] {
 }
 
 function escapeHtml(text: string): string {
-  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+  return text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 }
 
 function renderHtml(text: string): string {
@@ -80,7 +80,9 @@ async function sendChunk(chatRef: string, text: string): Promise<void> {
     const payload = (await response.json().catch(() => ({}))) as { parameters?: { retry_after?: number } };
     const retryAfter = Number(payload.parameters?.retry_after);
     if (Number.isFinite(retryAfter) && retryAfter > 0) {
-      await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+      // cap 30s：路由 maxDuration=60，TG 回超大 retry_after 时不能顶穿执行时限。
+      const waitSec = Math.min(retryAfter, 30);
+      await new Promise((resolve) => setTimeout(resolve, waitSec * 1000));
       response = await postMessage(chatRef, text, useHtml);
     }
   }

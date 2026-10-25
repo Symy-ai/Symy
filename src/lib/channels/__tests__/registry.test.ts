@@ -27,4 +27,11 @@ describe('channel registry', () => {
     expect(() => registerAdapter(adapter)).toThrow(/asyncPush/);
     expect(getAdapter('telegram')).toBeNull();
   });
+
+  it('rejects duplicate registration for the same platform', async () => {
+    const { getAdapter: get, registerAdapter: register } = await import('../registry');
+    register(createAdapter());
+    expect(() => register(createAdapter())).toThrow(/already registered/);
+    expect(get('telegram')).not.toBeNull();
+  });
 });

@@ -41,6 +41,14 @@ describe('sendTelegramMessage', () => {
     expect(texts()).toHaveLength(2);
   });
 
+  it('escapes double quotes so they cannot break out of HTML attributes', async () => {
+    await sendTelegramMessage('1', '[label](https://e.com/a?x="1")');
+    expect(body(calls()[0])).toMatchObject({
+      parse_mode: 'HTML',
+      text: '<a href="https://e.com/a?x=&quot;1&quot;">label</a>',
+    });
+  });
+
   it('falls back to plain text after a 400 parse failure', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(badRequest()).mockResolvedValueOnce(ok());
     await expect(sendTelegramMessage('1', '**b**')).resolves.toEqual({ ok: true });
@@ -65,6 +73,19 @@ describe('sendTelegramMessage', () => {
     await expect(pending).resolves.toEqual({ ok: true });
     expect(calls()).toHaveLength(2);
     expect(body(calls()[0]).text).toBe(body(calls()[1]).text);
+  });
+
+  it('caps the 429 wait at 30 seconds even when retry_after is huge', async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetch)
+      .mockImplementationOnce(() => Promise.resolve(new Response('{"parameters":{"retry_after":9999}}', { status: 429 })))
+      .mockImplementationOnce(() => Promise.resolve(ok()));
+    const pending = sendTelegramMessage('1', 'hello');
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(pending).resolves.toEqual({ ok: true });
+    expect(calls()).toHaveLength(2);
   });
 });
 
