@@ -14,6 +14,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const createUser = vi.fn();
+const deleteUser = vi.fn(); // M4 补偿删除 — createUser 成功 + insert 非 23505 失败路径专用
 const getOrCreateAgentId = vi.fn();
 const selectMaybeSingle = vi.fn(); // 初查与竞态复读共用形态, 按序 mockResolvedValueOnce
 const insertSingle = vi.fn();
@@ -42,6 +43,7 @@ function fakeSupabase(): unknown {
     auth: {
       admin: {
         createUser: (attrs: Record<string, unknown>) => createUser(attrs),
+        deleteUser: (uid: string) => deleteUser(uid),
       },
     },
     from: (table: string) => {
@@ -84,6 +86,7 @@ function makeMsg(overrides?: Partial<InboundMessage>): InboundMessage {
 describe('resolveOrCreateBinding — 首次建号（影子账号）', () => {
   beforeEach(() => {
     createUser.mockReset();
+    deleteUser.mockReset().mockResolvedValue({ data: {}, error: null });
     getOrCreateAgentId.mockReset();
     selectMaybeSingle.mockReset();
     insertSingle.mockReset();
@@ -146,6 +149,7 @@ describe('resolveOrCreateBinding — 首次建号（影子账号）', () => {
 describe('resolveOrCreateBinding — 重复 resolve 幂等', () => {
   beforeEach(() => {
     createUser.mockReset();
+    deleteUser.mockReset().mockResolvedValue({ data: {}, error: null });
     getOrCreateAgentId.mockReset();
     selectMaybeSingle.mockReset();
     insertSingle.mockReset();
@@ -184,6 +188,8 @@ describe('resolveOrCreateBinding — 重复 resolve 幂等', () => {
     expect(result).toEqual({ userId: 'u-winner', locale: 'zh', chatRef: '9001', created: false });
     // 竞态分支也对胜者幂等预建 agent (getOrCreate 语义安全)
     expect(getOrCreateAgentId).toHaveBeenCalledWith('u-winner');
+    // 23505 分支不触发补偿删除 — 胜者 binding 行存在, 删除语义不适用 (M4 边界锚)
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it('23505 后胜者行也读不到（极端）→ null', async () => {
@@ -196,12 +202,24 @@ describe('resolveOrCreateBinding — 重复 resolve 幂等', () => {
     expect(await resolveOrCreateBinding(makeMsg())).toBeNull();
   });
 
-  it('binding insert 其他错误（如 FK/权限）→ null', async () => {
+  it('binding insert 其他错误（如 FK/权限）→ null + 补偿删除孤儿 auth 用户 (M4)', async () => {
     selectMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
     createUser.mockResolvedValueOnce({ data: { user: { id: 'u-new' } }, error: null });
     insertSingle.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'RLS violation' } });
 
     expect(await resolveOrCreateBinding(makeMsg())).toBeNull();
+    // 孤儿补偿删除 — 不删则确定性邮箱残留, 下次 createUser 恒 422 → 永久静默锁死
+    expect(deleteUser).toHaveBeenCalledWith('u-new');
+  });
+
+  it('补偿删除失败也不炸 (fire-and-forget, 仅遗留孤儿无安全面)', async () => {
+    selectMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    createUser.mockResolvedValueOnce({ data: { user: { id: 'u-new' } }, error: null });
+    insertSingle.mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'RLS violation' } });
+    deleteUser.mockRejectedValueOnce(new Error('admin api down'));
+
+    expect(await resolveOrCreateBinding(makeMsg())).toBeNull();
+    expect(deleteUser).toHaveBeenCalledWith('u-new');
   });
 });
 

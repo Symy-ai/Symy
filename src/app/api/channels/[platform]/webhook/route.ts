@@ -12,6 +12,8 @@
  * 闸门与键（§8）：
  * - 重放:   acquireLock(`channel:upd:${platform}:${dedupId}`, 24h) — 已见 → 200 静默丢
  * - 洪水:   checkRateLimit(`channel:flood:${platform}:${platformUserId}`, 20, 60_000)
+ * - 提示闸: checkRateLimit(`channel:notice:${platform}:${platformUserId}`, 1, 60_000)
+ *   — §8「提示本身也限频」: 被拒消息的轻提示 1/min, 否则我方变 spammer (60s 内可发 80 条)
  * - 回合锁: acquireLock(`channel:turn:${platform}:${platformUserId}`, 90_000, failClosed=true)
  *   锁 key 用 platform identity（不是 userId）— 首条消息此刻还没有 userId，锁必须在身份解析之前。
  */
@@ -58,6 +60,16 @@ function trySendLight(adapter: ChannelAdapter, chatRef: string, text: string, lo
   );
 }
 
+/**
+ * 轻提示自身限频（§8「提示本身也限频」）— 1/min per (platform, platform-user)。
+ * 洪水判定 key 在拒答态 remaining 恒 0 无法区分首条, 独立 notice key 是干净实现;
+ * 1 分钟内已发过提示 → 静默丢弃提示（照常 ack, 不发送）。
+ */
+async function shouldSendNotice(platform: string, platformUserId: string): Promise<boolean> {
+  const { allowed } = await checkRateLimit(`channel:notice:${platform}:${platformUserId}`, 1, 60_000);
+  return allowed;
+}
+
 export async function POST(req: Request, context: RouteContext): Promise<Response> {
   const { platform } = await context.params;
 
@@ -96,11 +108,13 @@ export async function POST(req: Request, context: RouteContext): Promise<Respons
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
-  // ⑥ 洪水限流 (20/min per platform-user) — 超限 200 + 尽力轻提示
+  // ⑥ 洪水限流 (20/min per platform-user) — 超限 200 + 尽力轻提示（提示自身 1/min 限频）
   const flood = await checkRateLimit(`channel:flood:${platform}:${msg.platformUserId}`, 20, 60_000);
   if (!flood.allowed) {
     logger.warn('[Channel] flood_limited platform=%s user=%s', platform, msg.platformUserId);
-    trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].flood, localeFromLanguageHint(msg.languageHint));
+    if (await shouldSendNotice(platform, msg.platformUserId)) {
+      trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].flood, localeFromLanguageHint(msg.languageHint));
+    }
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
@@ -109,7 +123,9 @@ export async function POST(req: Request, context: RouteContext): Promise<Respons
   const turnAcquired = await acquireLock(turnLockKey, 90_000, true);
   if (!turnAcquired) {
     logger.warn('[Channel] busy_dropped platform=%s user=%s', platform, msg.platformUserId);
-    trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].busy, localeFromLanguageHint(msg.languageHint));
+    if (await shouldSendNotice(platform, msg.platformUserId)) {
+      trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].busy, localeFromLanguageHint(msg.languageHint));
+    }
     return NextResponse.json({ ok: true }, { status: 200 });
   }
 
@@ -126,6 +142,17 @@ async function processTurn(adapter: ChannelAdapter, msg: InboundMessage, turnLoc
     const binding = await resolveOrCreateBinding(msg);
     if (!binding) {
       logger.error('[Channel] turn_error outcome=bind_failed platform=%s user=%s', msg.platform, msg.platformUserId);
+      return;
+    }
+
+    // /start 不进 LLM（M3）— 新用户绑定成功 → 欢迎语即终; 老用户重发 /start →
+    // 重发欢迎语 (TG 惯例)。两分支均 return, 不烧 token/配额 (finally 释放锁)
+    if (msg.kind === 'command_start') {
+      const startAck = await adapter.sendMessage(binding.chatRef, LIGHT_TEXTS[binding.locale].welcome, { locale: binding.locale });
+      if (!startAck.ok) {
+        logger.warn('[Channel] welcome_send_failed platform=%s', msg.platform);
+      }
+      logger.info('[Channel] start_command_ack platform=%s', msg.platform);
       return;
     }
 

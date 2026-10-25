@@ -103,7 +103,8 @@ describe('runChannelTurn — 正常回合（编排序锁定）', () => {
     getChatProfileSnapshot.mockResolvedValue({ plan: 'premium', timezone: null, hourlyRate: null });
     await runChannelTurn({ userId: 'u-1', locale: 'zh', text: 'hi' });
     const keys = checkRateLimit.mock.calls.map((c) => c[0]);
-    expect(keys).toEqual(['chat:user:u-1']);
+    // premium 不吃免费档 daily, 但全局熔断闸 (M1, §8) 对所有人生效
+    expect(keys).toEqual(['chat:user:u-1', 'channel:global:daily']);
   });
 
   it('审计与 PostHog 是 fire-and-forget (不 await, 不阻塞回合)', async () => {
@@ -157,6 +158,22 @@ describe('runChannelTurn — outcome 分支', () => {
     expect(result.replyText).toBe(CHANNEL_TURN_TEXTS.zh.limit_hourly);
   });
 
+  it('全局日预算耗尽 → limit_global, 不进 LLM (§8 兜底防线)', async () => {
+    checkRateLimit.mockImplementation((key: string) =>
+      key === 'channel:global:daily'
+        ? Promise.resolve({ allowed: false, remaining: 0 })
+        : Promise.resolve({ allowed: true, remaining: 10 }),
+    );
+    const result = await runChannelTurn({ userId: 'u-1', locale: 'zh', text: 'hi' });
+    expect(result.outcome).toBe('limit_global');
+    expect(result.replyText).toBe(CHANNEL_TURN_TEXTS.zh.limit_global);
+    expect(result.replyText).toContain('明天再来');
+    // 预算闸参数锁定: 共享键 + 24h 窗 + 默认预算 (config 未配 env → 2000)
+    expect(checkRateLimit).toHaveBeenCalledWith('channel:global:daily', 2000, 24 * 60 * 60 * 1000);
+    expect(loadLettaTurnContext).not.toHaveBeenCalled();
+    expect(processLettaResponse).not.toHaveBeenCalled();
+  });
+
   it('LLM 抛错 → error outcome (文案兜底, 不裸抛)', async () => {
     processLettaResponse.mockRejectedValue(new Error('letta 500'));
     const result = await runChannelTurn({ userId: 'u-1', locale: 'zh', text: 'hi' });
@@ -199,10 +216,10 @@ describe('runChannelTurn — reasoning 铁律', () => {
 });
 
 describe('CHANNEL_TURN_TEXTS — 双语文案快照', () => {
-  it('六 outcome × 双语齐全且非空', () => {
+  it('全部 outcome × 双语齐全且非空', () => {
     for (const locale of ['zh', 'en'] as const) {
       const texts = CHANNEL_TURN_TEXTS[locale];
-      expect(Object.keys(texts).sort()).toEqual(['agent_unavailable', 'error', 'limit_daily', 'limit_hourly']);
+      expect(Object.keys(texts).sort()).toEqual(['agent_unavailable', 'error', 'limit_daily', 'limit_global', 'limit_hourly']);
       for (const key of Object.keys(texts)) {
         expect(texts[key as keyof typeof texts].length).toBeGreaterThan(0);
       }

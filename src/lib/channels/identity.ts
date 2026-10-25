@@ -165,7 +165,13 @@ export async function resolveOrCreateBinding(msg: InboundMessage): Promise<Resol
       logger.error('[Channel] bind_conflict_reread_failed', rereadError?.message ?? 'winner row missing');
       return null;
     }
-    logger.warn('[Channel] bind_insert_error', insertError.message);
+    // 非 23505 失败（FK/权限等）— 补偿删除刚建的孤儿 auth 用户（M4, fire-and-forget）:
+    // 不删 → 确定性邮箱残留 → 下次 createUser 恒 422 → 该用户永久静默锁死。
+    // 若 insert 实为超时但已提交, deleteUser 经 ON DELETE CASCADE 连带清 binding → 状态归零自愈。
+    void supabase.auth.admin.deleteUser(userId).catch(() => {
+      // safe to ignore: 补偿删除失败仅遗留孤儿 (无安全面, 影子号不可登录), 下方 warn 兜底观测
+    });
+    logger.warn('[Channel] bind_insert_error — shadow user compensated', insertError.message);
     return null;
   }
 

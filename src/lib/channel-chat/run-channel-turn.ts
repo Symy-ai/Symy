@@ -17,6 +17,7 @@ import 'server-only'; // 架构守卫: admin client 引用文件须防客户端 
 import { fireAndForgetSafely } from '@/lib/admin-audit';
 import { stripLeakedReasoning } from '@/lib/agent-stream';
 import { logAIBehavior } from '@/lib/ai-audit';
+import { channelGlobalBudget } from '@/lib/channels/config';
 import { checkRateLimit } from '@/lib/distributed-lock';
 import { getUserAgentId } from '@/lib/letta-agent-manager';
 import { logger } from '@/lib/logger';
@@ -37,7 +38,7 @@ export interface ChannelTurnInput {
 }
 
 export interface ChannelTurnResult {
-  outcome: 'replied' | 'limit_daily' | 'limit_hourly' | 'agent_unavailable' | 'error';
+  outcome: 'replied' | 'limit_daily' | 'limit_hourly' | 'limit_global' | 'agent_unavailable' | 'error';
   /** 已本地化、可直接发送的纯文本（无平台标记, reasoning 已剥离） */
   replyText?: string;
 }
@@ -48,16 +49,18 @@ const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
 const HOURLY_CHAT_LIMIT = 30;
 const HOURLY_WINDOW_MS = 60 * 60 * 1000;
 
-export const CHANNEL_TURN_TEXTS: Record<'zh' | 'en', Record<'limit_daily' | 'limit_hourly' | 'agent_unavailable' | 'error', string>> = {
+export const CHANNEL_TURN_TEXTS: Record<'zh' | 'en', Record<'limit_daily' | 'limit_hourly' | 'limit_global' | 'agent_unavailable' | 'error', string>> = {
   zh: {
     limit_daily: '今日额度已用完，明天再来。升级 Premium 可不限次数聊天。',
     limit_hourly: '消息有点密集，稍作休息，一小时后再聊。',
+    limit_global: '今日服务繁忙，请明天再来看看。',
     agent_unavailable: 'AI 助手仍在初始化中，请稍后再试。',
     error: '处理消息时遇到了问题，请稍后再试。',
   },
   en: {
     limit_daily: "You've reached today's chat limit. Come back tomorrow, or upgrade to Premium for unlimited chats.",
     limit_hourly: "That's a lot of messages in a short time. Please take a break and try again in an hour.",
+    limit_global: 'Service is busy today — please come back tomorrow.',
     agent_unavailable: 'Your AI companion is still initializing. Please try again in a moment.',
     error: 'Something went wrong while processing your message. Please try again later.',
   },
@@ -94,6 +97,14 @@ export async function runChannelTurn(input: ChannelTurnInput): Promise<ChannelTu
   if (!hourlyAllowed) {
     logger.warn('[Channel] hourly_limit user=%s', userId.substring(0, 8));
     return { outcome: 'limit_hourly', replyText: texts.limit_hourly };
+  }
+
+  // 2.5 全局日预算熔断（§8 兜底防线）— 任何人都能开 TG 号白嫖影子账号, 这是最后闸门。
+  //     放在 user 闸之后 = 只对「即将烧 token 的回合」计数, 预算即 LLM 支出的精确代理
+  const { allowed: globalAllowed } = await checkRateLimit('channel:global:daily', channelGlobalBudget(), DAILY_WINDOW_MS);
+  if (!globalAllowed) {
+    logger.warn('[Channel] global_budget_hit budget=%d', channelGlobalBudget());
+    return { outcome: 'limit_global', replyText: texts.limit_global };
   }
 
   // 3+4. 上下文装载 + 非流式 LLM 回合

@@ -178,7 +178,11 @@ describe('POST — 200 语义', () => {
   });
 
   it('洪水限流 → 200 + 轻提示, 不派发回合', async () => {
-    h.checkRateLimit.mockResolvedValue({ allowed: false, remaining: 0 });
+    h.checkRateLimit.mockImplementation((key: string) =>
+      key.startsWith('channel:flood:')
+        ? Promise.resolve({ allowed: false, remaining: 0 })
+        : Promise.resolve({ allowed: true, remaining: 0 }),
+    );
     const res = await POST(makeReq(), ctx());
     expect(res.status).toBe(200);
     expect(h.fireAndForgetSafely).toHaveBeenCalledTimes(1); // 只有轻提示发送
@@ -186,6 +190,30 @@ describe('POST — 200 语义', () => {
     await vi.waitFor(() => {
       expect(sendMock.calls.map((c) => String(c[1])).join('|')).toContain('发得太快');
     });
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('洪水连发 2 条 → 轻提示只发 1 条 (提示自身 1/min 限频, M2)', async () => {
+    let noticeUsed = false;
+    h.checkRateLimit.mockImplementation((key: string) => {
+      if (key.startsWith('channel:flood:')) return Promise.resolve({ allowed: false, remaining: 0 });
+      if (key.startsWith('channel:notice:')) {
+        const allowed = !noticeUsed;
+        noticeUsed = true;
+        return Promise.resolve({ allowed, remaining: 0 });
+      }
+      return Promise.resolve({ allowed: true, remaining: 20 });
+    });
+    const res1 = await POST(makeReq(), ctx());
+    const res2 = await POST(makeReq(), ctx());
+    expect(res1.status).toBe(200);
+    expect(res2.status).toBe(200); // 1 分钟内已发过提示 → 静默丢弃 (照常 ack)
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    await vi.waitFor(() => {
+      expect(sendMock.calls.filter((c) => String(c[1]).includes('发得太快'))).toHaveLength(1);
+    });
+    // 提示闸参数锁定: 独立 notice 键 + 1 次 / 60s
+    expect(h.checkRateLimit).toHaveBeenCalledWith('channel:notice:telegram:9001', 1, 60_000);
     expect(h.runChannelTurn).not.toHaveBeenCalled();
   });
 
@@ -212,7 +240,11 @@ describe('POST — 200 语义', () => {
   });
 
   it('洪水轻提示发送也走 locale (languageHint en → 英文)', async () => {
-    h.checkRateLimit.mockResolvedValue({ allowed: false, remaining: 0 });
+    h.checkRateLimit.mockImplementation((key: string) =>
+      key.startsWith('channel:flood:')
+        ? Promise.resolve({ allowed: false, remaining: 0 })
+        : Promise.resolve({ allowed: true, remaining: 0 }),
+    );
     h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([makeMsg({ languageHint: 'en' })])) });
     await POST(makeReq(), ctx());
     const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
@@ -221,6 +253,38 @@ describe('POST — 200 语义', () => {
       expect(sent).not.toContain('发得太快');
       expect(sent.length).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('POST — /start 命令（M3: 不进 LLM 回合）', () => {
+  it('新用户 /start (created=true) → 欢迎语一条即终, 不触发 LLM 调用', async () => {
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([makeMsg({ text: '/start', kind: 'command_start', dedupId: '8100' })])) });
+    h.resolveOrCreateBinding.mockResolvedValue({ userId: 'u-new', locale: 'zh', chatRef: '9001', created: true });
+    const res = await POST(makeReq(), ctx());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => {
+      expect(h.releaseLock).toHaveBeenCalledWith('channel:turn:telegram:9001');
+    });
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    const texts = sendMock.calls.map((c) => String(c[1]));
+    expect(texts).toHaveLength(1); // 仅欢迎语, 无 LLM 回复
+    expect(texts[0]).toContain('欢迎');
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('老用户重发 /start (created=false) → 重发欢迎语 (TG 惯例), 不触发 LLM 调用', async () => {
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([makeMsg({ text: '/start', kind: 'command_start', dedupId: '8101' })])) });
+    h.resolveOrCreateBinding.mockResolvedValue({ userId: 'u-1', locale: 'zh', chatRef: '9001', created: false });
+    const res = await POST(makeReq(), ctx());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => {
+      expect(h.releaseLock).toHaveBeenCalledWith('channel:turn:telegram:9001');
+    });
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    const texts = sendMock.calls.map((c) => String(c[1]));
+    expect(texts).toHaveLength(1);
+    expect(texts[0]).toContain('欢迎');
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
   });
 });
 
