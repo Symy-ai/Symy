@@ -30,6 +30,7 @@ export const ENV_CONSUMERS = [
   { feature: 'Email-whitelisted admin fallback', requirements: [['ADMIN_EMAILS']], behavior: 'explicit-failure', impact: 'Fallback admin routes return service unavailable.' },
   { feature: 'Z.AI browser configuration fallback', requirements: [['ZAI_BASE_URL']], behavior: 'explicit-failure', impact: 'The z-ai configuration endpoint returns service unavailable when no local config exists.' },
   { feature: 'Symy external shopping context', requirements: [['SYMY_SUPABASE_URL'], ['SYMY_SUPABASE_KEY']], behavior: 'disabled', impact: 'Cart totals and impulse context are omitted from chat prompts.' },
+  { feature: 'Telegram channel', requirements: [['TELEGRAM_BOT_TOKEN'], ['TELEGRAM_WEBHOOK_SECRET'], ['CHANNELS_ENABLED']], behavior: 'explicit-failure', impact: 'Telegram webhook returns service unavailable.' },
 ] satisfies EnvConsumerSpec[];
 
 const warnedFeatures = new Set<string>();
