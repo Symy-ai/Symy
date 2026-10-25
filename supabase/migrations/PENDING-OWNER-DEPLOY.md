@@ -27,13 +27,19 @@
 - **影响**：函数体与 136 逐行相同仅加安全设置；`REVOKE ... FROM anon` 一并补上（136 只 GRANT authenticated 未显式 REVOKE anon）。幂等。
 - **回滚**：无独立回滚（逻辑不变仅加固）。
 
+### 153_channel_bindings.sql
+- **目的**：渠道身份绑定表：platform identity ↔ Supabase user。
+- **为什么**：社交渠道接入层地基（设计文档 §4）。
+- **影响**：新表+RLS；UPDATE policy 带 WITH CHECK，与 148 号守卫天然兼容。
+- **回滚**：`DROP TABLE IF EXISTS public.channel_bindings CASCADE;`
+
 ## 部署顺序与命令
 
 ```bash
-supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148 顺序执行
+supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148→149→153 顺序执行
 ```
 
-四件无相互依赖，顺序仅按序号惯例（145→146→148→149）。145/146 若担心锁表，在 Supabase SQL 编辑器跑：
+五件无相互依赖，顺序仅按序号惯例（145→146→148→149→153）。145/146 若担心锁表，在 Supabase SQL 编辑器跑：
 ```sql
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_active_challenges_user_status_completed ON public.active_challenges (user_id, status, completed_at DESC);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_email_receipts_user_status_received ON public.email_receipts (user_id, status, received_at DESC);
