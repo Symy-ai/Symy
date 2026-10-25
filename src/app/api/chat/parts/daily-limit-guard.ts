@@ -42,3 +42,19 @@ export async function checkDailyChatLimit(
   }
   return null;
 }
+
+// ============================================================
+// 渠道回合复用的限流键名 helper（T7a, 设计 §6.2）
+// 键格式与上方/rate-guard 的字面量逐字节一致 — 渠道与 Web 同键 = 同一份配额。
+// 纯函数零副作用，正文行为零改动（structure-lock 锚点不动）。
+// ============================================================
+
+/** 免费档每日配额键 — 与 checkDailyChatLimit 内 `chat:daily:${userId}` 一致 */
+export function chatDailyKey(userId: string): string {
+  return `chat:daily:${userId}`;
+}
+
+/** 小时窗配额键 — 与 rate-guard.ts 内 `chat:user:${userId}` 一致 */
+export function chatUserHourlyKey(userId: string): string {
+  return `chat:user:${userId}`;
+}
