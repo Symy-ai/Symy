@@ -112,11 +112,20 @@ describe('buildImpulseForecastLine — 摘要', () => {
 
 describe('loadImpulseForecastContextLine — 注入点', () => {
   it('ok 态返回摘要行; 样本不足返回降级行 (明确降级, 不是 undefined)', async () => {
+    // ⏰ 注入点 loadImpulseForecastContextLine 内部用真实 new Date() 回看 8 周窗,
+    //    fixture 必须相对真实时间 (原 daysAgo 冻结 2026-09-09 — 日期炸弹, 10 月起
+    //    最旧样本掉出窗口致 8 条剩 5 条误判 insufficient)。
+    const realDaysAgo = (n: number, hour = 12): string => {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
     const okStore = stubStore(
       Array.from({ length: 8 }, (_, i) => ({
         event_type: 'challenge_completed',
         metadata: null,
-        created_at: daysAgo(i * 2 + 1),
+        created_at: realDaysAgo(i * 2 + 1),
       })),
     ).store;
     const okLine = await loadImpulseForecastContextLine({ userId: 'u1', store: okStore });
