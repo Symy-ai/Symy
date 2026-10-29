@@ -19,6 +19,7 @@ const getOrCreateAgentId = vi.fn();
 const selectMaybeSingle = vi.fn(); // 初查与竞态复读共用形态, 按序 mockResolvedValueOnce
 const insertSingle = vi.fn();
 const updateSecondEq = vi.fn();
+const getPostHogServer = vi.fn();
 
 /** 测试注入的 admin client (let 惰性赋值, 工厂闭包延迟求值 — 坑 49 技法) */
 let adminSupabase: unknown = null;
@@ -32,7 +33,18 @@ vi.mock('@/lib/letta-agent-manager', () => ({
 }));
 
 vi.mock('@/lib/logger', () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+  logger,
+}));
+
+const logger = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+}));
+
+vi.mock('@/lib/posthog-server', () => ({
+  getPostHogServer: () => getPostHogServer(),
 }));
 
 import { localeFromLanguageHint, resolveOrCreateBinding, shadowAccountEmail } from '../identity';
@@ -93,6 +105,10 @@ describe('resolveOrCreateBinding — 首次建号（影子账号）', () => {
     updateSecondEq.mockReset();
     updateSecondEq.mockReturnValue(Promise.resolve({ data: null, error: null }));
     adminSupabase = fakeSupabase();
+    getPostHogServer.mockReset().mockReturnValue({
+      capture: vi.fn(),
+      flush: vi.fn().mockResolvedValue(undefined),
+    });
   });
 
   it('miss → createUser(确定性邮箱, email_confirm) → insert binding → 预建 agent', async () => {
@@ -114,6 +130,23 @@ describe('resolveOrCreateBinding — 首次建号（影子账号）', () => {
       user_metadata: { channel: 'telegram', platform_user_id: '9001' },
     });
     expect(getOrCreateAgentId).toHaveBeenCalledWith('u-new');
+  });
+
+  it('绑定创建成功 → 发送 channel_bind_created 遥测', async () => {
+    const capture = vi.fn();
+    getPostHogServer.mockReturnValue({ capture, flush: vi.fn().mockResolvedValue(undefined) });
+    selectMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+    createUser.mockResolvedValueOnce({ data: { user: { id: 'u-new' } }, error: null });
+    insertSingle.mockResolvedValueOnce({
+      data: { user_id: 'u-new', locale: 'zh', chat_ref: '9001' },
+      error: null,
+    });
+    await resolveOrCreateBinding(makeMsg());
+    expect(capture).toHaveBeenCalledWith({
+      distinctId: 'u-new',
+      event: 'channel_bind_created',
+      properties: { platform: 'telegram' },
+    });
   });
 
   it('agent 预建失败不 fatal — 绑定仍成功返回（回合侧 agent_unavailable 兜底）', async () => {
@@ -220,6 +253,13 @@ describe('resolveOrCreateBinding — 重复 resolve 幂等', () => {
 
     expect(await resolveOrCreateBinding(makeMsg())).toBeNull();
     expect(deleteUser).toHaveBeenCalledWith('u-new');
+    await vi.waitFor(() => {
+      expect(logger.debug).toHaveBeenCalledWith(
+        '[Channel] shadow_user_compensation_delete_failed user=%s',
+        'u-new'.substring(0, 8),
+        expect.any(Error),
+      );
+    });
   });
 });
 

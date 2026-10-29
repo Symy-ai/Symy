@@ -26,6 +26,7 @@ import { getAdapter } from '@/lib/channels/registry';
 import '@/lib/channels/telegram/adapter'; // 注册表侧效应 — telegram 适配器挂载
 import { localeFromLanguageHint, resolveOrCreateBinding } from '@/lib/channels/identity';
 import { runChannelTurn } from '@/lib/channel-chat/run-channel-turn';
+import { getPostHogServer } from '@/lib/posthog-server';
 import type { ChannelAdapter, InboundMessage } from '@/lib/channels/types';
 
 export const dynamic = 'force-dynamic';
@@ -94,44 +95,50 @@ export async function POST(req: Request, context: RouteContext): Promise<Respons
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ④ 解析 — 外部报文 zod loose; 空结果 = edited_message/群聊/非文本 → 200 静默丢
-  const messages = await adapter.parse(req as unknown as Parameters<ChannelAdapter['parse']>[0], rawBody);
-  if (messages.length === 0) {
-    return NextResponse.json({ ok: true }, { status: 200 });
-  }
-  const msg: InboundMessage = messages[0]; // Telegram 单 update 单消息
-
-  // ⑤ update_id 去重 (24h TTL) — 重放纵深防线
-  const dedupAcquired = await acquireLock(`channel:upd:${platform}:${msg.dedupId}`, 24 * 60 * 60 * 1000);
-  if (!dedupAcquired) {
-    logger.debug('[Channel] replay_dropped platform=%s dedup=%s', platform, msg.dedupId);
-    return NextResponse.json({ ok: true }, { status: 200 });
-  }
-
-  // ⑥ 洪水限流 (20/min per platform-user) — 超限 200 + 尽力轻提示（提示自身 1/min 限频）
-  const flood = await checkRateLimit(`channel:flood:${platform}:${msg.platformUserId}`, 20, 60_000);
-  if (!flood.allowed) {
-    logger.warn('[Channel] flood_limited platform=%s user=%s', platform, msg.platformUserId);
-    if (await shouldSendNotice(platform, msg.platformUserId)) {
-      trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].flood, localeFromLanguageHint(msg.languageHint));
+  try {
+    // ④ 解析 — 外部报文 zod loose; 空结果 = edited_message/群聊/非文本 → 200 静默丢
+    const messages = await adapter.parse(req as unknown as Parameters<ChannelAdapter['parse']>[0], rawBody);
+    if (messages.length === 0) {
+      return NextResponse.json({ ok: true }, { status: 200 });
     }
-    return NextResponse.json({ ok: true }, { status: 200 });
-  }
+    const msg: InboundMessage = messages[0]; // Telegram 单 update 单消息
 
-  // ⑦ 同用户回合锁 (90s TTL > maxDuration 60s, failClosed) — 锁忙 = 有在途回合 → 丢弃+轻提示
-  const turnLockKey = `channel:turn:${platform}:${msg.platformUserId}`;
-  const turnAcquired = await acquireLock(turnLockKey, 90_000, true);
-  if (!turnAcquired) {
-    logger.warn('[Channel] busy_dropped platform=%s user=%s', platform, msg.platformUserId);
-    if (await shouldSendNotice(platform, msg.platformUserId)) {
-      trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].busy, localeFromLanguageHint(msg.languageHint));
+    // ⑤ update_id 去重 (24h TTL) — 重放纵深防线
+    const dedupAcquired = await acquireLock(`channel:upd:${platform}:${msg.dedupId}`, 24 * 60 * 60 * 1000);
+    if (!dedupAcquired) {
+      logger.debug('[Channel] replay_dropped platform=%s dedup=%s', platform, msg.dedupId);
+      return NextResponse.json({ ok: true }, { status: 200 });
     }
+
+    // ⑥ 洪水限流 (20/min per platform-user) — 超限 200 + 尽力轻提示（提示自身 1/min 限频）
+    const flood = await checkRateLimit(`channel:flood:${platform}:${msg.platformUserId}`, 20, 60_000);
+    if (!flood.allowed) {
+      logger.warn('[Channel] flood_limited platform=%s user=%s', platform, msg.platformUserId);
+      if (await shouldSendNotice(platform, msg.platformUserId)) {
+        trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].flood, localeFromLanguageHint(msg.languageHint));
+      }
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    // ⑦ 同用户回合锁 (90s TTL > maxDuration 60s, failClosed) — 锁忙 = 有在途回合 → 丢弃+轻提示
+    const turnLockKey = `channel:turn:${platform}:${msg.platformUserId}`;
+    const turnAcquired = await acquireLock(turnLockKey, 90_000, true);
+    if (!turnAcquired) {
+      logger.warn('[Channel] busy_dropped platform=%s user=%s', platform, msg.platformUserId);
+      if (await shouldSendNotice(platform, msg.platformUserId)) {
+        trySendLight(adapter, msg.chatRef, LIGHT_TEXTS[localeFromLanguageHint(msg.languageHint)].busy, localeFromLanguageHint(msg.languageHint));
+      }
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    // ⑧ 恒 200 ack → 后台回合派发 (锁在 processTurn finally 释放)
+    fireAndForgetSafely(processTurn(adapter, msg, turnLockKey));
+    return NextResponse.json({ ok: true }, { status: 200 });
+  } catch (err) {
+    // safe to ignore: 验签后处理异常仍恒 200, 防平台因未适配异常触发重试风暴
+    logger.error('[Channel] post_verify_error platform=%s', platform, err);
     return NextResponse.json({ ok: true }, { status: 200 });
   }
-
-  // ⑧ 恒 200 ack → 后台回合派发 (锁在 processTurn finally 释放)
-  fireAndForgetSafely(processTurn(adapter, msg, turnLockKey));
-  return NextResponse.json({ ok: true }, { status: 200 });
 }
 
 /** 后台回合：身份解析 → (欢迎语) → typing → runChannelTurn → sendMessage → finally 释放锁 */
@@ -144,6 +151,10 @@ async function processTurn(adapter: ChannelAdapter, msg: InboundMessage, turnLoc
       logger.error('[Channel] turn_error outcome=bind_failed platform=%s user=%s', msg.platform, msg.platformUserId);
       return;
     }
+    captureChannelEvent('channel_message_received', binding.userId, {
+      platform: msg.platform,
+      locale: binding.locale,
+    });
 
     // /start 不进 LLM（M3）— 新用户绑定成功 → 欢迎语即终; 老用户重发 /start →
     // 重发欢迎语 (TG 惯例)。两分支均 return, 不烧 token/配额 (finally 释放锁)
@@ -193,12 +204,37 @@ async function processTurn(adapter: ChannelAdapter, msg: InboundMessage, turnLoc
       result.outcome,
       Date.now() - startedAt,
     );
+    captureChannelEvent('channel_reply_sent', binding.userId, {
+      platform: msg.platform,
+      outcome: result.outcome,
+      locale: binding.locale,
+      latency_ms: Date.now() - startedAt,
+    });
   } catch (err) {
     // safe to ignore: 后台回合异常带内处理 + turn_error 已记 (恒 200 铁律下无带外出口)
     logger.error('[Channel] turn_error outcome=exception platform=%s', msg.platform, err);
   } finally {
     await releaseLock(turnLockKey);
   }
+}
+
+function captureChannelEvent(
+  event: 'channel_message_received' | 'channel_reply_sent',
+  distinctId: string,
+  properties: Record<string, unknown>,
+): void {
+  fireAndForgetSafely(
+    (async () => {
+      const posthog = getPostHogServer();
+      if (!posthog) return;
+      try {
+        posthog.capture({ distinctId, event, properties });
+        await posthog.flush();
+      } catch {
+        // safe to ignore: 遥测失败不影响渠道主链
+      }
+    })(),
+  );
 }
 
 export async function GET(_req: Request, context: RouteContext): Promise<Response> {

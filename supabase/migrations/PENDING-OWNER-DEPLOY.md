@@ -27,6 +27,21 @@
 - **影响**：函数体与 136 逐行相同仅加安全设置；`REVOKE ... FROM anon` 一并补上（136 只 GRANT authenticated 未显式 REVOKE anon）。幂等。
 - **回滚**：无独立回滚（逻辑不变仅加固）。
 
+### 150_drop_stale_avatars_update_policy.sql
+- **目的**：删除 `avatars_update` 旧 UPDATE 策略，消除 RLS OR 合并穿透 `WITH CHECK` 防线的风险。
+- **影响**：仅删除 074 残留旧策略；保留 114 的 `avatars_update_policy`。幂等。
+- **回滚**：按 074 原定义重建 `avatars_update`（不建议，会重新引入越权 UPDATE 面）。
+
+### 151_drop_stale_avatars_old_policies.sql
+- **目的**：删除 `avatars_select/delete/insert` 旧策略，收紧 public/anon 可访问整个 avatars bucket 的残留面。
+- **影响**：仅删除 074 残留旧策略；保留 114 的 authenticated + 自有文件夹约束版本。幂等。
+- **回滚**：按 074 原定义重建三条策略（不建议，会重新放开旧访问面）。
+
+### 152_decay_daily_needs_all_search_path.sql
+- **目的**：`decay_daily_needs_all` SECURITY DEFINER 函数补 `SET search_path = public`，补齐 CVE-2024-7348 防御一致性。
+- **影响**：重建函数体并固定 search_path；权限保持 service-role-only，函数体引用已全限定。幂等。
+- **回滚**：无独立回滚（逻辑不变仅加固）。
+
 ### 153_channel_bindings.sql
 - **目的**：渠道身份绑定表：platform identity ↔ Supabase user。
 - **为什么**：社交渠道接入层地基（设计文档 §4）。
@@ -36,10 +51,10 @@
 ## 部署顺序与命令
 
 ```bash
-supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148→149→153 顺序执行
+supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148→149→150→151→152→153 顺序执行
 ```
 
-五件无相互依赖，顺序仅按序号惯例（145→146→148→149→153）。145/146 若担心锁表，在 Supabase SQL 编辑器跑：
+八件无相互依赖，顺序仅按序号惯例（145→146→148→149→150→151→152→153）。145/146 若担心锁表，在 Supabase SQL 编辑器跑：
 ```sql
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_active_challenges_user_status_completed ON public.active_challenges (user_id, status, completed_at DESC);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_email_receipts_user_status_received ON public.email_receipts (user_id, status, received_at DESC);

@@ -26,6 +26,7 @@ const h = vi.hoisted(() => {
     // 可变测试状态 (beforeEach 重置 — 普通 let 不被 clearAllMocks 重置)
     adapter: null as unknown,
     enabled: true,
+    getPostHogServer: vi.fn(),
   };
 });
 
@@ -49,6 +50,9 @@ vi.mock('@/lib/channel-chat/run-channel-turn', () => ({
 }));
 vi.mock('@/lib/admin-audit', () => ({
   fireAndForgetSafely: (p: Promise<unknown>) => h.fireAndForgetSafely(p),
+}));
+vi.mock('@/lib/posthog-server', () => ({
+  getPostHogServer: () => h.getPostHogServer(),
 }));
 vi.mock('@/lib/channels/telegram/adapter', () => ({})); // 侧效应注册模块 — 测试不走真注册
 vi.mock('@/lib/logger', () => ({
@@ -90,6 +94,14 @@ function makeReq(headers: Record<string, string> = {}): NextRequest {
   });
 }
 
+function makeReqWithUpdateId(updateId: number): NextRequest {
+  return new NextRequest('http://localhost/api/channels/telegram/webhook', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ update_id: updateId, message: { message_id: updateId, from: { id: 9001 }, chat: { id: 9001, type: 'private' }, date: 1761000000, text: '帮我参谋要不要买冲锋衣' } }),
+  });
+}
+
 function ctx(platform = 'telegram') {
   return { params: Promise.resolve({ platform }) };
 }
@@ -108,6 +120,10 @@ beforeEach(() => {
   });
   h.adapter = makeAdapter();
   h.enabled = true;
+  h.getPostHogServer.mockReset().mockReturnValue({
+    capture: vi.fn(),
+    flush: vi.fn().mockResolvedValue(undefined),
+  });
 });
 
 describe('POST — 快路径闸门', () => {
@@ -135,8 +151,8 @@ describe('POST — 200 语义', () => {
   it('正常消息 → 恒 200 ack + 后台回合全链 (welcome跳过→turn→sendMessage→finally释放锁)', async () => {
     const res = await POST(makeReq(), ctx());
     expect(res.status).toBe(200);
-    // waitUntil 被派发一次 (processTurn)
-    expect(h.fireAndForgetSafely).toHaveBeenCalledTimes(1);
+    // waitUntil 被派发: processTurn + channel_* 遥测
+    expect(h.fireAndForgetSafely).toHaveBeenCalledTimes(2);
     // 快路径三闸: 去重锁(24h) / 洪水限流(20/min) / 回合锁(90s failClosed)
     expect(h.acquireLock).toHaveBeenCalledWith('channel:upd:telegram:8001', 86400000, undefined);
     expect(h.checkRateLimit).toHaveBeenCalledWith('channel:flood:telegram:9001', 20, 60_000);
@@ -151,6 +167,26 @@ describe('POST — 200 语义', () => {
     });
     await vi.waitFor(() => {
       expect(h.releaseLock).toHaveBeenCalledWith('channel:turn:telegram:9001');
+    });
+  });
+
+  it('回合遥测 → 收到消息与回复完成各发一条 channel_* 事件', async () => {
+    const capture = vi.fn();
+    h.getPostHogServer.mockReturnValue({ capture, flush: vi.fn().mockResolvedValue(undefined) });
+    await POST(makeReq(), ctx());
+    await vi.waitFor(() => {
+      expect(capture).toHaveBeenCalledWith(expect.objectContaining({
+        distinctId: 'u-1',
+        event: 'channel_message_received',
+        properties: { platform: 'telegram', locale: 'zh' },
+      }));
+    });
+    await vi.waitFor(() => {
+      expect(capture).toHaveBeenCalledWith(expect.objectContaining({
+        distinctId: 'u-1',
+        event: 'channel_reply_sent',
+        properties: expect.objectContaining({ platform: 'telegram', outcome: 'replied', locale: 'zh' }),
+      }));
     });
   });
 
@@ -204,8 +240,8 @@ describe('POST — 200 语义', () => {
       }
       return Promise.resolve({ allowed: true, remaining: 20 });
     });
-    const res1 = await POST(makeReq(), ctx());
-    const res2 = await POST(makeReq(), ctx());
+    const res1 = await POST(makeReqWithUpdateId(8001), ctx());
+    const res2 = await POST(makeReqWithUpdateId(8002), ctx());
     expect(res1.status).toBe(200);
     expect(res2.status).toBe(200); // 1 分钟内已发过提示 → 静默丢弃 (照常 ack)
     const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
@@ -215,6 +251,14 @@ describe('POST — 200 语义', () => {
     // 提示闸参数锁定: 独立 notice 键 + 1 次 / 60s
     expect(h.checkRateLimit).toHaveBeenCalledWith('channel:notice:telegram:9001', 1, 60_000);
     expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('验签后解析抛错 → 恒 200, 不触闸门', async () => {
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.reject(new Error('adapter exploded'))) });
+    const res = await POST(makeReq(), ctx());
+    expect(res.status).toBe(200);
+    await res.json();
+    expect(h.acquireLock).not.toHaveBeenCalled();
   });
 
   it('锁忙 (在途回合) → 200 + 轻提示, 不进回合', async () => {

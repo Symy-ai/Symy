@@ -13,6 +13,7 @@
 import 'server-only'; // 架构守卫: admin client 引用文件须防客户端 bundle 泄漏
 import { logger } from '@/lib/logger';
 import { getOrCreateAgentId } from '@/lib/letta-agent-manager';
+import { getPostHogServer } from '@/lib/posthog-server';
 import { createAdminClient } from '@/lib/supabase-admin';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { InboundMessage } from './types';
@@ -168,10 +169,11 @@ export async function resolveOrCreateBinding(msg: InboundMessage): Promise<Resol
     // 非 23505 失败（FK/权限等）— 补偿删除刚建的孤儿 auth 用户（M4, fire-and-forget）:
     // 不删 → 确定性邮箱残留 → 下次 createUser 恒 422 → 该用户永久静默锁死。
     // 若 insert 实为超时但已提交, deleteUser 经 ON DELETE CASCADE 连带清 binding → 状态归零自愈。
-    void supabase.auth.admin.deleteUser(userId).catch(() => {
-      // safe to ignore: 补偿删除失败仅遗留孤儿 (无安全面, 影子号不可登录), 下方 warn 兜底观测
+    void supabase.auth.admin.deleteUser(userId).catch((deleteError: unknown) => {
+      // safe to ignore: 补偿删除失败仅遗留孤儿 (无安全面, 影子号不可登录), debug 保留排查线索
+      logger.debug('[Channel] shadow_user_compensation_delete_failed user=%s', userId.substring(0, 8), deleteError);
     });
-    logger.warn('[Channel] bind_insert_error — shadow user compensated', insertError.message);
+    logger.warn('[Channel] bind_insert_error — attempting shadow user compensation', insertError.message);
     return null;
   }
 
@@ -182,5 +184,16 @@ export async function resolveOrCreateBinding(msg: InboundMessage): Promise<Resol
     logger.warn('[Channel] agent_precreate_failed — turn will surface agent_unavailable', userId.substring(0, 8));
   }
   logger.info('[Channel] bind_created platform=%s user=%s', msg.platform, userId.substring(0, 8));
+  const posthog = getPostHogServer();
+  if (posthog) {
+    try {
+      posthog.capture({ distinctId: userId, event: 'channel_bind_created', properties: { platform: msg.platform } });
+      void posthog.flush().catch(() => {
+        // safe to ignore: 绑定遥测失败不影响身份解析
+      });
+    } catch {
+      // safe to ignore: 绑定遥测失败不影响身份解析
+    }
+  }
   return { userId: row.user_id, locale: row.locale, chatRef: row.chat_ref || msg.chatRef, created: true };
 }

@@ -187,7 +187,7 @@ describe('runChannelTurn — outcome 分支', () => {
     expect(result.outcome).toBe('error');
   });
 
-  it('快照查询失败 (null) → fail-open 照常进 LLM (与 Web 同语义)', async () => {
+  it('快照查询失败 (null) → fail-closed 施加免费档限额', async () => {
     getChatProfileSnapshot.mockResolvedValue(null);
     const result = await runChannelTurn({ userId: 'u-1', locale: 'zh', text: 'hi' });
     expect(result.outcome).toBe('replied');

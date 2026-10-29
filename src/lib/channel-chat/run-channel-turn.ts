@@ -78,13 +78,13 @@ export async function runChannelTurn(input: ChannelTurnInput): Promise<ChannelTu
     return { outcome: 'agent_unavailable', replyText: texts.agent_unavailable };
   }
 
-  // 2. 配额 — 与 Web 同键共享 (premium 判定复用 chat-profile-snapshot, 快照失败 fail-open)
+  // 2. 配额 — 与 Web 同键共享 (premium 判定复用 chat-profile-snapshot, 快照失败 fail-closed)
   let isPremium = false;
   try {
     const snapshot = await getChatProfileSnapshot(userId);
     isPremium = snapshot?.plan === 'premium';
   } catch {
-    // safe to ignore: 快照失败按免费档处理 — 与 checkDailyChatLimit 的 fail-open 语义一致, 查询炸不误放行也不误拦
+    // safe to ignore: 渠道侧有意 fail-closed — 影子用户滥用面更大, 快照失败按免费档从严; limit_global 是反滥用兜底
   }
   if (!isPremium) {
     const { allowed: dailyAllowed } = await checkRateLimit(chatDailyKey(userId), FREE_TIER_DAILY_CHAT_LIMIT, DAILY_WINDOW_MS);
