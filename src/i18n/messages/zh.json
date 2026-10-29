@@ -3290,6 +3290,10 @@
     "savedAmount": "你省下了 {amount}"
   },
   "ritual": {
+    "greetingMorning": "早安",
+    "greetingAfternoon": "午安",
+    "greetingEvening": "晚上好",
+    "greetingNight": "夜深了",
     "beforeToday": "在你开始今天之前，小象有句话想说给你听：",
     "guardianIntro": "你和小象一起，守护着这颗星球。",
     "guardianDay": "第 {days} 天",

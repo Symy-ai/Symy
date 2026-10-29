@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import type { ChallengeContext } from '@/types/challenge-context';
 import { TabBar, type Tab } from '@/components/tab-bar';
 import { TAB_ORDER, TAB_URL_WHITELIST, isTabId, type TabId } from '@/lib/tab-registry';
-import { GlobalToast } from '@/components/global-toast';
 import { showToast } from '@/lib/toast';
 import { recordAhaChallenge, useAhaChallengeMigration } from '@/hooks/use-aha-challenge-migration';
 import { ImpulseEvent } from '@/lib/impulse-detector';
@@ -708,7 +707,6 @@ export default function WeMeApp() {
           <TabBar activeTab={activeTab} previousTab={previousTab} onTabClick={switchTab} />
         </div>
       </div>
-      <GlobalToast />
 
       {/* ====== 新手导引遮罩层 (旧版 spotlight guide, 保留作为 fallback) ====== */}
       {!showAhaMoment && (

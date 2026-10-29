@@ -4,6 +4,7 @@ import { getMessages } from "next-intl/server";
 import { I18nProviderWrapper } from "@/i18n/provider";
 import type { Locale } from "@/i18n/config";
 import { routing } from "@/i18n/routing";
+import { GlobalToast } from '@/components/global-toast';
 
 export async function generateMetadata({
   params,
@@ -122,6 +123,7 @@ export default async function RootLayout({
         <I18nProviderWrapper initialLocale={locale as Locale} initialMessages={messages}>
           <div id="main-content">
             {children}
+            <GlobalToast />
           </div>
         </I18nProviderWrapper>
       </NextIntlClientProvider>

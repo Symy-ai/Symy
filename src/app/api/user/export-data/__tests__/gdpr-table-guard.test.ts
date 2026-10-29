@@ -38,6 +38,7 @@ const EXPORT_EXEMPT = new Set([
   'transparency_snapshots', // 透明报告快照 — 公共数据非个人数据
   'community_challenges', // 社区挑战定义 — 公共内容 (参与记录在 challenge_participants, 已导出)
   'cart_lines', // 购物车行 — 草稿态, 语义上属 challenge 流 (active_challenges 已导出); 留观 R1228
+  'channel_bind_codes', // T11 一次性绑定码 — 5min TTL 活码导出即泄露 (拿到导出文件者可在 TTL 内 /start CODE 抢绑); 消费后即失效, 绑定关系本体在 channel_bindings (已导出); R2631
 ]);
 
 /** 从 route.ts 提取 .from('xxx') 消费表名 */

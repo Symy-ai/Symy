@@ -3290,6 +3290,10 @@
     "savedAmount": "You saved {amount}"
   },
   "ritual": {
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingNight": "Good night",
     "beforeToday": "Before you begin today, a word from your little elephant:",
     "guardianIntro": "You and Symy are standing guard for the planet.",
     "guardianDay": "Day {days}",
