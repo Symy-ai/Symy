@@ -48,10 +48,16 @@
 - **影响**：新表+RLS；UPDATE policy 带 WITH CHECK，与 148 号守卫天然兼容。
 - **回滚**：`DROP TABLE IF EXISTS public.channel_bindings CASCADE;`
 
+### 154_channel_bind_codes.sql
+- **目的**：网页账号一次性绑定码与影子账号改绑 RPC。
+- **为什么**：T11 方案 A 让既有 Telegram 影子身份迁移到网页登录账号。
+- **影响**：新表+RLS+两个 service-role-only RPC（REVOKE public/anon/authenticated + 显式 GRANT EXECUTE TO service_role，不依赖平台默认权限）；service key 持有者可原子作废旧码、改绑/新建 binding、返回待补偿删除的影子用户。
+- **回滚**：`DROP FUNCTION IF EXISTS public.claim_channel_binding(text, text, text, text, text); DROP FUNCTION IF EXISTS public.issue_channel_bind_code(uuid, text, text); DROP TABLE IF EXISTS public.channel_bind_codes CASCADE;`
+
 ## 部署顺序与命令
 
 ```bash
-supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148→149→150→151→152→153 顺序执行
+supabase db push   # 或 Vercel/Supabase 控制台按 145→146→148→149→150→151→152→153→154 顺序执行
 ```
 
 八件无相互依赖，顺序仅按序号惯例（145→146→148→149→150→151→152→153）。145/146 若担心锁表，在 Supabase SQL 编辑器跑：

@@ -3789,5 +3789,16 @@
     "wonBackTogether": "一起赢回：{hours} · {guards} 位守护者",
     "collectiveUnavailable": "集体数字暂时不可用。契约仍在，稍后可以再看累计结果。",
     "trustLink": "我们的公开边界"
+  },
+  "settingsChannels": {
+    "title": "渠道绑定",
+    "description": "生成一次性验证码后，从 Telegram 打开 Symy，即可把这个 Telegram 身份绑定到当前账号。",
+    "generate": "生成绑定码",
+    "loading": "生成中…",
+    "generated": "绑定码已生成",
+    "failed": "生成失败，请稍后再试",
+    "expires": "验证码 5 分钟内有效，重复生成会使旧码失效。",
+    "openTelegram": "打开 Telegram 绑定",
+    "manualCode": "未配置机器人链接，请在 Telegram 中向 Symy 发送：/start 绑定码"
   }
 }

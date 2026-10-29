@@ -65,7 +65,11 @@ export function parseTelegramWebhook(_req: { headers: Headers }, rawBody: string
       text,
       dedupId: String(update_id),
       languageHint: message.from.language_code,
-      kind: text === '/start' ? 'command_start' : 'text',
+      ...(text === '/start'
+        ? { kind: 'command_start' as const }
+        : /^\/start ([A-Z0-9]{8})$/.test(text)
+          ? { kind: 'command_start_payload' as const, startPayload: text.slice(7) }
+          : { kind: 'text' as const }),
     },
   ];
 }

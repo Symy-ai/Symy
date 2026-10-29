@@ -52,6 +52,22 @@ describe('parseTelegramWebhook', () => {
     expect(msg?.kind).toBe('command_start');
   });
 
+  it('/start ABCD2345 → command_start_payload + payload', () => {
+    const withPayload = JSON.parse(updateJson());
+    withPayload.message.text = '/start ABCD2345';
+    const [msg] = parseTelegramWebhook(req, JSON.stringify(withPayload));
+    expect(msg?.kind).toBe('command_start_payload');
+    expect(msg?.startPayload).toBe('ABCD2345');
+  });
+
+  it('/start 非法 payload → text', () => {
+    const invalid = JSON.parse(updateJson());
+    invalid.message.text = '/start 0O1Iabc';
+    const [msg] = parseTelegramWebhook(req, JSON.stringify(invalid));
+    expect(msg?.kind).toBe('text');
+    expect(msg?.startPayload).toBeUndefined();
+  });
+
   it('非 private (group/supergroup) → 空数组静默丢', () => {
     const group = JSON.parse(updateJson());
     group.message.chat.type = 'group';

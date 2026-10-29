@@ -27,6 +27,7 @@ const h = vi.hoisted(() => {
     adapter: null as unknown,
     enabled: true,
     getPostHogServer: vi.fn(),
+    createAdminClient: vi.fn(),
   };
 });
 
@@ -53,6 +54,9 @@ vi.mock('@/lib/admin-audit', () => ({
 }));
 vi.mock('@/lib/posthog-server', () => ({
   getPostHogServer: () => h.getPostHogServer(),
+}));
+vi.mock('@/lib/supabase-admin', () => ({
+  createAdminClient: () => h.createAdminClient(),
 }));
 vi.mock('@/lib/channels/telegram/adapter', () => ({})); // 侧效应注册模块 — 测试不走真注册
 vi.mock('@/lib/logger', () => ({
@@ -123,6 +127,70 @@ beforeEach(() => {
   h.getPostHogServer.mockReset().mockReturnValue({
     capture: vi.fn(),
     flush: vi.fn().mockResolvedValue(undefined),
+  });
+  h.createAdminClient.mockReset().mockReturnValue({
+    supabase: {
+      rpc: vi.fn(),
+      auth: { admin: { deleteUser: vi.fn() } },
+    },
+  });
+});
+
+describe('POST — /start CODE 绑定码（T11）', () => {
+  function bindMsg(): InboundMessage {
+    return makeMsg({ text: '/start ABCD2345', kind: 'command_start_payload', startPayload: 'ABCD2345', dedupId: '8300' });
+  }
+
+  function rpcResult(overrides: Record<string, unknown> = {}) {
+    return { data: { ok: true, user_id: 'u-real', shadow_user_id: null, ...overrides }, error: null };
+  }
+
+  it('有效码 → 改绑成功文案 + 删除影子号 + 不进 LLM', async () => {
+    const deleteUser = vi.fn().mockResolvedValue({ error: null });
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([bindMsg()])) });
+    h.createAdminClient.mockReturnValue({ supabase: { rpc: vi.fn().mockResolvedValue(rpcResult({ shadow_user_id: 'u-shadow' })), auth: { admin: { deleteUser } } } });
+    const res = await POST(makeReq(), ctx());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(h.releaseLock).toHaveBeenCalled());
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    expect(sendMock.calls.map((c) => String(c[1])).join('|')).toContain('绑定成功');
+    await vi.waitFor(() => expect(deleteUser).toHaveBeenCalledWith('u-shadow'));
+    expect(h.resolveOrCreateBinding).not.toHaveBeenCalled();
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('无效或已过期/已消费码 → 明确拒绝文案，不进 LLM', async () => {
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([bindMsg()])) });
+    h.createAdminClient.mockReturnValue({ supabase: { rpc: vi.fn().mockResolvedValue({ data: { ok: false }, error: null }), auth: { admin: { deleteUser: vi.fn() } } } });
+    const res = await POST(makeReq(), ctx());
+    expect(res.status).toBe(200);
+    await vi.waitFor(() => expect(h.releaseLock).toHaveBeenCalled());
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    expect(sendMock.calls.map((c) => String(c[1])).join('|')).toContain('验证码无效或已过期');
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('RPC 异常 → 拒绝文案，不进 LLM', async () => {
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([bindMsg()])) });
+    h.createAdminClient.mockReturnValue({ supabase: { rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'db down' } }), auth: { admin: { deleteUser: vi.fn() } } } });
+    await POST(makeReq(), ctx());
+    await vi.waitFor(() => expect(h.releaseLock).toHaveBeenCalled());
+    const sendMock = (h.adapter as { sendMessage: { mock: { calls: unknown[][] } } }).sendMessage.mock;
+    expect(sendMock.calls.map((c) => String(c[1])).join('|')).toContain('验证码无效或已过期');
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
+  });
+
+  it('binding 不存在由 RPC 插入；真人无影子号时不删除', async () => {
+    const rpc = vi.fn().mockResolvedValue(rpcResult());
+    const deleteUser = vi.fn();
+    h.adapter = makeAdapter({ parse: vi.fn(() => Promise.resolve([bindMsg()])) });
+    h.createAdminClient.mockReturnValue({ supabase: { rpc, auth: { admin: { deleteUser } } } });
+    await POST(makeReq(), ctx());
+    await vi.waitFor(() => expect(rpc).toHaveBeenCalledWith('claim_channel_binding', {
+      p_code: 'ABCD2345', p_platform: 'telegram', p_platform_user_id: '9001', p_chat_ref: '9001', p_locale: 'zh',
+    }));
+    expect(deleteUser).not.toHaveBeenCalled();
+    expect(h.runChannelTurn).not.toHaveBeenCalled();
   });
 });
 

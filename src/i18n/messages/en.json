@@ -3789,5 +3789,16 @@
     "wonBackTogether": "Won back together: {hours} · {guards} guards",
     "collectiveUnavailable": "Collective figures are temporarily unavailable. The covenant remains, and the running total can return later.",
     "trustLink": "Our public boundaries"
+  },
+  "settingsChannels": {
+    "title": "Channel binding",
+    "description": "Generate a one-time code, then open Symy from Telegram to connect this Telegram identity to your current account.",
+    "generate": "Generate binding code",
+    "loading": "Generating…",
+    "generated": "Binding code generated",
+    "failed": "Could not generate a code. Please try again later.",
+    "expires": "The code expires in 5 minutes. Generating a new code invalidates the previous one.",
+    "openTelegram": "Open Telegram to bind",
+    "manualCode": "Bot link is not configured. Send Symy this on Telegram: /start your code"
   }
 }

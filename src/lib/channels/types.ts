@@ -17,7 +17,8 @@ export interface InboundMessage {
   text: string; // MVP 仅文本
   dedupId: string; // TG update_id / 微信 MsgId — 重放去重键
   languageHint?: string; // TG from.language_code ('zh-CN' → locale)
-  kind: 'text' | 'command_start' | 'unsupported';
+  kind: 'text' | 'command_start' | 'command_start_payload' | 'unsupported';
+  startPayload?: string;
 }
 
 export interface ChannelAdapter {

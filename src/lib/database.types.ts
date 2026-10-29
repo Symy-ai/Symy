@@ -417,6 +417,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      channel_bind_codes: {
+        Row: {
+          id: string;
+          user_id: string;
+          code: string;
+          platform: string;
+          expires_at: string;
+          consumed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string | null;
+          user_id: string;
+          code: string;
+          platform: string;
+          expires_at: string;
+          consumed_at?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string | null;
+          user_id?: string | null;
+          code?: string | null;
+          platform?: string | null;
+          expires_at?: string | null;
+          consumed_at?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
       chat_messages: {
         Row: {
       id: string;
@@ -1573,6 +1603,14 @@ export interface Database {
       // community_platform_stats: { Row: {...}, Insert: never, Update: never },
     };
     Functions: {
+      claim_channel_binding: {
+        Args: { p_code: string; p_platform: string; p_platform_user_id: string; p_chat_ref: string; p_locale: string };
+        Returns: Json;
+      };
+      issue_channel_bind_code: {
+        Args: { p_user_id: string; p_code: string; p_platform: string };
+        Returns: string;
+      };
       // 🔧 Round 133: Agent pool functions
       assign_pool_agent: {
         Args: { p_user_id: string };

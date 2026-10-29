@@ -26,6 +26,7 @@ import { getAdapter } from '@/lib/channels/registry';
 import '@/lib/channels/telegram/adapter'; // 注册表侧效应 — telegram 适配器挂载
 import { localeFromLanguageHint, resolveOrCreateBinding } from '@/lib/channels/identity';
 import { runChannelTurn } from '@/lib/channel-chat/run-channel-turn';
+import { createAdminClient } from '@/lib/supabase-admin';
 import { getPostHogServer } from '@/lib/posthog-server';
 import type { ChannelAdapter, InboundMessage } from '@/lib/channels/types';
 
@@ -44,6 +45,17 @@ const LIGHT_TEXTS = {
     flood: "You're sending messages too fast — take a short break.",
     busy: 'Your previous message is still being answered. One moment.',
     welcome: 'Welcome! I am Symy, your shopping companion — I help you buy, and help you hold back. Just send me anything you are thinking of buying.',
+  },
+} as const;
+
+const BIND_CODE_TEXTS = {
+  zh: {
+    invalid: '验证码无效或已过期，请在网页重新获取。',
+    success: '绑定成功。这个 Telegram 账号已连接到你的 Symy 账号。',
+  },
+  en: {
+    invalid: 'The verification code is invalid or expired. Please get a new one on the website.',
+    success: 'Binding complete. This Telegram account is now connected to your Symy account.',
   },
 } as const;
 
@@ -145,6 +157,15 @@ export async function POST(req: Request, context: RouteContext): Promise<Respons
 async function processTurn(adapter: ChannelAdapter, msg: InboundMessage, turnLockKey: string): Promise<void> {
   const startedAt = Date.now();
   try {
+    if (msg.kind === 'command_start_payload') {
+      const locale = localeFromLanguageHint(msg.languageHint);
+      const claimed = await claimBinding(msg, locale);
+      const text = claimed ? BIND_CODE_TEXTS[locale].success : BIND_CODE_TEXTS[locale].invalid;
+      const sendResult = await adapter.sendMessage(msg.chatRef, text, { locale });
+      if (!sendResult.ok) logger.warn('[Channel] bind_code_reply_failed platform=%s', msg.platform);
+      logger.info('[Channel] bind_code_claim outcome=%s platform=%s', claimed ? 'ok' : 'invalid', msg.platform);
+      return;
+    }
     // 身份解析（影子账号按需建立）— 在 ack 之后的后台段
     const binding = await resolveOrCreateBinding(msg);
     if (!binding) {
@@ -218,8 +239,42 @@ async function processTurn(adapter: ChannelAdapter, msg: InboundMessage, turnLoc
   }
 }
 
+type ClaimResult = {
+  ok?: boolean | null;
+  user_id?: string | null;
+  shadow_user_id?: string | null;
+};
+
+async function claimBinding(msg: InboundMessage, locale: 'zh' | 'en'): Promise<boolean> {
+  const { supabase, error } = createAdminClient();
+  if (error || !supabase || !msg.startPayload) return false;
+  const { data, error: rpcError } = await supabase.rpc('claim_channel_binding', {
+    p_code: msg.startPayload,
+    p_platform: msg.platform,
+    p_platform_user_id: msg.platformUserId,
+    p_chat_ref: msg.chatRef,
+    p_locale: locale,
+  });
+  if (rpcError) {
+    logger.error('[Channel] bind_code_rpc_failed platform=%s', msg.platform, rpcError.message);
+    return false;
+  }
+  const result = data as ClaimResult | null;
+  if (!result?.ok) return false;
+  captureChannelEvent('channel_binding_claimed', result.user_id ?? '', { platform: msg.platform, locale });
+  if (result.shadow_user_id) {
+    fireAndForgetSafely(
+      supabase.auth.admin.deleteUser(result.shadow_user_id).catch((deleteError: unknown) => {
+        // safe to ignore: 影子号补偿删除失败仅留不可登录孤儿号，不影响真人绑定
+        logger.debug('[Channel] shadow_user_delete_failed user=%s', result.shadow_user_id?.substring(0, 8), deleteError);
+      }),
+    );
+  }
+  return true;
+}
+
 function captureChannelEvent(
-  event: 'channel_message_received' | 'channel_reply_sent',
+  event: 'channel_message_received' | 'channel_reply_sent' | 'channel_binding_claimed',
   distinctId: string,
   properties: Record<string, unknown>,
 ): void {

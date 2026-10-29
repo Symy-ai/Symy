@@ -31,6 +31,7 @@ export const ENV_CONSUMERS = [
   { feature: 'Z.AI browser configuration fallback', requirements: [['ZAI_BASE_URL']], behavior: 'explicit-failure', impact: 'The z-ai configuration endpoint returns service unavailable when no local config exists.' },
   { feature: 'Symy external shopping context', requirements: [['SYMY_SUPABASE_URL'], ['SYMY_SUPABASE_KEY']], behavior: 'disabled', impact: 'Cart totals and impulse context are omitted from chat prompts.' },
   { feature: 'Telegram channel', requirements: [['TELEGRAM_BOT_TOKEN'], ['TELEGRAM_WEBHOOK_SECRET'], ['CHANNELS_ENABLED']], behavior: 'explicit-failure', impact: 'Telegram webhook returns service unavailable.' },
+  { feature: 'Telegram binding deep link', requirements: [['TELEGRAM_BOT_USERNAME']], behavior: 'default', impact: 'The channel settings page shows the code without a Telegram deep link.' },
 ] satisfies EnvConsumerSpec[];
 
 const warnedFeatures = new Set<string>();
